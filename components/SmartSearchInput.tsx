@@ -39,6 +39,7 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
 
   const debouncedQuery = useDebounce(query, 500);
   const isFirstMount = React.useRef(true);
+  const isInteracted = React.useRef(false);
 
   // Trigger search when debounced query changes
   useEffect(() => {
@@ -46,8 +47,8 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
       isFirstMount.current = false;
       return;
     }
-    // Only trigger if we aren't showing filters. If showing filters, user will click "Apply Filters"
-    if (onSearch && !showFilters) {
+    // Only trigger if the user has actually interacted and we aren't showing filters.
+    if (onSearch && !showFilters && isInteracted.current) {
       onSearch(debouncedQuery, filters);
     }
   }, [debouncedQuery]);
@@ -141,7 +142,10 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
         <input 
           type="text" 
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            isInteracted.current = true;
+            setQuery(e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={`w-full bg-slate-50/80 backdrop-blur-sm transition-all outline-none font-medium text-sm ${
@@ -230,7 +234,7 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
                     <input 
                         type="number" 
                         placeholder="Min" 
-                        value={filters.minPrice}
+                        value={filters.minPrice ?? ''}
                         onChange={(e) => handleFilterChange('minPrice', e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 font-medium"
                     />
@@ -240,7 +244,7 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
                     <input 
                         type="number" 
                         placeholder="Max" 
-                        value={filters.maxPrice}
+                        value={filters.maxPrice ?? ''}
                         onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 font-medium"
                     />

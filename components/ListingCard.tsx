@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { getSymbolFromCode } from '../services/location';
 import { getOptimizedImageUrl } from '../utils/imageOptimization';
 import ResponsiveImage from './ResponsiveImage';
+import { getUserProfile } from '../services/supabaseService';
 
 interface ListingCardProps {
   listing?: Listing;
@@ -20,6 +21,29 @@ interface ListingCardProps {
 const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  const [cardSeller, setCardSeller] = useState<User | undefined>(seller);
+
+  useEffect(() => {
+    if (seller) {
+      setCardSeller(seller);
+      return;
+    }
+    if (!listing?.sellerId) return;
+
+    let isMounted = true;
+    getUserProfile(listing.sellerId).then(profile => {
+      if (isMounted && profile) {
+        setCardSeller(profile);
+      }
+    }).catch(err => {
+      console.error("Failed to load seller for listing:", listing.id, err);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [listing?.sellerId, seller]);
   
   if (isLoading || !listing) {
     return (
@@ -234,17 +258,17 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading })
                      <div className="relative group/avatar cursor-pointer z-30">
                        <div className="w-6 h-6 rounded-full border border-white shadow-sm overflow-hidden bg-slate-100">
                           <ResponsiveImage 
-                            src={seller?.avatar || ''}
+                            src={cardSeller?.avatar || ''}
                             generateSrcSet={false}
                             alt="Seller" 
                             referrerPolicy="no-referrer" 
                             className="w-full h-full object-cover" 
-                            fallbackSrc={`https://ui-avatars.com/api/?name=${encodeURIComponent(seller?.name || 'User')}&background=random`}
+                            fallbackSrc={`https://ui-avatars.com/api/?name=${encodeURIComponent(cardSeller?.name || 'User')}&background=random`}
                           />
                        </div>
                        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 hidden group-hover/avatar:flex items-center gap-1 bg-white p-1 rounded-lg shadow-lg border border-slate-100 z-50">
                            <button onClick={handleChat} className="w-6 h-6 flex items-center justify-center rounded bg-brand-50 text-brand-600 border border-brand-100"><Icon name="messageCircle" size={12} /></button>
-                           {seller?.socials.phone && <a href={`tel:${seller.socials.phone}`} className="w-6 h-6 flex items-center justify-center rounded bg-emerald-50 text-emerald-600 border border-emerald-100"><Icon name="phone" size={12} /></a>}
+                           {cardSeller?.socials?.phone && <a href={`tel:${cardSeller.socials.phone}`} className="w-6 h-6 flex items-center justify-center rounded bg-emerald-50 text-emerald-600 border border-emerald-100"><Icon name="phone" size={12} /></a>}
                        </div>
                      </div>
                  </div>

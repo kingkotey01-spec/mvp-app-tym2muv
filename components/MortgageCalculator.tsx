@@ -10,16 +10,25 @@ interface MortgageCalculatorProps {
 }
 
 const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ price, currency }) => {
-  const [downPayment, setDownPayment] = useState(price * 0.2);
+  const [downPayment, setDownPayment] = useState(() => (price || 0) * 0.2);
   const [interestRate, setInterestRate] = useState(6.5);
   const [loanTerm, setLoanTerm] = useState(30);
   const [monthlyPayment, setMonthlyPayment] = useState(0);
   const { userLocation } = useLocation();
 
   useEffect(() => {
-    const principal = price - downPayment;
+    setDownPayment((price || 0) * 0.2);
+  }, [price]);
+
+  useEffect(() => {
+    const principal = (price || 0) - downPayment;
     const monthlyRate = interestRate / 100 / 12;
     const numberOfPayments = loanTerm * 12;
+
+    if (numberOfPayments <= 0) {
+      setMonthlyPayment(0);
+      return;
+    }
 
     if (monthlyRate === 0) {
       setMonthlyPayment(principal / numberOfPayments);
@@ -27,7 +36,7 @@ const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ price, currency
       const payment =
         (principal * monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) /
         (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
-      setMonthlyPayment(payment);
+      setMonthlyPayment(isNaN(payment) ? 0 : payment);
     }
   }, [price, downPayment, interestRate, loanTerm]);
 

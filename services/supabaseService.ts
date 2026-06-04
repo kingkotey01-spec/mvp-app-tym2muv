@@ -308,7 +308,7 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
     return await withCache(cacheKey('listings', filters || 'all'), async () => {
       let query = supabase
         .from('properties')
-        .select('*, seller:profiles!agent_id(*)', { count: 'exact' });
+        .select('*', { count: 'exact' });
 
       if (!filters?.isAdminQuery) {
         query = query.eq('status', 'approved');
