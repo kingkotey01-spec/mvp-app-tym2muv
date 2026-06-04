@@ -1,31 +1,31 @@
 import { supabase } from '../supabaseClient';
-import { Listing, User, Chat, ChatMessage, SearchFilters, Monetization, Review, Payment, ViewRequest, StaticPage, BlogPost, RentFinancingApplication } from '../types';
+import { Listing, User, UserRole, Chat, ChatMessage, SearchFilters, Monetization, Review, Payment, ViewRequest, StaticPage, BlogPost, RentFinancingApplication } from '../types';
 import { withCache, delCache, invalidateCachePrefix, CACHE_TTL, cacheKey } from './cacheService';
 import { uploadImageToCloudinary } from './imageService';
 
 // --- AUTH SERVICES ---
-export const loginWithEmail = async (email: string, password: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant') => {
+export const loginWithEmail = async (email: string, password: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   
   // For now, attach role
-  return Object.assign(data.user, { isNewAccount: false, role: selectedRole, uid: data.user?.id });
+  return Object.assign(data.user || {}, { isNewAccount: false, role: selectedRole, id: data.user?.id, uid: data.user?.id });
 };
 
-export const signupWithEmail = async (email: string, password: string, name: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant') => {
+export const signupWithEmail = async (email: string, password: string, name: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: name,
-        role: selectedRole,
+        role: selectedRole.toLowerCase(),
       }
     }
   });
   if (error) throw error;
   
-  return Object.assign(data.user || {}, { isNewAccount: true, role: selectedRole, uid: data.user?.id });
+  return Object.assign(data.user || {}, { isNewAccount: true, role: selectedRole, id: data.user?.id, uid: data.user?.id });
 };
 
 export const logout = async () => {
@@ -73,6 +73,15 @@ export const loginWithLinkedIn = async () => {
 
 // --- USER SERVICES ---
 const mapProfileToUser = (profileData: any): User => {
+  let mappedRole: UserRole = 'Customer';
+  if (profileData.role) {
+    const r = String(profileData.role).toLowerCase();
+    if (r === 'tenant') mappedRole = 'Tenant';
+    else if (r === 'agent') mappedRole = 'Agent';
+    else if (r === 'admin') mappedRole = 'Admin';
+    else if (r === 'customer') mappedRole = 'Customer';
+    else mappedRole = profileData.role;
+  }
   return {
     id: profileData.id,
     name: profileData.full_name || 'Unknown',
@@ -83,7 +92,7 @@ const mapProfileToUser = (profileData: any): User => {
     memberSince: profileData.created_at || new Date().toISOString(),
     bio: profileData.bio || '',
     verified: profileData.verified || false,
-    role: profileData.role || 'Customer',
+    role: mappedRole,
     savedListings: profileData.savedListings || [],
     socials: profileData.socials || {}
   };
@@ -239,7 +248,7 @@ export const getAllUsers = async (): Promise<User[]> => {
 };
 
 export const updateUserRole = async (userId: string, role: string) => {
-  const { error } = await supabase.from('profiles').update({ role }).eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ role: role.toLowerCase() }).eq('id', userId);
   if (error) throw error;
   await delCache(cacheKey('profile', userId));
 };

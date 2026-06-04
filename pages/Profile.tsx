@@ -12,7 +12,7 @@ import { getOptimizedImageUrl } from '../utils/imageOptimization';
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const { user: currentUser, logout } = useAuth();
+  const { user: currentUser, loading: authLoading, logout } = useAuth();
   const [user, setUser] = useState<User | undefined>(undefined);
   const [listings, setListings] = useState<Listing[]>([]);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
@@ -50,6 +50,9 @@ const Profile: React.FC = () => {
         if (userId === 'me') {
           if (currentUser) {
             targetId = currentUser.id;
+          } else if (authLoading) {
+            // Keep loading true and wait for next render
+            return;
           } else {
             setIsLoading(false);
             return;
@@ -88,7 +91,7 @@ const Profile: React.FC = () => {
     };
 
     fetchProfileData();
-  }, [userId, currentUser]);
+  }, [userId, currentUser, authLoading]);
 
   const handleShare = () => {
     if (navigator.share) {

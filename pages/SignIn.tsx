@@ -71,17 +71,17 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
     try {
       setIsLoading(true);
       if (isSignUp) {
-        await signupWithEmail(email, password, name, selectedRole);
+        const resultUser = await signupWithEmail(email, password, name, selectedRole);
         setMessage('Registration successful! Secure profile provisioned.');
         setTimeout(() => {
-          navigate('/');
+          navigate(resultUser?.id ? `/profile/${resultUser.id}` : '/profile/me');
         }, 1500);
       } else {
-        await loginWithEmail(email, password, selectedRole);
+        const resultUser = await loginWithEmail(email, password, selectedRole);
         setMessage('Authentication successful! Welcome back.');
         setTimeout(() => {
-          navigate('/');
-        }, 1500);
+          navigate(resultUser?.id ? `/profile/${resultUser.id}` : '/profile/me');
+        }, 1100);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication.');
