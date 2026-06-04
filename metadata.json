@@ -1,0 +1,10 @@
+{
+  "name": "mvp app tym2muv ",
+  "description": "An African real estate listing platform",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
