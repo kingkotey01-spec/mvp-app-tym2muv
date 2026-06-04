@@ -5,9 +5,30 @@ import { logger } from '../utils/logger';
 const redisUrl = import.meta.env.VITE_UPSTASH_REDIS_REST_URL;
 const redisToken = import.meta.env.VITE_UPSTASH_REDIS_REST_TOKEN;
 
+// Helper to validate the Upstash Redis URL
+const isValidRedisUrl = (url?: string): boolean => {
+  if (!url) return false;
+  const lowercase = url.toLowerCase().trim();
+  return (
+    (lowercase.startsWith('https://') || lowercase.startsWith('http://')) &&
+    !lowercase.includes('your-upstash-redis-url') &&
+    !lowercase.includes('placeholder')
+  );
+};
+
+const isValidRedisToken = (token?: string): boolean => {
+  if (!token) return false;
+  const lowercase = token.toLowerCase().trim();
+  return (
+    lowercase !== '' &&
+    !lowercase.includes('your-upstash-redis-token') &&
+    !lowercase.includes('placeholder')
+  );
+};
+
 // Initialize Redis client conditionally to handle missing credentials gracefully
-export const redisClient = redisUrl && redisToken 
-  ? new Redis({ url: redisUrl, token: redisToken })
+export const redisClient = isValidRedisUrl(redisUrl) && isValidRedisToken(redisToken)
+  ? new Redis({ url: redisUrl!.trim(), token: redisToken!.trim() })
   : null;
 
 /**

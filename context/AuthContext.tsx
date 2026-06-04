@@ -35,20 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initAuth = async () => {
-      const mockStr = localStorage.getItem('caliber_mock_user');
-      if (mockStr) {
-        try {
-          const mockUser = JSON.parse(mockStr);
-          setUser(mockUser);
-          setSupabaseUser(null);
-          setLoading(false);
-          setIsAuthReady(true);
-          return;
-        } catch (e) {
-          // ignore
-        }
-      }
-
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
@@ -71,20 +57,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
 
     const unsubscribe = subscribeToAuth(async (sUser) => {
-      const mockStr = localStorage.getItem('caliber_mock_user');
-      if (mockStr) {
-        try {
-          const mockUser = JSON.parse(mockStr);
-          setUser(mockUser);
-          setSupabaseUser(null);
-          setLoading(false);
-          setIsAuthReady(true);
-          return;
-        } catch (e) {
-          // ignore
-        }
-      }
-
       setSupabaseUser(sUser);
       if (sUser) {
         const profile = await getUserProfile(sUser.id || sUser.uid);

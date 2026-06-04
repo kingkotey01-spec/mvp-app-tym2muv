@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginWithEmail } from '../services/supabaseService';
-import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import Icon from '../components/Icon';
 import { Logo } from '../components/Logo';
 
@@ -22,44 +22,6 @@ const AdminLogin: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-
-      // Check for supreme local admin bypass account
-      const isSuperBypass = email.toLowerCase() === 'admin@caliberdesk.com' && password === 'admin123';
-
-      if (isSuperBypass || !isSupabaseConfigured) {
-        // Mock Admin login logic
-        if (email.toLowerCase().includes('admin') || email === 'niidjanie@gmail.com' || isSuperBypass) {
-          const mockAdminUser = {
-            id: 'mock-admin-id',
-            name: 'System Administrator',
-            avatar: 'https://ui-avatars.com/api/?name=Admin&background=0F172A&color=ffffff',
-            rating: 5.0,
-            reviewCount: 0,
-            location: 'Accra, Ghana',
-            memberSince: 'Jun 2026',
-            bio: 'Master Administrative Account',
-            verified: true,
-            role: 'Admin',
-            socials: { email }
-          };
-          
-          localStorage.setItem('caliber_mock_user', JSON.stringify({
-            ...mockAdminUser,
-            isNewAccount: false,
-            role: 'Admin',
-            uid: mockAdminUser.id,
-            email: email
-          }));
-          
-          // Trigger local storage state update for subscribeToAuth in AuthContext
-          window.dispatchEvent(new Event('storage'));
-          navigate('/admin');
-        } else {
-          setError('Invalid administrator credentials in offline mode.');
-        }
-        setIsLoading(false);
-        return;
-      }
 
       // Live Supabase Authenticator
       const loginResult = await loginWithEmail(email, password, 'Admin');

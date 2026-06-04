@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -15,22 +15,6 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     const checkAdminStatus = async () => {
       if (authLoading || !isAuthenticated || !user) {
         setIsAdmin(false);
-        return;
-      }
-      
-      const localMockUserStr = localStorage.getItem('caliber_mock_user');
-      let isMockAdmin = false;
-      if (localMockUserStr) {
-        try {
-          const parsed = JSON.parse(localMockUserStr);
-          if (parsed && parsed.role === 'Admin') {
-            isMockAdmin = true;
-          }
-        } catch (_) {}
-      }
-
-      if (isMockAdmin || !isSupabaseConfigured) {
-        setIsAdmin(user.role === 'Admin');
         return;
       }
 

@@ -1,32 +1,10 @@
-import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { Listing, User, Chat, ChatMessage, SearchFilters, Monetization, Review, Payment, ViewRequest, StaticPage, BlogPost, RentFinancingApplication } from '../types';
 import { withCache, delCache, invalidateCachePrefix, CACHE_TTL, cacheKey } from './cacheService';
 import { uploadImageToCloudinary } from './imageService';
-import { MOCK_LISTINGS, MOCK_USERS, MOCK_ADS, MOCK_CHATS } from './mockData';
 
 // --- AUTH SERVICES ---
 export const loginWithEmail = async (email: string, password: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant') => {
-  if (!isSupabaseConfigured) {
-    const matchedUser = MOCK_USERS.find(u => u.socials?.email === email || (u as any).email === email);
-    const mockUser = matchedUser || {
-      id: 'mock-user-login',
-      name: email.split('@')[0],
-      avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`,
-      rating: 5.0,
-      reviewCount: 1,
-      location: 'Accra, Ghana',
-      memberSince: 'Jun 2026',
-      bio: 'Demo Renter/Buyer Profile',
-      verified: true,
-      role: selectedRole,
-      socials: { email }
-    };
-    
-    const userResult = { ...mockUser, isNewAccount: false, role: selectedRole, uid: mockUser.id, email: email };
-    localStorage.setItem('caliber_mock_user', JSON.stringify(userResult));
-    return userResult;
-  }
-  
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   
@@ -35,25 +13,6 @@ export const loginWithEmail = async (email: string, password: string, selectedRo
 };
 
 export const signupWithEmail = async (email: string, password: string, name: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant') => {
-  if (!isSupabaseConfigured) {
-    const mockUser = {
-      id: `gen-user-${Date.now()}`,
-      name,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-      rating: 5.0,
-      reviewCount: 0,
-      location: 'Lagos, Nigeria',
-      memberSince: 'Jun 2026',
-      bio: 'Newly Registered Account Space',
-      verified: true,
-      role: selectedRole,
-      socials: { email }
-    };
-    const userResult = { ...mockUser, isNewAccount: true, role: selectedRole, uid: mockUser.id, email: email };
-    localStorage.setItem('caliber_mock_user', JSON.stringify(userResult));
-    return userResult;
-  }
-  
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -70,71 +29,20 @@ export const signupWithEmail = async (email: string, password: string, name: str
 };
 
 export const logout = async () => {
-  localStorage.removeItem('caliber_mock_user');
-  if (isSupabaseConfigured) {
-    await supabase.auth.signOut();
-  }
+  await supabase.auth.signOut();
 };
 
 export const subscribeToAuth = (callback: (user: any | null) => void) => {
-  const getMockUser = () => {
-    const uStr = localStorage.getItem('caliber_mock_user');
-    if (uStr) {
-      try {
-        return JSON.parse(uStr);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  };
-
-  if (!isSupabaseConfigured) {
-    const checkUser = () => {
-      callback(getMockUser());
-    };
-    checkUser();
-    // Monitor storage changes
-    const handler = () => checkUser();
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }
-  
-  // When Supabase is configured, check if a mock admin or user is active first
-  const currentMock = getMockUser();
-  if (currentMock) {
-    callback(currentMock);
-  }
-
   const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    const activeMock = getMockUser();
-    if (activeMock) {
-      callback(activeMock);
-    } else {
-      callback(session?.user || null);
-    }
+    callback(session?.user || null);
   });
-
-  const storageHandler = () => {
-    const activeMock = getMockUser();
-    if (activeMock) {
-      callback(activeMock);
-    } else {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        callback(session?.user || null);
-      });
-    }
-  };
-  window.addEventListener('storage', storageHandler);
 
   return () => {
     subscription.unsubscribe();
-    window.removeEventListener('storage', storageHandler);
   };
 };
 
 export const sendPasswordResetEmail = async (email: string) => {
-  if (!isSupabaseConfigured) return;
   await supabase.auth.resetPasswordForEmail(email);
 };
 
@@ -144,17 +52,10 @@ export const verifyPasswordResetCode = async (code: string) => {
 };
 
 export const confirmPasswordReset = async (code: string, newPassword: string) => {
-  if (!isSupabaseConfigured) return;
   await supabase.auth.updateUser({ password: newPassword });
 };
 
 export const loginWithGoogle = async () => {
-  if (!isSupabaseConfigured) {
-    const randomUser = MOCK_USERS.find(u => u.role === 'Agent') || MOCK_USERS[1];
-    localStorage.setItem('caliber_mock_user', JSON.stringify({ ...randomUser, email: 'demo_agent@tym2muv.com' }));
-    window.location.href = '/';
-    return;
-  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: `${window.location.origin}/` }
@@ -163,12 +64,6 @@ export const loginWithGoogle = async () => {
 };
 
 export const loginWithLinkedIn = async () => {
-  if (!isSupabaseConfigured) {
-    const randomUser = MOCK_USERS.find(u => u.role === 'Tenant') || MOCK_USERS[4];
-    localStorage.setItem('caliber_mock_user', JSON.stringify({ ...randomUser, email: 'demo_tenant@tym2muv.com' }));
-    window.location.href = '/';
-    return;
-  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'linkedin_oidc',
     options: { redirectTo: `${window.location.origin}/` }
@@ -195,11 +90,6 @@ const mapProfileToUser = (profileData: any): User => {
 };
 
 export const getUserProfile = async (userId: string): Promise<User | null> => {
-  if (!isSupabaseConfigured) {
-    const user = MOCK_USERS.find(u => u.id === userId);
-    return user || null;
-  }
-  
   try {
     return await withCache(cacheKey('profile', userId), async () => {
       let { data, error } = await supabase
@@ -299,22 +189,12 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       return mapProfileToUser(data);
     }, CACHE_TTL.PROFILES);
   } catch (err) {
-    console.warn("Supabase profile fetch failed, using mock profile", err);
-    const user = MOCK_USERS.find(u => u.id === userId);
-    return user || null;
+    console.error("Supabase profile fetch failed:", err);
+    throw err;
   }
 };
 
 export const updateUserProfile = async (userId: string, updates: Partial<User>) => {
-  if (!isSupabaseConfigured) {
-    const userIdx = MOCK_USERS.findIndex(u => u.id === userId);
-    if (userIdx !== -1) {
-      MOCK_USERS[userIdx] = { ...MOCK_USERS[userIdx], ...updates };
-      localStorage.setItem('caliber_mock_user', JSON.stringify(MOCK_USERS[userIdx]));
-    }
-    return;
-  }
-  
   const dbUpdates: any = {};
   if (updates.name !== undefined) dbUpdates.full_name = updates.name;
   if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar;
@@ -322,26 +202,13 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
   if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
   
   if (Object.keys(dbUpdates).length > 0) {
-    await supabase.from('profiles').update(dbUpdates).eq('id', userId);
+    const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
+    if (error) throw error;
     await delCache(cacheKey('profile', userId));
   }
 };
 
 export const toggleSavedListing = async (userId: string, listingId: string): Promise<void> => {
-  if (!isSupabaseConfigured) {
-    const user = MOCK_USERS.find(u => u.id === userId);
-    if (user) {
-      const saved = user.savedListings || [];
-      if (saved.includes(listingId)) {
-        user.savedListings = saved.filter(id => id !== listingId);
-      } else {
-        user.savedListings = [...saved, listingId];
-      }
-      localStorage.setItem('caliber_mock_user', JSON.stringify(user));
-    }
-    return;
-  }
-  
   const { data: existing } = await supabase
     .from('saved_listings')
     .select('id')
@@ -350,46 +217,30 @@ export const toggleSavedListing = async (userId: string, listingId: string): Pro
     .maybeSingle();
 
   if (existing) {
-    await supabase.from('saved_listings').delete().eq('id', existing.id);
+    const { error } = await supabase.from('saved_listings').delete().eq('id', existing.id);
+    if (error) throw error;
   } else {
-    await supabase.from('saved_listings').insert({ user_id: userId, listing_id: listingId });
+    const { error } = await supabase.from('saved_listings').insert({ user_id: userId, listing_id: listingId });
+    if (error) throw error;
   }
   await delCache(cacheKey('profile', userId)); // invalidate profile cache since savedListings changed
 };
 
 export const getSavedListingIds = async (userId: string): Promise<string[]> => {
-  if (!isSupabaseConfigured) {
-    const user = MOCK_USERS.find(u => u.id === userId);
-    return user?.savedListings || [];
-  }
-  const { data } = await supabase.from('saved_listings').select('listing_id').eq('user_id', userId);
+  const { data, error } = await supabase.from('saved_listings').select('listing_id').eq('user_id', userId);
+  if (error) throw error;
   return (data || []).map(r => r.listing_id);
 };
 
 export const getAllUsers = async (): Promise<User[]> => {
-  if (!isSupabaseConfigured) {
-    return MOCK_USERS;
-  }
-  try {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapProfileToUser);
-  } catch (err) {
-    console.warn("Supabase users fetch failed, using mock", err);
-    return MOCK_USERS;
-  }
+  const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapProfileToUser);
 };
 
 export const updateUserRole = async (userId: string, role: string) => {
-  if (!isSupabaseConfigured) {
-    const userIdx = MOCK_USERS.findIndex(u => u.id === userId);
-    if (userIdx !== -1) {
-      MOCK_USERS[userIdx].role = role as any;
-      localStorage.setItem('caliber_mock_user', JSON.stringify(MOCK_USERS[userIdx]));
-    }
-    return;
-  }
-  await supabase.from('profiles').update({ role }).eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ role }).eq('id', userId);
+  if (error) throw error;
   await delCache(cacheKey('profile', userId));
 };
 
@@ -440,70 +291,6 @@ CREATE INDEX IF NOT EXISTS idx_properties_price ON properties(price);
 CREATE INDEX IF NOT EXISTS idx_properties_agent ON properties(agent_id);
 */
 export const getListings = async (filters?: SearchFilters): Promise<{ listings: Listing[], total: number, hasMore: boolean }> => {
-  const getMockListings = () => {
-    let filtered = [...MOCK_LISTINGS];
-    if (filters?.categoryId) {
-      filtered = filtered.filter(l => l.categoryId === filters.categoryId);
-    }
-    if (filters?.type) {
-      filtered = filtered.filter(l => l.type === filters.type);
-    }
-    if (filters?.propertyType) {
-      filtered = filtered.filter(l => l.propertyType === filters.propertyType);
-    }
-    if (filters?.countryCode) {
-      filtered = filtered.filter(l => l.country === filters.countryCode);
-    }
-    if (filters?.sellerId || filters?.agent_id) {
-      const sellerId = filters.sellerId || filters.agent_id;
-      filtered = filtered.filter(l => l.sellerId === sellerId);
-    }
-    if (filters?.minPrice) {
-      filtered = filtered.filter(l => l.price >= parseInt(filters.minPrice!));
-    }
-    if (filters?.maxPrice) {
-      filtered = filtered.filter(l => l.price <= parseInt(filters.maxPrice!));
-    }
-    if (filters?.location) {
-      filtered = filtered.filter(l => l.location.toLowerCase().includes(filters.location!.toLowerCase()));
-    }
-    if (filters?.query) {
-      const q = filters.query.toLowerCase();
-      filtered = filtered.filter(l => l.title.toLowerCase().includes(q) || l.description.toLowerCase().includes(q));
-    }
-    
-    // Sort logic
-    if (filters?.sortBy === 'price_asc') {
-      filtered.sort((a, b) => a.price - b.price);
-    } else if (filters?.sortBy === 'price_desc') {
-      filtered.sort((a, b) => b.price - a.price);
-    } else {
-      // Default: premium/featured first, then date newer
-      filtered.sort((a, b) => {
-        if (a.isPremium && !b.isPremium) return -1;
-        if (!a.isPremium && b.isPremium) return 1;
-        if (a.isFeatured && !b.isFeatured) return -1;
-        if (!a.isFeatured && b.isFeatured) return 1;
-        return new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime();
-      });
-    }
-
-    const page = filters?.page || 1;
-    const limit = filters?.limit || filters?.pageSize || 24;
-    const from = (page - 1) * limit;
-    const pageData = filtered.slice(from, from + limit);
-    
-    return {
-      listings: pageData,
-      total: filtered.length,
-      hasMore: from + limit < filtered.length
-    };
-  };
-
-  if (!isSupabaseConfigured) {
-    return getMockListings();
-  }
-  
   try {
     return await withCache(cacheKey('listings', filters || 'all'), async () => {
       let query = supabase
@@ -545,17 +332,12 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       return { listings: (data || []).map(mapPropertyToListing), total: totalCount, hasMore };
     }, CACHE_TTL.SEARCH);
   } catch (err) {
-    console.warn("Supabase listings query failed, using mock", err);
-    return getMockListings();
+    console.error("Supabase listings query failed:", err);
+    throw err;
   }
 };
 
 export const getListingById = async (id: string): Promise<Listing | null> => {
-  if (!isSupabaseConfigured) {
-    const listing = MOCK_LISTINGS.find(l => l.id === id);
-    return listing || null;
-  }
-  
   try {
     return await withCache(cacheKey('listing', id), async () => {
       const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
@@ -563,25 +345,12 @@ export const getListingById = async (id: string): Promise<Listing | null> => {
       return mapPropertyToListing(data);
     }, CACHE_TTL.LISTINGS);
   } catch (err) {
-    console.warn("Supabase getListingById failed, using mock description", err);
-    const listing = MOCK_LISTINGS.find(l => l.id === id);
-    return listing || null;
+    console.error("Supabase getListingById failed:", err);
+    throw err;
   }
 };
 
 export const createListing = async (listing: Omit<Listing, 'id'>): Promise<string> => {
-  if (!isSupabaseConfigured) {
-    const newId = `gen-listing-${Date.now()}`;
-    const newListing: Listing = {
-      ...listing,
-      id: newId,
-      datePosted: new Date().toISOString(),
-      expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-    MOCK_LISTINGS.push(newListing);
-    return newId;
-  }
-  
   const { data, error } = await supabase.from('properties').insert({
     title: listing.title,
     price: listing.price,
@@ -615,14 +384,6 @@ export const createListing = async (listing: Omit<Listing, 'id'>): Promise<strin
 };
 
 export const updateListing = async (id: string, updates: Partial<Listing>) => {
-  if (!isSupabaseConfigured) {
-    const idx = MOCK_LISTINGS.findIndex(l => l.id === id);
-    if (idx !== -1) {
-      MOCK_LISTINGS[idx] = { ...MOCK_LISTINGS[idx], ...updates };
-    }
-    return;
-  }
-  
   const dbUpdates: any = {};
   if (updates.status !== undefined) {
     dbUpdates.status = updates.status === 'active' ? 'approved' : updates.status;
@@ -650,14 +411,6 @@ export const updateListing = async (id: string, updates: Partial<Listing>) => {
 };
 
 export const deleteListing = async (id: string) => {
-  if (!isSupabaseConfigured) {
-    const idx = MOCK_LISTINGS.findIndex(l => l.id === id);
-    if (idx !== -1) {
-      MOCK_LISTINGS.splice(idx, 1);
-    }
-    return;
-  }
-  
   const { error } = await supabase.from('properties').delete().eq('id', id);
   if (error) throw error;
   
@@ -803,85 +556,41 @@ export const getUserPayments = async (userId: string): Promise<Payment[]> => {
 
 // --- ADMIN SERVICES ---
 export const getAdminStats = async () => {
-  if (!isSupabaseConfigured) {
-    return {
-      totalUsers: MOCK_USERS.length,
-      totalListings: MOCK_LISTINGS.length,
-      totalAds: MOCK_ADS.length,
-      pendingApprovals: 2,
-      revenue: 45000,
-      userRoles: { 
-        Admin: 1, 
-        Agent: MOCK_USERS.filter(u => u.role === 'Agent').length, 
-        Customer: MOCK_USERS.filter(u => u.role !== 'Agent').length 
-      },
-      listingTypes: { 
-        Rent: MOCK_LISTINGS.filter(l => l.type === 'Rent').length, 
-        Sale: MOCK_LISTINGS.filter(l => l.type === 'Sale').length 
-      },
-      adPerformance: { totalClicks: 12500, totalImpressions: 489000 }
-    };
-  }
-
   try {
     return await withCache('admin_stats', async () => {
-      const { data, error } = await supabase.rpc('get_dashboard_stats');
-      if (error) {
-        console.error('Error fetching admin stats:', error);
-        // fallback if rpc fails
-        return {
-          totalUsers: MOCK_USERS.length, totalListings: MOCK_LISTINGS.length, totalAds: MOCK_ADS.length,
-          pendingApprovals: 2, revenue: 45000,
-          userRoles: { 
-            Admin: 1, 
-            Agent: MOCK_USERS.filter(u => u.role === 'Agent').length, 
-            Customer: MOCK_USERS.filter(u => u.role !== 'Agent').length 
-          },
-          listingTypes: { 
-            Rent: MOCK_LISTINGS.filter(l => l.type === 'Rent').length, 
-            Sale: MOCK_LISTINGS.filter(l => l.type === 'Sale').length 
-          },
-          adPerformance: { totalClicks: 12500, totalImpressions: 489000 }
-        };
-      }
-      return data;
-    }, 300); // 5 minute TTL (5 * 60)
+      // 1. Try fetching via RPC if we have get_dashboard_stats initialized
+      try {
+        const { data, error } = await supabase.rpc('get_dashboard_stats');
+        if (!error && data) return data;
+      } catch (_) {}
+
+      // 2. Fallback to active query metrics on database tables
+      const [{ count: totalUsers }, { count: totalListings }, { count: totalAds }, { count: pendingApprovals }] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('properties').select('*', { count: 'exact', head: true }),
+        supabase.from('monetization_ads').select('*', { count: 'exact', head: true }),
+        supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+      ]);
+
+      return {
+        totalUsers: totalUsers || 0,
+        totalListings: totalListings || 0,
+        totalAds: totalAds || 0,
+        pendingApprovals: pendingApprovals || 0,
+        revenue: 0,
+        userRoles: { Admin: 1, Agent: 0, Customer: totalUsers || 0 },
+        listingTypes: { Rent: 0, Sale: totalListings || 0 },
+        adPerformance: { totalClicks: 0, totalImpressions: 0 }
+      };
+    }, 300);
   } catch (err) {
-    console.warn("getAdminStats query failed, falling back to mock counts:", err);
-    return {
-      totalUsers: MOCK_USERS.length,
-      totalListings: MOCK_LISTINGS.length,
-      totalAds: MOCK_ADS.length,
-      pendingApprovals: 2,
-      revenue: 45000,
-      userRoles: { 
-        Admin: 1, 
-        Agent: MOCK_USERS.filter(u => u.role === 'Agent').length, 
-        Customer: MOCK_USERS.filter(u => u.role !== 'Agent').length 
-      },
-      listingTypes: { 
-        Rent: MOCK_LISTINGS.filter(l => l.type === 'Rent').length, 
-        Sale: MOCK_LISTINGS.filter(l => l.type === 'Sale').length 
-      },
-      adPerformance: { totalClicks: 12500, totalImpressions: 489000 }
-    };
+    console.error("getAdminStats query failed:", err);
+    throw err;
   }
 };
 
 // --- MONETIZATION SERVICES ---
 export const getMonetizationAds = async (countryCode?: string): Promise<Monetization[]> => {
-  const getMockAds = () => {
-    let ads = [...MOCK_ADS];
-    if (countryCode) {
-      ads = ads.filter(ad => ad.countryCode === countryCode);
-    }
-    return ads;
-  };
-
-  if (!isSupabaseConfigured) {
-    return getMockAds();
-  }
-
   try {
     let query = supabase.from('monetization_ads').select('*').order('priority', { ascending: false });
     if (countryCode) query = query.eq('country_code', countryCode);
@@ -904,34 +613,12 @@ export const getMonetizationAds = async (countryCode?: string): Promise<Monetiza
       createdAt: ad.created_at
     }));
   } catch (err) {
-    console.warn("getMonetizationAds failed, using mock ads", err);
-    return getMockAds();
+    console.error("getMonetizationAds failed:", err);
+    throw err;
   }
 };
 
 export const createMonetizationAd = async (ad: any): Promise<string> => {
-  if (!isSupabaseConfigured) {
-    const newId = `ad-gen-${Date.now()}`;
-    const newAd: Monetization = {
-      id: newId,
-      type: ad.type,
-      title: ad.title,
-      description: ad.description,
-      cta: ad.cta,
-      image: ad.image || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&q=80',
-      link: ad.link,
-      color: ad.color || 'from-orange-600 to-amber-600',
-      active: ad.active !== undefined ? ad.active : true,
-      countryCode: ad.countryCode,
-      priority: ad.priority || 0,
-      clicks: 0,
-      impressions: 0,
-      createdAt: new Date().toISOString()
-    };
-    MOCK_ADS.push(newAd);
-    return newId;
-  }
-
   const { data, error } = await supabase.from('monetization_ads').insert({
     type: ad.type,
     title: ad.title,
@@ -949,17 +636,6 @@ export const createMonetizationAd = async (ad: any): Promise<string> => {
 };
 
 export const updateMonetizationAd = async (id: string, updates: any) => {
-  if (!isSupabaseConfigured) {
-    const idx = MOCK_ADS.findIndex(ad => ad.id === id);
-    if (idx !== -1) {
-      MOCK_ADS[idx] = {
-        ...MOCK_ADS[idx],
-        ...updates
-      };
-    }
-    return;
-  }
-
   const dbUpdates: any = {};
   if (updates.type !== undefined) dbUpdates.type = updates.type;
   if (updates.title !== undefined) dbUpdates.title = updates.title;
@@ -977,14 +653,6 @@ export const updateMonetizationAd = async (id: string, updates: any) => {
 };
 
 export const deleteMonetizationAd = async (id: string) => {
-  if (!isSupabaseConfigured) {
-    const idx = MOCK_ADS.findIndex(ad => ad.id === id);
-    if (idx !== -1) {
-      MOCK_ADS.splice(idx, 1);
-    }
-    return;
-  }
-
   const { error } = await supabase.from('monetization_ads').delete().eq('id', id);
   if (error) throw error;
 };
@@ -1161,385 +829,273 @@ const saveLocalPosts = (posts: BlogPost[]) => {
 };
 
 export const getStaticPages = async (): Promise<StaticPage[]> => {
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase.from('cms_pages').select('*').order('created_at', { ascending: false });
-      if (!error && data) {
-        return data.map((p: any) => ({
-          id: p.id,
-          slug: p.slug,
-          title: p.title,
-          content: p.content,
-          published: p.published,
-          metaTitle: p.meta_title,
-          metaDescription: p.meta_description,
-          createdAt: p.created_at,
-          updatedAt: p.updated_at
-        }));
-      }
-    } catch (e) {
-      console.warn('Supabase cms_pages failed, falling back to local files', e);
+  try {
+    const { data, error } = await supabase.from('cms_pages').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    if (data && data.length > 0) {
+      return data.map((p: any) => ({
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        content: p.content,
+        published: p.published,
+        metaTitle: p.meta_title,
+        metaDescription: p.meta_description,
+        createdAt: p.created_at,
+        updatedAt: p.updated_at
+      }));
     }
+  } catch (e) {
+    console.warn('Supabase cms_pages lookup, falling back to static schema templates', e);
   }
-  return getLocalPages();
+  return DEFAULT_STATIC_PAGES;
 };
 
 export const getStaticPageBySlug = async (slug: string): Promise<StaticPage | null> => {
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase.from('cms_pages').select('*').eq('slug', slug).maybeSingle();
-      if (!error && data) {
-        return {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          content: data.content,
-          published: data.published,
-          metaTitle: data.meta_title,
-          metaDescription: data.meta_description,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
-        };
-      }
-    } catch (_) {}
-  }
-  const pages = getLocalPages();
-  const page = pages.find(p => p.slug === slug || p.id === slug);
+  try {
+    const { data, error } = await supabase.from('cms_pages').select('*').or(`slug.eq.${slug},id.eq.${slug}`).maybeSingle();
+    if (!error && data) {
+      return {
+        id: data.id,
+        slug: data.slug,
+        title: data.title,
+        content: data.content,
+        published: data.published,
+        metaTitle: data.meta_title,
+        metaDescription: data.meta_description,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+  } catch (_) {}
+  const page = DEFAULT_STATIC_PAGES.find(p => p.slug === slug || p.id === slug);
   return page || null;
 };
 
 export const createStaticPage = async (page: Omit<StaticPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   const now = new Date().toISOString();
   const id = `page-${Date.now()}`;
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase.from('cms_pages').insert({
-        id,
-        slug: page.slug,
-        title: page.title,
-        content: page.content,
-        published: page.published,
-        meta_title: page.metaTitle,
-        meta_description: page.metaDescription,
-        created_at: now,
-        updated_at: now
-      }).select('id').single();
-      if (!error && data) return data.id;
-    } catch (e) {
-      console.warn('Fallback to local page creation', e);
-    }
-  }
-  const pages = getLocalPages();
-  pages.push({ ...page, id, createdAt: now, updatedAt: now });
-  saveLocalPages(pages);
-  return id;
+  const { data, error } = await supabase.from('cms_pages').insert({
+    id,
+    slug: page.slug,
+    title: page.title,
+    content: page.content,
+    published: page.published,
+    meta_title: page.metaTitle,
+    meta_description: page.metaDescription,
+    created_at: now,
+    updated_at: now
+  }).select('id').single();
+  if (error) throw error;
+  return data.id;
 };
 
 export const updateStaticPage = async (id: string, page: Partial<StaticPage>): Promise<void> => {
   const now = new Date().toISOString();
-  if (isSupabaseConfigured) {
-    try {
-      const dbPayload: any = { updated_at: now };
-      if (page.title !== undefined) dbPayload.title = page.title;
-      if (page.slug !== undefined) dbPayload.slug = page.slug;
-      if (page.content !== undefined) dbPayload.content = page.content;
-      if (page.published !== undefined) dbPayload.published = page.published;
-      if (page.metaTitle !== undefined) dbPayload.meta_title = page.metaTitle;
-      if (page.metaDescription !== undefined) dbPayload.meta_description = page.metaDescription;
+  const dbPayload: any = { updated_at: now };
+  if (page.title !== undefined) dbPayload.title = page.title;
+  if (page.slug !== undefined) dbPayload.slug = page.slug;
+  if (page.content !== undefined) dbPayload.content = page.content;
+  if (page.published !== undefined) dbPayload.published = page.published;
+  if (page.metaTitle !== undefined) dbPayload.meta_title = page.metaTitle;
+  if (page.metaDescription !== undefined) dbPayload.meta_description = page.metaDescription;
 
-      const { error } = await supabase.from('cms_pages').update(dbPayload).eq('id', id);
-      if (!error) return;
-    } catch (e) {
-      console.warn('Fallback to local page update', e);
-    }
-  }
-  const pages = getLocalPages();
-  const idx = pages.findIndex(p => p.id === id);
-  if (idx !== -1) {
-    pages[idx] = { ...pages[idx], ...page, updatedAt: now };
-    saveLocalPages(pages);
-  }
+  const { error } = await supabase.from('cms_pages').update(dbPayload).eq('id', id);
+  if (error) throw error;
 };
 
 export const deleteStaticPage = async (id: string): Promise<void> => {
-  if (isSupabaseConfigured) {
-    try {
-      const { error } = await supabase.from('cms_pages').delete().eq('id', id);
-      if (!error) return;
-    } catch (e) {
-      console.warn('Fallback to local page deletion', e);
-    }
-  }
-  const pages = getLocalPages();
-  const filtered = pages.filter(p => p.id !== id);
-  saveLocalPages(filtered);
+  const { error } = await supabase.from('cms_pages').delete().eq('id', id);
+  if (error) throw error;
 };
 
 // --- BLOG POST SERVICES ---
 
 export const getBlogPosts = async (): Promise<BlogPost[]> => {
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-      if (!error && data) {
-        return data.map((b: any) => ({
-          id: b.id,
-          slug: b.slug,
-          title: b.title,
-          excerpt: b.excerpt,
-          content: b.content,
-          published: b.published,
-          coverImage: b.cover_image,
-          authorName: b.author_name,
-          category: b.category,
-          readTime: b.read_time,
-          createdAt: b.created_at,
-          updatedAt: b.updated_at
-        }));
-      }
-    } catch (e) {
-      console.warn('Supabase blog_posts query failed, falling back to local files', e);
+  try {
+    const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    if (data && data.length > 0) {
+      return data.map((b: any) => ({
+        id: b.id,
+        slug: b.slug,
+        title: b.title,
+        excerpt: b.excerpt,
+        content: b.content,
+        published: b.published,
+        coverImage: b.cover_image,
+        authorName: b.author_name,
+        category: b.category,
+        readTime: b.read_time,
+        createdAt: b.created_at,
+        updatedAt: b.updated_at
+      }));
     }
+  } catch (e) {
+    console.warn('Supabase blog_posts query failed, falling back to cached template posts', e);
   }
-  return getLocalPosts();
+  return DEFAULT_BLOG_POSTS;
 };
 
 export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> => {
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase.from('blog_posts').select('*').eq('slug', slug).maybeSingle();
-      if (!error && data) {
-        return {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          excerpt: data.excerpt,
-          content: data.content,
-          published: data.published,
-          coverImage: data.cover_image,
-          authorName: data.author_name,
-          category: data.category,
-          readTime: data.read_time,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
-        };
-      }
-    } catch (_) {}
-  }
-  const posts = getLocalPosts();
-  const post = posts.find(b => b.slug === slug || b.id === slug);
+  try {
+    const { data, error } = await supabase.from('blog_posts').select('*').or(`slug.eq.${slug},id.eq.${slug}`).maybeSingle();
+    if (!error && data) {
+      return {
+        id: data.id,
+        slug: data.slug,
+        title: data.title,
+        excerpt: data.excerpt,
+        content: data.content,
+        published: data.published,
+        coverImage: data.cover_image,
+        authorName: data.author_name,
+        category: data.category,
+        readTime: data.read_time,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+  } catch (_) {}
+  const post = DEFAULT_BLOG_POSTS.find(b => b.slug === slug || b.id === slug);
   return post || null;
 };
 
 export const createBlogPost = async (post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   const now = new Date().toISOString();
   const id = `blog-${Date.now()}`;
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase.from('blog_posts').insert({
-        id,
-        slug: post.slug,
-        title: post.title,
-        excerpt: post.excerpt,
-        content: post.content,
-        published: post.published,
-        cover_image: post.coverImage,
-        author_name: post.authorName,
-        category: post.category,
-        read_time: post.readTime || '4 min read',
-        created_at: now,
-        updated_at: now
-      }).select('id').single();
-      if (!error && data) return data.id;
-    } catch (e) {
-      console.warn('Fallback to local blog post creation', e);
-    }
-  }
-  const posts = getLocalPosts();
-  posts.push({ ...post, id, createdAt: now, updatedAt: now });
-  saveLocalPosts(posts);
-  return id;
+  const { data, error } = await supabase.from('blog_posts').insert({
+    id,
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    content: post.content,
+    published: post.published,
+    cover_image: post.coverImage,
+    author_name: post.authorName,
+    category: post.category,
+    read_time: post.readTime || '4 min read',
+    created_at: now,
+    updated_at: now
+  }).select('id').single();
+  if (error) throw error;
+  return data.id;
 };
 
 export const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<void> => {
   const now = new Date().toISOString();
-  if (isSupabaseConfigured) {
-    try {
-      const dbPayload: any = { updated_at: now };
-      if (post.title !== undefined) dbPayload.title = post.title;
-      if (post.slug !== undefined) dbPayload.slug = post.slug;
-      if (post.excerpt !== undefined) dbPayload.excerpt = post.excerpt;
-      if (post.content !== undefined) dbPayload.content = post.content;
-      if (post.published !== undefined) dbPayload.published = post.published;
-      if (post.coverImage !== undefined) dbPayload.cover_image = post.coverImage;
-      if (post.authorName !== undefined) dbPayload.author_name = post.authorName;
-      if (post.category !== undefined) dbPayload.category = post.category;
-      if (post.readTime !== undefined) dbPayload.read_time = post.readTime;
+  const dbPayload: any = { updated_at: now };
+  if (post.title !== undefined) dbPayload.title = post.title;
+  if (post.slug !== undefined) dbPayload.slug = post.slug;
+  if (post.excerpt !== undefined) dbPayload.excerpt = post.excerpt;
+  if (post.content !== undefined) dbPayload.content = post.content;
+  if (post.published !== undefined) dbPayload.published = post.published;
+  if (post.coverImage !== undefined) dbPayload.cover_image = post.coverImage;
+  if (post.authorName !== undefined) dbPayload.author_name = post.authorName;
+  if (post.category !== undefined) dbPayload.category = post.category;
+  if (post.readTime !== undefined) dbPayload.read_time = post.readTime;
 
-      const { error } = await supabase.from('blog_posts').update(dbPayload).eq('id', id);
-      if (!error) return;
-    } catch (e) {
-      console.warn('Fallback to local blog update', e);
-    }
-  }
-  const posts = getLocalPosts();
-  const idx = posts.findIndex(b => b.id === id);
-  if (idx !== -1) {
-    posts[idx] = { ...posts[idx], ...post, updatedAt: now };
-    saveLocalPosts(posts);
-  }
+  const { error } = await supabase.from('blog_posts').update(dbPayload).eq('id', id);
+  if (error) throw error;
 };
 
 export const deleteBlogPost = async (id: string): Promise<void> => {
-  if (isSupabaseConfigured) {
-    try {
-      const { error } = await supabase.from('blog_posts').delete().eq('id', id);
-      if (!error) return;
-    } catch (e) {
-      console.warn('Fallback to local blog deletion', e);
-    }
-  }
-  const posts = getLocalPosts();
-  const filtered = posts.filter(b => b.id !== id);
-  saveLocalPosts(filtered);
+  const { error } = await supabase.from('blog_posts').delete().eq('id', id);
+  if (error) throw error;
 };
 
 // --- RENT FINANCING SERVICES ---
-const getLocalApplications = (): RentFinancingApplication[] => {
-  const data = localStorage.getItem('caliber_rent_financing_applications');
-  if (!data) return [];
-  try {
-    return JSON.parse(data);
-  } catch (e) {
-    return [];
-  }
-};
-
-const saveLocalApplications = (apps: RentFinancingApplication[]): void => {
-  localStorage.setItem('caliber_rent_financing_applications', JSON.stringify(apps));
-};
 
 export const submitRentFinancingApplication = async (app: Omit<RentFinancingApplication, 'id' | 'createdAt' | 'status'>): Promise<RentFinancingApplication> => {
-  const newApp: RentFinancingApplication = {
-    ...app,
-    id: `app-${Date.now()}`,
+  const nowString = new Date().toISOString();
+  const { data, error } = await supabase.from('rent_financing_applications').insert({
+    user_id: app.userId,
+    full_name: app.fullName,
+    email: app.email,
+    phone: app.phone,
+    employment_status: app.employmentStatus,
+    monthly_income: app.monthlyIncome,
+    id_type: app.idType,
+    id_number: app.idNumber,
+    monthly_rent: app.monthlyRent,
+    landlord_name: app.landlordName,
+    landlord_phone: app.landlordPhone,
+    move_in_date: app.moveInDate,
+    lease_duration: app.leaseDuration,
+    street_address: app.streetAddress,
+    city: app.city,
+    state_region: app.stateRegion,
+    country: app.country,
+    postal_code: app.postalCode,
+    amount_required: app.amountRequired,
+    repayment_duration: app.repaymentDuration,
     status: 'pending',
-    createdAt: new Date().toISOString()
+    created_at: nowString
+  }).select().single();
+
+  if (error) throw error;
+  if (!data) throw new Error('Failed to insert rent financing application');
+
+  return {
+    id: data.id,
+    userId: data.user_id,
+    fullName: data.full_name,
+    email: data.email,
+    phone: data.phone,
+    employmentStatus: data.employment_status,
+    monthlyIncome: Number(data.monthly_income),
+    idType: data.id_type,
+    idNumber: data.id_number,
+    monthlyRent: Number(data.monthly_rent),
+    landlordName: data.landlord_name,
+    landlordPhone: data.landlord_phone,
+    moveInDate: data.move_in_date,
+    leaseDuration: Number(data.lease_duration),
+    streetAddress: data.street_address,
+    city: data.city,
+    stateRegion: data.state_region,
+    country: data.country || app.country, // support any returned profiles key
+    postalCode: data.postal_code,
+    amountRequired: Number(data.amount_required),
+    repaymentDuration: Number(data.repayment_duration),
+    status: data.status,
+    createdAt: data.created_at
   };
-
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase.from('rent_financing_applications').insert({
-        user_id: newApp.userId,
-        full_name: newApp.fullName,
-        email: newApp.email,
-        phone: newApp.phone,
-        employment_status: newApp.employmentStatus,
-        monthly_income: newApp.monthlyIncome,
-        id_type: newApp.idType,
-        id_number: newApp.idNumber,
-        monthly_rent: newApp.monthlyRent,
-        landlord_name: newApp.landlordName,
-        landlord_phone: newApp.landlordPhone,
-        move_in_date: newApp.moveInDate,
-        lease_duration: newApp.leaseDuration,
-        street_address: newApp.streetAddress,
-        city: newApp.city,
-        state_region: newApp.stateRegion,
-        country: newApp.country,
-        postal_code: newApp.postalCode,
-        amount_required: newApp.amountRequired,
-        repayment_duration: newApp.repaymentDuration,
-        status: newApp.status,
-        created_at: newApp.createdAt
-      }).select().single();
-
-      if (error) throw error;
-      if (data) {
-        return {
-          id: data.id,
-          userId: data.user_id,
-          fullName: data.full_name,
-          email: data.email,
-          phone: data.phone,
-          employmentStatus: data.employment_status,
-          monthlyIncome: Number(data.monthly_income),
-          idType: data.id_type,
-          idNumber: data.id_number,
-          monthlyRent: Number(data.monthly_rent),
-          landlordName: data.landlord_name,
-          landlordPhone: data.landlord_phone,
-          moveInDate: data.move_in_date,
-          leaseDuration: Number(data.lease_duration),
-          streetAddress: data.street_address,
-          city: data.city,
-          stateRegion: data.state_region,
-          country: data.country,
-          postalCode: data.postal_code,
-          amountRequired: Number(data.amount_required),
-          repaymentDuration: Number(data.repayment_duration),
-          status: data.status,
-          createdAt: data.created_at
-        };
-      }
-    } catch (e) {
-      console.warn('Fallback to local rent financing submission', e);
-    }
-  }
-
-  const apps = getLocalApplications();
-  apps.unshift(newApp);
-  saveLocalApplications(apps);
-  return newApp;
 };
 
 export const getRentFinancingApplications = async (userId?: string): Promise<RentFinancingApplication[]> => {
-  if (isSupabaseConfigured && userId) {
-    try {
-      const { data, error } = await supabase
-        .from('rent_financing_applications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      if (data) {
-        return data.map((d: any) => ({
-          id: d.id,
-          userId: d.user_id,
-          fullName: d.full_name,
-          email: d.email,
-          phone: d.phone,
-          employmentStatus: d.employment_status,
-          monthlyIncome: Number(d.monthly_income),
-          idType: d.id_type,
-          idNumber: d.id_number,
-          monthlyRent: Number(d.monthly_rent),
-          landlordName: d.landlord_name,
-          landlordPhone: d.landlord_phone,
-          moveInDate: d.move_in_date,
-          leaseDuration: Number(d.lease_duration),
-          streetAddress: d.street_address,
-          city: d.city,
-          stateRegion: d.state_region,
-          country: d.country,
-          postalCode: d.postal_code,
-          amountRequired: Number(d.amount_required),
-          repaymentDuration: Number(d.repayment_duration),
-          status: d.status,
-          createdAt: d.created_at
-        }));
-      }
-    } catch (e) {
-      console.warn('Fallback to local rent financing list', e);
-    }
-  }
-
-  const apps = getLocalApplications();
+  let query = supabase.from('rent_financing_applications').select('*');
   if (userId) {
-    return apps.filter(a => a.userId === userId || a.email === userId);
+    query = query.eq('user_id', userId);
   }
-  return apps;
+  const { data, error } = await query.order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map((d: any) => ({
+    id: d.id,
+    userId: d.user_id,
+    fullName: d.full_name,
+    email: d.email,
+    phone: d.phone,
+    employmentStatus: d.employment_status,
+    monthlyIncome: Number(d.monthly_income),
+    idType: d.id_type,
+    idNumber: d.id_number,
+    monthlyRent: Number(d.monthly_rent),
+    landlordName: d.landlord_name,
+    landlordPhone: d.landlord_phone,
+    moveInDate: d.move_in_date,
+    leaseDuration: Number(d.lease_duration),
+    streetAddress: d.street_address,
+    city: d.city,
+    stateRegion: d.state_region,
+    country: d.country,
+    postalCode: d.postal_code,
+    amountRequired: Number(d.amount_required),
+    repaymentDuration: Number(d.repayment_duration),
+    status: d.status,
+    createdAt: d.created_at
+  }));
 };
 
 

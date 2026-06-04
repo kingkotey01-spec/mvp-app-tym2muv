@@ -9,7 +9,7 @@
         },
         {
           "key": "X-Frame-Options",
-          "value": "DENY"
+          "value": "SAMEORIGIN"
         },
         {
           "key": "X-Content-Type-Options",
@@ -34,11 +34,10 @@
       ]
     }
   ],
-  "redirects": [
+  "rewrites": [
     {
-      "source": "http://(.*)",
-      "destination": "https://$1",
-      "permanent": true
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }

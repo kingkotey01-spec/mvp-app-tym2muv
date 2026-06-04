@@ -8,7 +8,17 @@ const DATADOG_CLIENT_TOKEN = import.meta.env.VITE_DATADOG_CLIENT_TOKEN;
 const DATADOG_SITE = import.meta.env.VITE_DATADOG_SITE || 'datadoghq.com';
 const ENV = import.meta.env.VITE_ENV || 'development';
 
-if (DATADOG_APP_ID && DATADOG_CLIENT_TOKEN) {
+const isPlaceholder = (val?: string): boolean => {
+  if (!val) return true;
+  const lowercase = val.toLowerCase().trim();
+  return (
+    lowercase === '' ||
+    lowercase.includes('your-datadog') ||
+    lowercase.includes('placeholder')
+  );
+};
+
+if (DATADOG_APP_ID && DATADOG_CLIENT_TOKEN && !isPlaceholder(DATADOG_APP_ID) && !isPlaceholder(DATADOG_CLIENT_TOKEN)) {
   datadogRum.init({
     applicationId: DATADOG_APP_ID,
     clientToken: DATADOG_CLIENT_TOKEN,
