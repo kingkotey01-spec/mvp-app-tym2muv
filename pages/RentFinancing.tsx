@@ -213,7 +213,7 @@ const RentFinancing: React.FC = () => {
 
   return (
     <div id="rent-financing-view" className="py-8 min-h-screen bg-slate-50/50">
-      <div className="container mx-auto px-4 max-w-5xl">
+      <div className="container mx-auto px-4 max-w-7xl">
         
         {/* Page Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">

@@ -32,7 +32,7 @@ describe('Auth Service', () => {
       email: 'test@example.com',
       password: 'password123',
       options: {
-        data: { full_name: 'Test User', role: 'Tenant' }
+        data: { full_name: 'Test User', role: 'tenant' }
       }
     });
     expect((result as any).id).toBe('1');

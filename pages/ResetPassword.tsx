@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { verifyPasswordResetCode, confirmPasswordReset } from '../services/supabaseService';
 import { Logo } from '../components/Logo';
+import { supabase } from '../supabaseClient';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -21,14 +22,39 @@ const ResetPassword = () => {
 
   useEffect(() => {
     async function checkCode() {
-      if (!oobCode) {
-        setError('No reset code found in URL. Please use the link sent to your email.');
-        setIsVerifying(false);
-        return;
-      }
       try {
-        const userEmail = await verifyPasswordResetCode(oobCode);
-        setEmail(userEmail);
+        // 1. Check if we already have an active Supabase recovery session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setEmail(session.user.email || '');
+          setIsVerifying(false);
+          return;
+        }
+
+        // 2. Or check if there is an access_token / recovery in URL hash and wait for it to populate
+        const hash = window.location.hash || '';
+        if (hash.includes('access_token=') || hash.includes('type=recovery')) {
+          setTimeout(async () => {
+            const { data: { session: delayedSession } } = await supabase.auth.getSession();
+            if (delayedSession?.user) {
+              setEmail(delayedSession.user.email || '');
+            } else {
+              setError('Failed to establish a secure recovery session. Please try resetting again.');
+            }
+            setIsVerifying(false);
+          }, 1000);
+          return;
+        }
+
+        // 3. Fallback compatibility for oobCode / other engines
+        if (oobCode) {
+          const userEmail = await verifyPasswordResetCode(oobCode);
+          setEmail(userEmail);
+          setIsVerifying(false);
+          return;
+        }
+
+        setError('No active password reset session found. Please click the reset link sent to your email or request a new one.');
       } catch (err: any) {
         setError(err.message || 'The password reset link is invalid or has expired.');
       } finally {
@@ -48,16 +74,13 @@ const ResetPassword = () => {
       setError('Password must be at least 6 characters long.');
       return;
     }
-    if (!oobCode) {
-      return;
-    }
 
     setLoading(true);
     setError(null);
     setMessage('');
     
     try {
-      await confirmPasswordReset(oobCode, password);
+      await confirmPasswordReset(oobCode || '', password);
       setMessage('Password updated successfully! You can now sign in with your new password.');
       setTimeout(() => {
         navigate('/signin');
@@ -113,7 +136,7 @@ const ResetPassword = () => {
                   <p className="text-slate-500 text-sm font-medium animate-pulse">Verifying secure link...</p>
                </div>
             ) : (
-              !message && !error && oobCode && (
+              !message && !error && (
                 <form onSubmit={handleReset} className="space-y-4 text-left">
                   <div>
                     <input
@@ -141,7 +164,7 @@ const ResetPassword = () => {
               )
             )}
             
-            {(error || !oobCode) && (
+            {error && (
                <div className="pt-4">
                  <Link to="/signin" className="w-full inline-block bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold py-3 rounded-xl transition-all shadow-sm">
                    Return to Safety

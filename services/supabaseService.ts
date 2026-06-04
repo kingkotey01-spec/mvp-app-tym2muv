@@ -43,7 +43,11 @@ export const subscribeToAuth = (callback: (user: any | null) => void) => {
 };
 
 export const sendPasswordResetEmail = async (email: string) => {
-  await supabase.auth.resetPasswordForEmail(email);
+  const redirectTo = `${window.location.origin}/reset-password`;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+  if (error) throw error;
 };
 
 export const verifyPasswordResetCode = async (code: string) => {
