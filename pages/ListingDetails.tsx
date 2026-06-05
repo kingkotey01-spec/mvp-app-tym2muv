@@ -255,7 +255,7 @@ const ListingDetails: React.FC = () => {
     <div className="min-h-screen bg-white font-sans pb-24">
       {/* Header / Navigation */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl 2xl:max-w-none mx-auto px-4 h-16 flex items-center justify-between">
           <button 
             onClick={() => navigate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
@@ -305,7 +305,7 @@ const ListingDetails: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl 2xl:max-w-none mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           {/* Section 1: Column 1 */}
           <div className="space-y-6">

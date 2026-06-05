@@ -7,6 +7,7 @@ import { CATEGORIES } from '../constants';
 import Icon from './Icon';
 import { generateListingTitle } from '../utils/listingUtils';
 import { useAuth } from '../context/AuthContext';
+import { useComparison } from '../context/ComparisonContext';
 import { getSymbolFromCode } from '../services/location';
 import { getOptimizedImageUrl } from '../utils/imageOptimization';
 import ResponsiveImage from './ResponsiveImage';
@@ -21,6 +22,7 @@ interface ListingCardProps {
 const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToCompare, removeFromCompare, isCompared } = useComparison();
   
   const [cardSeller, setCardSeller] = useState<User | undefined>(seller);
 
@@ -140,6 +142,17 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading })
     navigate(`/chat?to=${listing.sellerId}`);
   };
 
+  const handleCompareToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!listing) return;
+    if (isCompared(listing.id)) {
+      removeFromCompare(listing.id);
+    } else {
+      addToCompare(listing);
+    }
+  };
+
   const CardFace = ({ imageIndex, isBack = false }: { imageIndex: number; isBack?: boolean }) => (
     <div 
       className={`${isBack ? 'absolute inset-0' : 'relative'} w-full h-full bg-white rounded-xl shadow-sm flex flex-col isolate ring-1 ring-slate-100 hover:ring-brand-200 backface-hidden font-nunito ${isBack ? '[transform:rotateY(180deg)]' : ''}`}
@@ -193,6 +206,22 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading })
             ))}
           </div>
         )}
+
+        {/* Comparison Button */}
+        <button
+          onClick={handleCompareToggle}
+          className={`absolute bottom-2 right-2 p-1.5 px-2 rounded-lg backdrop-blur-md transition-all duration-200 shadow-md border z-30 flex items-center gap-1 cursor-pointer pointer-events-auto ${
+            isCompared(listing.id)
+              ? 'bg-[#00ffcc] text-slate-950 border-[#00ffcc] font-black'
+              : 'bg-slate-950/60 text-slate-300 border-white/10 hover:bg-slate-950/80'
+          }`}
+          title={isCompared(listing.id) ? "Remove from comparison" : "Compare this property"}
+        >
+          <Icon name="copy" size={10} className={isCompared(listing.id) ? "animate-pulse text-slate-950 animate-duration-1000" : "text-white"} />
+          <span className="text-[9px] font-mono tracking-tight select-none lowercase">
+            {isCompared(listing.id) ? 'compared' : 'compare'}
+          </span>
+        </button>
       </div>
 
       {/* Content Section */}

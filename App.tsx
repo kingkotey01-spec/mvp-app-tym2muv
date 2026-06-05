@@ -5,6 +5,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Layout from './components/Layout';
 import { AuthProvider } from './context/AuthContext';
 import { LocationProvider } from './context/LocationContext';
+import { ComparisonProvider } from './context/ComparisonContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Icon from './components/Icon';
@@ -146,8 +147,9 @@ const App: React.FC = () => {
       <EnvValidator>
         <AuthProvider>
           <LocationProvider>
-            <Router>
-              <ScrollToTop />
+            <ComparisonProvider>
+              <Router>
+                <ScrollToTop />
               <Layout>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
@@ -217,6 +219,7 @@ const App: React.FC = () => {
               </Suspense>
             </Layout>
           </Router>
+          </ComparisonProvider>
         </LocationProvider>
       </AuthProvider>
       </EnvValidator>

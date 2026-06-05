@@ -249,27 +249,28 @@ const Home: React.FC = () => {
       <div className="container mx-auto px-4 space-y-6 animate-slide-up relative z-10">
          
           {/* Stunning Premium Home Hero Banner */}
-          <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600 via-indigo-600 to-brand-700 text-white p-8 md:p-14 shadow-xl shadow-indigo-500/10 border border-white/10 mt-2">
-            {/* Visual background layers */}
-            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/20 pointer-events-none"></div>
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#8607C1] to-[#3B0058] text-white p-8 md:p-14 shadow-2xl shadow-[#8607C1]/15 border border-[#CF8EED]/20 mt-2">
+            {/* Visual background layers & Neon glows */}
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#00ffcc]/10 rounded-full blur-[110px] pointer-events-none animate-pulse"></div>
+            <div className="absolute bottom-0 left-10 w-[250px] h-[250px] bg-[#ff007f]/5 rounded-full blur-[100px] pointer-events-none"></div>
             
             <div className="relative z-10 max-w-3xl flex flex-col gap-6">
-              <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] md:text-xs font-semibold tracking-wider uppercase text-purple-200 border border-white/10 w-fit">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <div className="inline-flex items-center gap-1.5 bg-black/35 border border-white/10 px-3.5 py-1.5 rounded-full text-[10px] md:text-xs font-semibold tracking-wider font-mono uppercase text-slate-300 w-fit">
+                <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse"></span>
                 PREMIUM AFRICAN PROPERTY MARKETPLACE
               </div>
               
-              <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight md:leading-tight font-display text-white">
-                Find Your Next <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-300 to-amber-200">Verified Space</span> across Africa
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight md:leading-none font-sans lowercase text-white">
+                perspective change? it’s <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-400">tym2muv.</span>
               </h1>
               
-              <p className="text-slate-100/90 text-[13px] md:text-sm max-w-xl leading-relaxed">
-                Connect directly with thousands of verified estate agents, landlords, and commercial vendors with zero hidden broker fees. Secure, live-chat communication.
+              <p className="text-slate-200 text-[13px] md:text-sm max-w-xl leading-relaxed lowercase font-medium">
+                stop doom scrolling apps that ghost you. lock down your next aesthetic upgrade and drop the link to the group chat.
               </p>
               
               {/* Integrated Hero Smart Search */}
-              <div className="w-full max-w-2xl bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-lg mt-2">
+              <div className="w-full max-w-2xl bg-black/20 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-xl mt-2">
                 <SmartSearchInput 
                   variant="simple" 
                   placeholder="Accra apartment, commercial warehouses, plots of land..." 
@@ -282,24 +283,24 @@ const Home: React.FC = () => {
                     if (filters?.propertyType) searchParams.set('propertyType', filters.propertyType);
                     window.location.href = `/search?${searchParams.toString()}`;
                   }}
-                  className="w-full bg-white text-slate-900 rounded-xl"
+                  className="w-full bg-slate-950 text-white border border-[#8607C1]/20 rounded-xl"
                 />
               </div>
 
               {/* Trust Badge Indicators */}
-              <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-[10px] md:text-xs font-mono text-purple-200">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-[10px] md:text-xs font-mono text-slate-400">
                 <div className="flex items-center gap-1.5">
-                  <Icon name="check" size={14} className="text-emerald-400" />
+                  <Icon name="check" size={14} className="text-[#00ffcc]" />
                   <span>5,000+ Daily Verified Listings</span>
                 </div>
-                <div className="w-1 h-1 bg-white/20 rounded-full hidden sm:block"></div>
+                <div className="w-1 h-1 bg-slate-800 rounded-full hidden sm:block"></div>
                 <div className="flex items-center gap-1.5">
-                  <Icon name="shield" size={14} className="text-emerald-400" />
+                  <Icon name="shield" size={14} className="text-[#ff007f]" />
                   <span>100% Secure Transactions</span>
                 </div>
-                <div className="w-1 h-1 bg-white/20 rounded-full hidden sm:block"></div>
+                <div className="w-1 h-1 bg-slate-800 rounded-full hidden sm:block"></div>
                 <div className="flex items-center gap-1.5">
-                  <Icon name="messageCircle" size={14} className="text-emerald-400" />
+                  <Icon name="messageCircle" size={14} className="text-sky-400" />
                   <span>Real-time Seller Connect</span>
                 </div>
               </div>
@@ -381,36 +382,80 @@ const Home: React.FC = () => {
             </div>
           </section>
 
-          {/* Luxury Rent Financing Banner */}
+          {/* Muv Now, Pay Monthly Rent Financing Program */}
           <section className="mt-1 animate-slide-up">
-            <div className="relative overflow-hidden rounded-[2.2rem] bg-gradient-to-br from-indigo-900 via-indigo-950 to-emerald-950 text-white p-6 sm:p-10 border border-emerald-500/10 shadow-lg">
-              {/* Background accent designs */}
-              <div className="absolute top-0 right-0 w-[240px] h-[240px] bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none"></div>
-              <div className="absolute bottom-0 left-0 w-[180px] h-[180px] bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none"></div>
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#8607C1] to-[#240035] text-white p-8 md:p-12 border border-[#CF8EED]/20 shadow-2xl shadow-[#8607C1]/10">
+              {/* Decorative Glows */}
+              <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-[#fb00ff]/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div className="max-w-2xl space-y-3">
-                  <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold tracking-wider uppercase">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    CaliberRent Finance Program
-                  </span>
-                  <h2 className="text-xl sm:text-3xl font-black font-display tracking-tight text-white leading-tight">
-                    Struggling with <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-indigo-200">Huge Landlord Advances</span>?
-                  </h2>
-                  <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                    Zero worry. CaliberDesk will finance your rent directly and immediately. Secure the space you love today, and pay us back in stress-free monthly tiers over up to <strong>36 months</strong>.
-                  </p>
+              <div className="relative z-10 flex flex-col gap-8">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-[#CF8EED]/10 pb-6">
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-full text-[10px] md:text-xs font-semibold tracking-wider font-mono lowercase">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] animate-ping"></span>
+                      tym2muv rent financing program
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-black font-sans tracking-tight text-white leading-tight lowercase">
+                      muv now, pay monthly.
+                    </h2>
+                    <p className="text-slate-200 text-xs md:text-sm max-w-xl lowercase">
+                      struggling with huge upfront landlord advances? select any verified listings, we'll cover the landlord upfront while you pay us in stress-free monthly tiers.
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 w-full md:w-auto">
+                    <Link
+                      id="apply-financing-home-banner-btn"
+                      to="/rent-financing"
+                      className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-450 hover:opacity-90 font-extrabold text-xs md:text-sm text-slate-950 px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-500/10 duration-200 transition-all hover:scale-[1.02] active:scale-98 w-full md:w-auto lowercase"
+                    >
+                      <span>calculate & apply now</span>
+                      <Icon name="chevronRight" size={16} />
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="w-full md:w-auto flex-shrink-0">
-                  <Link
-                    id="apply-financing-home-banner-btn"
-                    to="/rent-financing"
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 font-extrabold text-xs sm:text-sm text-slate-950 px-6 py-4 rounded-2xl shadow-xl shadow-emerald-500/15 duration-300 transition-all hover:scale-[1.03] active:scale-97 w-full sm:w-auto"
-                  >
-                    <span>Calculate & Apply Now</span>
-                    <Icon name="chevronRight" size={16} />
-                  </Link>
+                {/* 3 Step breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Step 1 */}
+                  <div className="group relative overflow-hidden rounded-2xl bg-black/25 border border-white/10 p-6 flex flex-col gap-4 hover:border-emerald-500/30 transition-all duration-300">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-950 text-[#00ffcc] font-mono font-bold text-sm border border-white/10 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                      01
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-white text-sm md:text-base tracking-tight"><span className="text-[#00ffcc]">find the vibe:</span> browse 100% verified listings.</h3>
+                      <p className="text-slate-200 text-xs leading-relaxed lowercase">
+                        every listing on tym2muv goes through robust background validation to ensure what you see is what you lock down.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="group relative overflow-hidden rounded-2xl bg-black/25 border border-white/10 p-6 flex flex-col gap-4 hover:border-[#ff007f]/30 transition-all duration-300">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-950 text-[#ff007f] font-mono font-bold text-sm border border-white/10 group-hover:bg-pink-500 group-hover:text-slate-950 transition-all">
+                      02
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-white text-sm md:text-base tracking-tight"><span className="text-[#ff007f]">we pay upfront:</span> tym2muv covers the landlord's required advance.</h3>
+                      <p className="text-slate-200 text-xs leading-relaxed lowercase">
+                        no more saving up for 12 or 24 months of advance rent files. we handle the full upfront check for you instantly.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="group relative overflow-hidden rounded-2xl bg-black/25 border border-white/10 p-6 flex flex-col gap-4 hover:border-sky-500/30 transition-all duration-300">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-950 text-sky-400 font-mono font-bold text-sm border border-white/10 group-hover:bg-sky-400 group-hover:text-slate-950 transition-all">
+                      03
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-white text-sm md:text-base tracking-tight"><span className="text-sky-400">move in & pay monthly:</span> you move in immediately and pay a predictable, stress-free monthly rate.</h3>
+                      <p className="text-slate-200 text-xs leading-relaxed lowercase">
+                        take full control of your liquidity. split your rent over predictable, easy-to-manage monthly installments.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
