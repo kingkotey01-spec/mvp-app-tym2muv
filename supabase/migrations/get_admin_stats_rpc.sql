@@ -3,6 +3,7 @@ CREATE OR REPLACE FUNCTION get_admin_dashboard_stats()
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_total_users INT;
@@ -47,6 +48,7 @@ CREATE OR REPLACE FUNCTION increment_ad_stat(ad_id uuid, field text)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   IF field = 'clicks' THEN

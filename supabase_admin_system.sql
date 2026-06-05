@@ -19,7 +19,7 @@ BEGIN
     WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Helper Function: Check if current user is a Super Admin
 CREATE OR REPLACE FUNCTION public.is_super_admin()
@@ -30,7 +30,7 @@ BEGIN
     WHERE id = auth.uid() AND role = 'super_admin'
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ==========================================
 -- STEP 2: ADMIN TABLES
@@ -87,7 +87,7 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 DROP TRIGGER IF EXISTS update_reports_modtime ON public.reports;
 CREATE TRIGGER update_reports_modtime
@@ -134,14 +134,14 @@ BEGIN
         p_metadata
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ==========================================
 -- STEP 4: ADMIN DASHBOARD METRICS VIEW
 -- ==========================================
 
 -- View aggregating key metrics for admin insight
-CREATE OR REPLACE VIEW public.admin_dashboard_metrics AS
+CREATE OR REPLACE VIEW public.admin_dashboard_metrics WITH (security_invoker = true) AS
 SELECT
     (SELECT COUNT(*) FROM public.profiles WHERE role = 'tenant') AS total_users,
     (SELECT COUNT(*) FROM public.profiles WHERE role = 'agent') AS total_agents,

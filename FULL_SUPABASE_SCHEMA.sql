@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS public.property_views (
 -- ==========================================
 
 -- 1. Admin Dashboard Metrics View
-CREATE OR REPLACE VIEW public.admin_dashboard_metrics AS
+CREATE OR REPLACE VIEW public.admin_dashboard_metrics WITH (security_invoker = true) AS
 SELECT
     (SELECT COUNT(*) FROM public.profiles WHERE role = 'user') AS total_users,
     (SELECT COUNT(*) FROM public.profiles WHERE role = 'agent') AS total_agents,
@@ -244,7 +244,7 @@ SELECT
     (SELECT COUNT(*) FROM public.reports WHERE status = 'open') AS open_reports;
 
 -- 2. Agent Stats View (Aggregates performance metrics dynamically)
-CREATE OR REPLACE VIEW public.agent_stats AS
+CREATE OR REPLACE VIEW public.agent_stats WITH (security_invoker = true) AS
 SELECT 
     a.id AS agent_id,
     (SELECT COUNT(*) FROM public.properties p WHERE p.agent_id = a.id) AS total_properties,
@@ -265,7 +265,7 @@ BEGIN
         WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION public.is_super_admin() RETURNS BOOLEAN AS $$
 BEGIN
@@ -274,11 +274,11 @@ BEGIN
         WHERE id = auth.uid() AND role = 'super_admin'
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION public.get_user_role() RETURNS user_role AS $$
     SELECT role FROM public.profiles WHERE id = auth.uid();
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
 
 -- Admin Logger Function
 CREATE OR REPLACE FUNCTION public.log_admin_action(
@@ -299,7 +299,7 @@ BEGIN
         auth.uid(), p_action_type, p_target_table, p_target_id, p_description, p_metadata
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Safe Property View Logger
 CREATE OR REPLACE FUNCTION public.log_property_view(
@@ -311,7 +311,7 @@ BEGIN
     INSERT INTO public.property_views (property_id, user_id, ip_address, viewed_at)
     VALUES (p_property_id, p_user_id, p_ip_address, NOW());
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Auto Updated_At Triggers
 CREATE OR REPLACE FUNCTION public.set_updated_at() RETURNS TRIGGER AS $$
@@ -319,7 +319,7 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- Apply Triggers
 DO $$ 
@@ -490,7 +490,7 @@ CREATE POLICY "Agents can view stats for own properties" ON public.property_view
 );
 
 DROP POLICY IF EXISTS "Anyone can insert a view" ON public.property_views;
-CREATE POLICY "Anyone can insert a view" ON public.property_views FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can insert a view" ON public.property_views FOR INSERT WITH CHECK (property_id IS NOT NULL);
 
 -- ========================================================================================
 -- END OF SCRIPT

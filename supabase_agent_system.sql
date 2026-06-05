@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.property_views (
 -- ==========================================
 
 -- 2. Agent Stats View (Aggregates performance metrics dynamically)
-CREATE OR REPLACE VIEW public.agent_stats AS
+CREATE OR REPLACE VIEW public.agent_stats WITH (security_invoker = true) AS
 SELECT 
     a.id AS agent_id,
     -- Total properties owned by the agent
@@ -60,7 +60,7 @@ BEGIN
     INSERT INTO public.property_views (property_id, user_id, ip_address, viewed_at)
     VALUES (p_property_id, p_user_id, p_ip_address, NOW());
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ==========================================
 -- STEP 4: INDEXING FOR PERFORMANCE
@@ -87,7 +87,7 @@ FOR SELECT USING (
 -- Anyone can insert a view
 DROP POLICY IF EXISTS "Anyone can insert a view" ON public.property_views;
 CREATE POLICY "Anyone can insert a view" ON public.property_views
-FOR INSERT WITH CHECK (true);
+FOR INSERT WITH CHECK (property_id IS NOT NULL);
 
 -- Ensure Core Tables RLS is restricted precisely for the agent dashboard interactions
 

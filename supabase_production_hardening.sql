@@ -233,7 +233,7 @@ BEGIN
         WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION public.is_super_admin() RETURNS BOOLEAN AS $$
 BEGIN
@@ -242,11 +242,11 @@ BEGIN
         WHERE id = auth.uid() AND role = 'super_admin'
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION public.get_user_role() RETURNS user_role AS $$
     SELECT role FROM public.profiles WHERE id = auth.uid();
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
 
 -- 5.2 Admin Logger Function
 CREATE OR REPLACE FUNCTION public.log_admin_action(
@@ -267,7 +267,7 @@ BEGIN
         auth.uid(), p_action_type, p_target_table, p_target_id, p_description, p_metadata
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 5.3 Auto Updated_At Triggers
 CREATE OR REPLACE FUNCTION public.set_updated_at() RETURNS TRIGGER AS $$
@@ -275,7 +275,7 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- Apply Triggers
 DO $$ 
@@ -318,7 +318,7 @@ CREATE INDEX IF NOT EXISTS idx_reports_target ON public.reports (target_type, ta
 -- ==========================================
 -- STEP 7: ADMIN DASHBOARD METRICS VIEW
 -- ==========================================
-CREATE OR REPLACE VIEW public.admin_dashboard_metrics AS
+CREATE OR REPLACE VIEW public.admin_dashboard_metrics WITH (security_invoker = true) AS
 SELECT
     (SELECT COUNT(*) FROM public.profiles WHERE role = 'user') AS total_users,
     (SELECT COUNT(*) FROM public.profiles WHERE role = 'agent') AS total_agents,

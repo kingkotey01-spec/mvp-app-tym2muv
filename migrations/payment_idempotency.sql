@@ -16,11 +16,14 @@ CREATE TABLE payment_attempts (
 CREATE INDEX idx_payment_attempts_ik ON payment_attempts(idempotency_key);
 CREATE INDEX idx_payment_attempts_ref ON payment_attempts(reference_id);
 
--- Apply RLS so edge functions can access this, but users can only read their own attempts
+-- Apply RLS so users can only access their own payment attempts
 ALTER TABLE payment_attempts ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own payment attempts" ON payment_attempts
 FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Edge functions bypass RLS" ON payment_attempts
-FOR ALL USING (true); -- We will assume service role bypasses RLS in reality, but this is a fallback if needed
+CREATE POLICY "Users can insert own payment attempts" ON payment_attempts
+FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Note: Edge Functions utilize the service_role secret key which inherently
+-- bypasses Row Level Security. Therefore, no permissive "always true" check is needed.

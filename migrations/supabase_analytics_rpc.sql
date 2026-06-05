@@ -36,7 +36,7 @@ BEGIN
         )
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION get_user_activity_daily()
 RETURNS JSON AS $$
@@ -44,7 +44,7 @@ BEGIN
     -- Would return an array of {date, count} for signups
     RETURN '[]'::json;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION get_listing_stats()
 RETURNS JSON AS $$
@@ -52,4 +52,4 @@ BEGIN
     -- Would return stats by category
     RETURN '{}'::json;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
