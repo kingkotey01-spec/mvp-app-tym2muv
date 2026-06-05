@@ -389,11 +389,17 @@ CREATE POLICY "Public can view valid profiles" ON public.profiles FOR SELECT USI
 DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
 DROP POLICY IF EXISTS "Public can view agents" ON public.agents;
 CREATE POLICY "Public can view agents" ON public.agents FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Agents update own profile" ON public.agents;
 CREATE POLICY "Agents update own profile" ON public.agents FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can insert own agent profile" ON public.agents;
+CREATE POLICY "Users can insert own agent profile" ON public.agents FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- PROPERTIES
 DROP POLICY IF EXISTS "Public sees approved properties" ON public.properties;

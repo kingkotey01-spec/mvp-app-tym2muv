@@ -282,8 +282,10 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 -- 8.1 PROFILES & AGENTS
 CREATE POLICY "Public can view non-blocked profiles" ON profiles FOR SELECT USING (is_blocked = false OR is_admin());
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Public can view agents" ON agents FOR SELECT USING (true);
 CREATE POLICY "Agents can update own profile" ON agents FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own agent profile" ON agents FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- 8.2 PROPERTIES & IMAGES
 CREATE POLICY "Public sees approved properties" ON properties FOR SELECT USING (status = 'approved' OR is_admin() OR auth.uid() = agent_id);

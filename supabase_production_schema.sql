@@ -195,6 +195,7 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 -- Profiles
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Properties
 CREATE POLICY "Available properties viewable by public" ON properties FOR SELECT USING (status = 'available' OR auth.uid() = agent_id);

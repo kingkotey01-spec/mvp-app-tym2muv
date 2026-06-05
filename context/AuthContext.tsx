@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '../types';
-import { subscribeToAuth, getUserProfile, logout as backendLogout } from '../services/supabaseService';
+import { getUserProfile, logout as backendLogout } from '../services/supabaseService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 
@@ -60,106 +60,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const buildFallbackUser = (sUser: SupabaseUser): User => {
+    const fullName = sUser.user_metadata?.full_name || sUser.user_metadata?.name || sUser.email?.split('@')[0] || 'User';
+    const avatarUrl = sUser.user_metadata?.avatar_url || sUser.user_metadata?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
+    const rawRole = sUser.user_metadata?.role || localStorage.getItem('oauth_selected_role') || 'Tenant';
+    const formattedRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
+
+    return {
+      id: sUser.id,
+      name: fullName,
+      avatar: avatarUrl,
+      email: sUser.email,
+      role: formattedRole as any,
+      rating: 0,
+      reviewCount: 0,
+      location: 'Unknown',
+      memberSince: sUser.created_at || new Date().toISOString(),
+      bio: '',
+      verified: false,
+      savedListings: [],
+      socials: {}
+    } as any;
+  };
+
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setSupabaseUser(session.user);
-          let profile = null;
-          try {
-            profile = await getUserProfile(session.user.id);
-          } catch (profileError) {
-            console.warn('Failed to fetch profile during init, using auth fallback:', profileError);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        try {
+          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            const sUser = session?.user ?? null;
+            setSupabaseUser(sUser);
+            if (sUser) {
+              const profile = await getUserProfile(sUser.id).catch(() => null);
+              if (profile) {
+                setUser({ ...profile, email: sUser.email } as any);
+              } else {
+                setUser(buildFallbackUser(sUser));
+              }
+            } else {
+              setUser(null);
+            }
+          } else if (event === 'SIGNED_OUT') {
+            setSupabaseUser(null);
+            setUser(null);
           }
-
-          if (profile) {
-            setUser({ ...profile, email: session.user.email } as any);
-          } else {
-            const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
-            const avatarUrl = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
-            const rawRole = session.user.user_metadata?.role || localStorage.getItem('oauth_selected_role') || 'Tenant';
-            const formattedRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
-
-            setUser({
-              id: session.user.id,
-              name: fullName,
-              avatar: avatarUrl,
-              email: session.user.email,
-              role: formattedRole as any,
-              rating: 0,
-              reviewCount: 0,
-              location: 'Unknown',
-              memberSince: session.user.created_at || new Date().toISOString(),
-              bio: '',
-              verified: false,
-              savedListings: [],
-              socials: {}
-            } as any);
-          }
-        } else {
+        } catch (error) {
+          console.error('Error handling auth state change:', error);
           setSupabaseUser(null);
           setUser(null);
+        } finally {
+          setLoading(false);
+          setIsAuthReady(true);
         }
-      } catch (err) {
-        console.warn('Failed to retrieve Supabase session:', err);
-        setSupabaseUser(null);
-        setUser(null);
       }
-      setLoading(false);
-      setIsAuthReady(true);
-    };
-
-    initAuth();
-
-    const unsubscribe = subscribeToAuth(async (sUser) => {
-      try {
-        setSupabaseUser(sUser);
-        if (sUser) {
-          let profile = null;
-          try {
-            profile = await getUserProfile(sUser.id || sUser.uid);
-          } catch (profileError) {
-            console.warn('Failed to fetch profile in subscribe, using auth fallback:', profileError);
-          }
-
-          if (profile) {
-            setUser({ ...profile, email: sUser.email } as any);
-          } else {
-            const fullName = sUser.user_metadata?.full_name || sUser.user_metadata?.name || sUser.email?.split('@')[0] || 'User';
-            const avatarUrl = sUser.user_metadata?.avatar_url || sUser.user_metadata?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
-            const rawRole = sUser.user_metadata?.role || localStorage.getItem('oauth_selected_role') || 'Tenant';
-            const formattedRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
-
-            setUser({
-              id: sUser.id || sUser.uid,
-              name: fullName,
-              avatar: avatarUrl,
-              email: sUser.email,
-              role: formattedRole as any,
-              rating: 0,
-              reviewCount: 0,
-              location: 'Unknown',
-              memberSince: sUser.created_at || new Date().toISOString(),
-              bio: '',
-              verified: false,
-              savedListings: [],
-              socials: {}
-            } as any);
-          }
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('Failed processing auth state change callback:', err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-        setIsAuthReady(true);
-      }
-    });
-
-    return () => unsubscribe();
+    );
+    return () => subscription.unsubscribe();
   }, []);
 
   const isAuthenticated = !!supabaseUser;

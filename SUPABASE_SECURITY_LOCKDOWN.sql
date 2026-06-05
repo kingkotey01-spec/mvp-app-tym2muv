@@ -15,6 +15,10 @@
 
 REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
 
+-- Grant INSERT & UPDATE back on profiles and agents so client-side updates and fallback inserts can work under RLS of user=id
+GRANT INSERT, UPDATE ON TABLE public.profiles TO authenticated;
+GRANT INSERT, UPDATE ON TABLE public.agents TO authenticated;
+
 -- Ensure service_role can still do everything
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
