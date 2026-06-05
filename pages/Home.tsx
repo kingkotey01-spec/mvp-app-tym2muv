@@ -246,7 +246,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="pt-2 pb-8">
-      <div className="container mx-auto px-4 space-y-6 animate-slide-up relative z-10">
+      <div className="container mx-auto px-4 max-w-7xl space-y-6 animate-slide-up relative z-10">
          
           {/* Stunning Premium Home Hero Banner */}
           <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#8607C1] to-[#3B0058] text-white p-8 md:p-14 shadow-2xl shadow-[#8607C1]/15 border border-[#CF8EED]/20 mt-2">

@@ -17,7 +17,7 @@ const InteractiveAdBanner: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 pt-2 pb-2">
+    <div className="container mx-auto px-4 max-w-7xl pt-2 pb-2">
       <motion.div 
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

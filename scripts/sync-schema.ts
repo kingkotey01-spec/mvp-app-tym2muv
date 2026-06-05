@@ -1,6 +1,14 @@
 import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import dns from 'dns';
+
+// Ensure Node.js prefers IPv4 over IPv6 to prevent ENETUNREACH errors when resolving Supabase database hosts
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (e) {
+  // Ignored fallback
+}
 
 // Helper to load and parse environment variables from .env
 function loadEnv() {

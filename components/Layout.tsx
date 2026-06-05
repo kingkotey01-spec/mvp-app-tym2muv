@@ -165,7 +165,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Unified Floating Header Card */}
       <header className="sticky top-0 z-[100] pt-4 pb-2 pointer-events-none transition-all duration-300">
-        <div className="container mx-auto px-4 max-w-7xl 2xl:max-w-none">
+        <div className="container mx-auto px-4 max-w-7xl">
             <div className="pointer-events-auto w-full glass-card rounded-2xl transition-all relative">
             
             {/* Top Bar: Brand, Search, Actions */}
@@ -261,7 +261,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       
       {/* Footer */}
       <footer className="bg-brand-950 text-purple-100 py-6 mt-0 relative z-10">
-        <div className="container mx-auto px-4 max-w-7xl 2xl:max-w-none flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
+        <div className="container mx-auto px-4 max-w-7xl flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
           
           {/* Brand & CMS Links */}
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
