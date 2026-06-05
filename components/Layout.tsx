@@ -298,22 +298,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </footer>
-
-      {/* Floating App WhatsApp Button */}
-      <a 
-        href="https://wa.me/233530483353" 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        className="fixed bottom-24 md:bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-lg shadow-[#25D366]/30 hover:bg-[#128C7E] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center group"
-        aria-label="Chat with us on WhatsApp"
-      >
-        <Icon name="whatsapp" size={28} />
-        <span className="absolute right-full mr-4 bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-          App Support
-          <div className="absolute top-1/2 -right-1 -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-transparent border-l-slate-800"></div>
-        </span>
-      </a>
-
       <ComparisonDrawer />
       <MobileBottomNav />
     </div>

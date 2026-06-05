@@ -256,36 +256,13 @@ const Home: React.FC = () => {
             <div className="absolute bottom-0 left-10 w-[250px] h-[250px] bg-[#ff007f]/5 rounded-full blur-[100px] pointer-events-none"></div>
             
             <div className="relative z-10 max-w-3xl flex flex-col gap-6">
-              <div className="inline-flex items-center gap-1.5 bg-black/35 border border-white/10 px-3.5 py-1.5 rounded-full text-[10px] md:text-xs font-semibold tracking-wider font-mono uppercase text-slate-300 w-fit">
-                <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse"></span>
-                PREMIUM AFRICAN PROPERTY MARKETPLACE
-              </div>
-              
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight md:leading-none font-sans lowercase text-white">
-                perspective change? it’s <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-400">tym2muv.</span>
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight md:leading-none font-wix text-white">
+                Perspective Change? <span className="whitespace-nowrap">It's <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-400">tym2muv.</span></span>
               </h1>
               
-              <p className="text-slate-200 text-[13px] md:text-sm max-w-xl leading-relaxed lowercase font-medium">
-                stop doom scrolling apps that ghost you. lock down your next aesthetic upgrade and drop the link to the group chat.
+              <p className="text-slate-200 text-[13px] md:text-sm max-w-xl leading-relaxed font-wix font-medium">
+                Stop doom scrolling apps that ghost you. Lock down your next aesthetic upgrade and drop the link to the group chat.
               </p>
-              
-              {/* Integrated Hero Smart Search */}
-              <div className="w-full max-w-2xl bg-black/20 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-xl mt-2">
-                <SmartSearchInput 
-                  variant="simple" 
-                  placeholder="Accra apartment, commercial warehouses, plots of land..." 
-                  onSearch={(query, filters) => {
-                    const searchParams = new URLSearchParams();
-                    if (query) searchParams.set('q', query);
-                    if (filters?.minPrice) searchParams.set('minPrice', filters.minPrice);
-                    if (filters?.maxPrice) searchParams.set('maxPrice', filters.maxPrice);
-                    if (filters?.location) searchParams.set('location', filters.location);
-                    if (filters?.propertyType) searchParams.set('propertyType', filters.propertyType);
-                    window.location.href = `/search?${searchParams.toString()}`;
-                  }}
-                  className="w-full bg-slate-950 text-white border border-[#8607C1]/20 rounded-xl"
-                />
-              </div>
 
               {/* Trust Badge Indicators */}
               <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-[10px] md:text-xs font-mono text-slate-400">
@@ -316,7 +293,6 @@ const Home: React.FC = () => {
                     <Icon name="sliders" size={20} className="text-brand-600 animate-pulse" />
                     How can we help you today?
                   </h2>
-                  <p className="text-slate-400 text-xs mt-1">Select a category to browse active verified properties</p>
                 </div>
               </div>
 
