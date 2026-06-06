@@ -226,7 +226,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <Icon name="messageCircle" size={20} className="w-5 h-5" />
                         <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 border border-white rounded-full"></span>
                         </Link>
-                        <Link to="/profile/me" className="w-9 h-9 rounded-full bg-slate-100 p-0.5 border border-slate-200 cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all flex-shrink-0">
+                        <Link to={user?.id ? `/profile/${user.id}` : "/profile/me"} className="w-9 h-9 rounded-full bg-slate-100 p-0.5 border border-slate-200 cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all flex-shrink-0">
                         <img src={user?.avatar || 'https://via.placeholder.com/150'} alt="User" referrerPolicy="no-referrer" className="w-full h-full rounded-full object-cover" />
                         </Link>
                     </>

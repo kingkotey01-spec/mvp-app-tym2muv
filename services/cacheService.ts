@@ -70,7 +70,15 @@ export async function getCache<T>(key: string): Promise<T | null> {
   if (!redisClient) return null;
   
   try {
-    const data = await redisClient.get<T>(key);
+    const getPromise = redisClient.get<T>(key);
+    const data = await Promise.race([
+      getPromise,
+      new Promise<null>((resolve) => setTimeout(() => {
+        logger.warn(`[CACHE TIMEOUT] Get operation timed out for key: ${key}`);
+        resolve(null);
+      }, 600))
+    ]);
+
     if (data) {
       logger.info(`[CACHE HIT] ${key}`);
       return data;
@@ -90,11 +98,17 @@ export async function setCache<T>(key: string, value: T, ttlSeconds?: number): P
   if (!redisClient) return;
   
   try {
-    if (ttlSeconds) {
-      await redisClient.set(key, value, { ex: ttlSeconds });
-    } else {
-      await redisClient.set(key, value);
-    }
+    const setPromise = ttlSeconds
+      ? redisClient.set(key, value, { ex: ttlSeconds })
+      : redisClient.set(key, value);
+
+    await Promise.race([
+      setPromise,
+      new Promise<void>((resolve) => setTimeout(() => {
+        logger.warn(`[CACHE TIMEOUT] Set operation timed out for key: ${key}`);
+        resolve();
+      }, 600))
+    ]);
     logger.info(`[CACHE SET] ${key}`);
   } catch (error) {
     logger.error(`Error writing to redis cache (key: ${key}):`, { error });
@@ -108,7 +122,14 @@ export async function delCache(key: string): Promise<void> {
   if (!redisClient) return;
   
   try {
-    await redisClient.del(key);
+    const delPromise = redisClient.del(key);
+    await Promise.race([
+      delPromise,
+      new Promise<void>((resolve) => setTimeout(() => {
+        logger.warn(`[CACHE TIMEOUT] Del operation timed out for key: ${key}`);
+        resolve();
+      }, 600))
+    ]);
     logger.info(`[CACHE DEL] ${key}`);
   } catch (error) {
     logger.error(`Error deleting from redis cache (key: ${key}):`, { error });
@@ -126,13 +147,34 @@ export async function invalidateCachePrefix(prefix: string): Promise<void> {
   try {
     // A simplified scan & delete approach for wiping namespace prefixes
     let cursor: number | string = 0;
+    const startTime = Date.now();
     do {
-      const result = await redisClient.scan(cursor, { match: `${prefix}*`, count: 100 });
+      // Prevent infinite loop if scan hangs or is slow (max 1500ms total)
+      if (Date.now() - startTime > 1500) {
+        logger.warn(`[CACHE TIMEOUT] Invalidate prefix scan exceeded limit for prefix: ${prefix}`);
+        break;
+      }
+
+      const scanPromise = redisClient.scan(cursor, { match: `${prefix}*`, count: 100 });
+      const result = await Promise.race([
+        scanPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 600))
+      ]);
+
+      if (!result) {
+        logger.warn(`[CACHE TIMEOUT] Invalidate scan operation timed out for prefix: ${prefix}`);
+        break;
+      }
+
       cursor = result[0];
       const keys = result[1];
       
       if (keys.length > 0) {
-        await redisClient.del(...keys);
+        const delPromise = redisClient.del(...keys);
+        await Promise.race([
+          delPromise,
+          new Promise<void>((resolve) => setTimeout(() => resolve(), 600))
+        ]);
       }
     } while (cursor !== 0 && cursor !== '0');
     logger.info(`[CACHE INVALIDATE PREFIX] ${prefix}*`);

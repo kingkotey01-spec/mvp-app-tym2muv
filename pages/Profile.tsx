@@ -41,56 +41,85 @@ const Profile: React.FC = () => {
   const mixedContent = useMixedContent(listings, ads, 8, 5, false);
 
   useEffect(() => {
+    let active = true;
+
     const fetchProfileData = async () => {
+      let targetId: string | undefined = undefined;
+
+      if (userId === 'me') {
+        if (authLoading) {
+          if (active) setIsLoading(true);
+          return;
+        }
+        if (!currentUser) {
+          if (active) {
+            setUser(undefined);
+            setIsLoading(false);
+          }
+          return;
+        }
+        targetId = currentUser.id;
+      } else {
+        targetId = userId;
+      }
+
+      if (!targetId) {
+        if (active) {
+          setUser(undefined);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       window.scrollTo(0, 0);
-      setIsLoading(true);
+      if (active) setIsLoading(true);
       
       try {
-        let targetId = userId;
-        if (userId === 'me') {
-          if (currentUser) {
-            targetId = currentUser.id;
-          } else if (authLoading) {
-            // Keep loading true and wait for next render
-            return;
-          } else {
-            setIsLoading(false);
-            return;
-          }
-        }
+        const u = await getUserProfile(targetId);
+        if (!active) return;
 
-        if (targetId) {
-          const u = await getUserProfile(targetId);
-          setUser(u);
-          if (u) {
-            // Fetch agent listings
-            const { listings: userListings } = await getListings({
-              sellerId: u.id,
-              limit: 50
-            });
-            setListings(userListings);
-            
-            // If viewing own tenant profile, fetch saved listings
-            if (targetId === currentUser?.id && u.role === 'Tenant' && u.savedListings?.length) {
-              // Note: A real app would use a specific 'getSavedListings' query with array-contains 
-              // For simplicity, we just fetch all and filter in this MVP view if missing a specific hook
-              const { listings: allListings } = await getListings({ limit: 100 });
-              setSavedListings(allListings.filter(l => u.savedListings?.includes(l.id)));
-              setActiveTab('saved'); // Default to saved tab for tenants
-            }
-            
-            const vendorReviews = await getReviewsForVendor(u.id);
-            setReviews(vendorReviews);
+        setUser(u);
+        if (u) {
+          // Set correct default active tab based on role
+          if (u.role === 'Tenant') {
+            setActiveTab('saved');
+          } else {
+            setActiveTab('listings');
+          }
+
+          // Fetch listings and reviews in parallel
+          const [listingsRes, reviewsRes] = await Promise.all([
+            getListings({ sellerId: u.id, limit: 50 }).catch(() => ({ listings: [] })),
+            getReviewsForVendor(u.id).catch(() => [])
+          ]);
+
+          if (!active) return;
+
+          setListings(listingsRes.listings);
+          setReviews(reviewsRes);
+          
+          // If viewing own tenant profile, fetch saved listings
+          if (targetId === currentUser?.id && u.role === 'Tenant' && u.savedListings?.length) {
+            const allListingsRes = await getListings({ limit: 100 }).catch(() => ({ listings: [] }));
+            if (!active) return;
+            setSavedListings(allListingsRes.listings.filter(l => u.savedListings?.includes(l.id)));
+            setActiveTab('saved'); // Default to saved tab for tenants
           }
         }
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchProfileData();
+
+    return () => {
+      active = false;
+    };
   }, [userId, currentUser, authLoading]);
 
   const handleShare = () => {
@@ -241,7 +270,7 @@ const Profile: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          {user.socials.whatsapp && (
+                          {user.socials?.whatsapp && (
                               <a href={`https://wa.me/${user.socials.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex-1 lg:flex-none bg-[#25D366] text-white px-6 py-3 rounded-2xl hover:bg-[#128C7E] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-bold shadow-md shadow-green-500/20">
                                  <Icon name="whatsapp" size={20} /> Chat
                               </a>
@@ -255,10 +284,10 @@ const Profile: React.FC = () => {
                    
                    {/* Social Row */}
                    <div className="flex justify-center lg:justify-end gap-3">
-                      {user.socials.facebook && <a href={`https://facebook.com/${user.socials.facebook}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1877F2] hover:text-white transition-all hover:scale-110"><Icon name="facebook" size={20} /></a>}
-                      {user.socials.instagram && <a href={`https://instagram.com/${user.socials.instagram}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-red-500 hover:to-purple-500 hover:text-white transition-all hover:scale-110"><Icon name="instagram" size={20} /></a>}
-                      {user.socials.twitter && <a href={`https://twitter.com/${user.socials.twitter}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1DA1F2] hover:text-white transition-all hover:scale-110"><Icon name="twitter" size={20} /></a>}
-                      {user.socials.linkedin && <a href="#" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#0A66C2] hover:text-white transition-all hover:scale-110"><Icon name="linkedin" size={20} /></a>}
+                      {user.socials?.facebook && <a href={`https://facebook.com/${user.socials.facebook}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1877F2] hover:text-white transition-all hover:scale-110"><Icon name="facebook" size={20} /></a>}
+                      {user.socials?.instagram && <a href={`https://instagram.com/${user.socials.instagram}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-red-500 hover:to-purple-500 hover:text-white transition-all hover:scale-110"><Icon name="instagram" size={20} /></a>}
+                      {user.socials?.twitter && <a href={`https://twitter.com/${user.socials.twitter}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1DA1F2] hover:text-white transition-all hover:scale-110"><Icon name="twitter" size={20} /></a>}
+                      {user.socials?.linkedin && <a href="#" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#0A66C2] hover:text-white transition-all hover:scale-110"><Icon name="linkedin" size={20} /></a>}
                    </div>
                 </div>
             </div>

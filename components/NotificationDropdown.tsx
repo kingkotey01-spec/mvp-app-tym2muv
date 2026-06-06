@@ -4,7 +4,7 @@ import Icon from './Icon';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
-const MOCK_NOTIFICATIONS = [
+const DEFAULT_NOTIFICATIONS = [
   { id: 1, title: 'New Message', text: 'You have a new message from Agent John', time: '5m ago', read: false, link: '/chat' },
   { id: 2, title: 'Property Update', text: 'Price dropped for "Luxury Villa in Cantonments"', time: '1h ago', read: false, link: '/listing/1' },
   { id: 3, title: 'Payment Success', text: 'Your premium ad payment was successful.', time: '1d ago', read: true, link: '/profile/me' },
@@ -15,7 +15,24 @@ const NotificationDropdown = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated } = useAuth();
   
-  const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const cached = localStorage.getItem('tym2muv_notifications');
+      return cached ? JSON.parse(cached) : DEFAULT_NOTIFICATIONS;
+    } catch (e) {
+      return DEFAULT_NOTIFICATIONS;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tym2muv_notifications', JSON.stringify(notifications));
+    } catch (e) {
+      console.error('Error saving notifications to localStorage', e);
+    }
+  }, [notifications]);
+
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -26,6 +43,23 @@ const NotificationDropdown = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleMarkAllAsRead = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setNotifications((prev: any[]) => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleClearAll = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setNotifications([]);
+  };
+
+  const handleNotificationClick = (id: number) => {
+    setNotifications((prev: any[]) => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setIsOpen(false);
+  };
 
   if (!isAuthenticated) return null;
 
@@ -55,23 +89,34 @@ const NotificationDropdown = () => {
           >
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h3 className="font-bold text-slate-900">Notifications</h3>
-              <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full cursor-pointer hover:bg-brand-100 transition-colors">
-                Mark all as read
-              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleMarkAllAsRead}
+                  className="text-[10px] font-semibold text-brand-600 bg-brand-50 px-2 py-1 rounded-full hover:bg-brand-100 transition-colors cursor-pointer"
+                >
+                  Mark read
+                </button>
+                <button 
+                  onClick={handleClearAll}
+                  className="text-[10px] font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
             
             <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-              {MOCK_NOTIFICATIONS.length > 0 ? (
+              {notifications.length > 0 ? (
                 <div className="flex flex-col">
-                  {MOCK_NOTIFICATIONS.map((notif) => (
+                  {notifications.map((notif: any) => (
                     <Link 
                       key={notif.id}
                       to={notif.link}
-                      onClick={() => setIsOpen(false)}
-                      className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-brand-50/30' : ''}`}
+                      onClick={() => handleNotificationClick(notif.id)}
+                      className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-brand-50/30 font-medium' : ''}`}
                     >
                       <div className="flex gap-3">
-                        <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${!notif.read ? 'bg-brand-500' : 'bg-transparent'}`} />
+                        <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!notif.read ? 'bg-brand-500' : 'bg-transparent'}`} />
                         <div className="flex-1">
                           <h4 className={`text-sm font-semibold ${!notif.read ? 'text-slate-900' : 'text-slate-700'}`}>{notif.title}</h4>
                           <p className="text-xs text-slate-500 mt-0.5 leading-snug">{notif.text}</p>

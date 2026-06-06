@@ -22,7 +22,7 @@ const Settings: React.FC = () => {
       setFormData({
         name: user.name || '',
         bio: user.bio || '',
-        phone: user.phone || '',
+        phone: user.socials?.phone || '',
         location: user.location || '',
         avatar: user.avatar || ''
       });
@@ -62,7 +62,7 @@ const Settings: React.FC = () => {
         location: formData.location,
         avatar: formData.avatar,
         socials: {
-          ...user.socials,
+          ...(user.socials || {}),
           phone: formData.phone
         }
       });

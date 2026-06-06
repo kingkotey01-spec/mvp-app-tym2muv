@@ -455,34 +455,29 @@ const mapChatRow = (data: any): Chat => ({
 });
 
 export const getChats = (userId: string, callback: (chats: Chat[]) => void) => {
-  let cachedChats: Chat[] = [];
-  
-  const fetchInitial = async () => {
+  const fetchAndCallback = async () => {
     const { data } = await supabase
       .from('chats')
       .select('*, messages(*, sender:profiles(id, full_name, avatar_url))')
       .contains('participants', [userId])
       .order('last_message_time', { ascending: false })
-      .limit(50); // Add pagination limit
-    cachedChats = (data || []).map(mapChatRow);
-    callback(cachedChats);
+      .limit(50);
+    if (data) {
+      callback(data.map(mapChatRow));
+    }
   };
   
-  fetchInitial();
+  fetchAndCallback();
 
   const channel = supabase
-    .channel(`user-chats:${userId}`)
+    .channel(`user-chats-all:${userId}`)
     .on('postgres_changes', {
-      event: 'UPDATE',
+      event: '*',
       schema: 'public',
       table: 'chats',
       filter: `participants=cs.{${userId}}`
-    }, (payload) => {
-      // Only refresh the specific chat that changed
-      cachedChats = cachedChats.map(c => 
-        c.id === payload.new.id ? { ...c, lastMessage: payload.new.last_message, lastMessageTime: payload.new.last_message_time } : c
-      );
-      callback([...cachedChats]);
+    }, () => {
+      fetchAndCallback();
     })
     .subscribe();
 
@@ -507,15 +502,23 @@ export const fetchMessages = async (chatId: string): Promise<ChatMessage[]> => {
   return data.map(mapMessage);
 };
 
-export const sendMessage = async (chatId: string, senderId: string, text: string) => {
-  const { error } = await supabase.from('messages').insert({
+export const sendMessage = async (chatId: string, senderId: string, text: string): Promise<ChatMessage> => {
+  const { data, error } = await supabase.from('messages').insert({
     chat_id: chatId,
     sender_id: senderId,
     content: text,
     is_read: false
-  });
-  if (error) throw error;
-  await supabase.from('chats').update({ last_message: text, last_message_time: new Date().toISOString(), last_sender_id: senderId }).eq('id', chatId);
+  }).select('*').single();
+  
+  if (error || !data) throw error || new Error('Failed to send message');
+  
+  await supabase.from('chats').update({ 
+    last_message: text, 
+    last_message_time: new Date().toISOString(), 
+    last_sender_id: senderId 
+  }).eq('id', chatId);
+  
+  return mapMessage(data);
 };
 
 export const createChat = async (currentUserId: string, otherUserId: string, listingId?: string): Promise<string> => {

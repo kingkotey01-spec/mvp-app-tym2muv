@@ -186,10 +186,11 @@ const ListingDetails: React.FC = () => {
   };
 
   const handleWhatsApp = () => {
-    if (!seller?.socials.phone) return;
+    const phone = seller?.socials?.phone;
+    if (!phone) return;
     const action = () => {
       const message = `Hi, I'm interested in your property: ${listing?.title}`;
-      const url = `https://wa.me/${seller.socials.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      const url = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
       window.open(url, '_blank');
     };
     triggerSafetyCheck(action);
@@ -461,7 +462,7 @@ const ListingDetails: React.FC = () => {
                       </>
                     )}
                   </button>
-                  {seller?.socials.phone && (
+                  {seller?.socials?.phone && (
                     <button 
                       onClick={() => triggerSafetyCheck(() => window.location.href = `tel:${seller.socials.phone}`)}
                       className="flex-none w-12 py-3 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-2"

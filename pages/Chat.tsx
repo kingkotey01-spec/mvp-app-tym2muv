@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getChats, fetchMessages, sendMessage, createChat, getUserProfile, mapMessage } from '../services/supabaseService';
 import { Chat as ChatType, User, ChatMessage } from '../types';
+import { supabase } from '../supabaseClient';
 import Icon from '../components/Icon';
 import { sanitizeString } from '../services/security';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +62,12 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (!currentUser) return;
 
+    const urlChatId = searchParams.get('chatId');
+    if (urlChatId) {
+      setActiveChatId(urlChatId);
+      return;
+    }
+
     // Handle URL params for starting a new chat
     const startWithUserId = searchParams.get('to');
     const listingId = searchParams.get('listingId') || undefined;
@@ -104,7 +111,11 @@ const Chat: React.FC = () => {
       filter: `chat_id=eq.${activeChatId}`,
     },
     (payload) => {
-      setMessages(prev => [...prev, mapMessage(payload.new)]);
+      const newMsg = mapMessage(payload.new);
+      setMessages(prev => {
+        if (prev.some(m => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
     },
     !!activeChatId // Only enabled when an active chat is selected
   );
@@ -118,10 +129,57 @@ const Chat: React.FC = () => {
     setMessageInput('');
 
     try {
-      await sendMessage(activeChatId, currentUser.id, sanitizedMessage);
+      const newMsg = await sendMessage(activeChatId, currentUser.id, sanitizedMessage);
+      setMessages(prev => {
+        if (prev.some(m => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
     } catch (error) {
       console.error("Error sending message:", error);
       setMessageInput(text); // Restore input on error
+    }
+  };
+
+  const handleDeleteConversation = async (chatId: string) => {
+    if (!window.confirm("Are you sure you want to delete this conversation and all its messages? This action is permanent!")) return;
+
+    try {
+      // Delete messages first to resolve foreign key constraints
+      await supabase.from('messages').delete().eq('chat_id', chatId);
+      // Delete chat
+      const { error } = await supabase.from('chats').delete().eq('id', chatId);
+      if (error) throw error;
+
+      setChats(prev => prev.filter(c => c.id !== chatId));
+      setActiveChatId(null);
+      setMessages([]);
+    } catch (err: any) {
+      console.error("Error deleting conversation:", err);
+      alert("Failed to delete conversation: " + (err.message || err));
+    }
+  };
+
+  const handleClearAllConversations = async () => {
+    if (!currentUser || chats.length === 0) return;
+    if (!window.confirm("Are you sure you want to clear and delete ALL conversations and messages from your inbox? This cannot be undone!")) return;
+
+    try {
+      const chatIds = chats.map(c => c.id);
+      
+      if (chatIds.length > 0) {
+        // Delete messages
+        await supabase.from('messages').delete().in('chat_id', chatIds);
+        // Delete chats
+        const { error } = await supabase.from('chats').delete().in('id', chatIds);
+        if (error) throw error;
+      }
+
+      setChats([]);
+      setActiveChatId(null);
+      setMessages([]);
+    } catch (err: any) {
+      console.error("Error clearing inbox:", err);
+      alert("Failed to clear inbox: " + (err.message || err));
     }
   };
 
@@ -144,8 +202,17 @@ const Chat: React.FC = () => {
           
           {/* Sidebar / Inbox List */}
           <div className={`${activeChatId ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col border-r border-slate-200 bg-white/50`}>
-             <div className="p-6 border-b border-slate-100">
+             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-800">Messages</h2>
+                {chats.length > 0 && (
+                  <button 
+                    onClick={handleClearAllConversations}
+                    className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50/55 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 border border-red-100"
+                    title="Clear entire messages inbox"
+                  >
+                    <Icon name="trash" size={13} /> Clear Inbox
+                  </button>
+                )}
              </div>
              <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {isLoadingChats ? (
@@ -197,31 +264,42 @@ const Chat: React.FC = () => {
               {activeChatId ? (
                   <>
                     {/* Header */}
-                    <div className="p-4 bg-white/60 backdrop-blur-sm border-b border-slate-200 flex items-center gap-3 shadow-sm">
-                        <button onClick={() => setActiveChatId(null)} className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-                            <Icon name="chevronRight" size={20} className="rotate-180" />
-                        </button>
-                        {(() => {
-                            const otherUser = activeChat && getOtherParticipant(activeChat);
-                            return otherUser ? (
-                                <div className="flex items-center gap-3">
-                                    <div className="relative">
-                                        <img src={otherUser.avatar} alt={otherUser.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover" />
-                                        {otherUser.verified && (
-                                            <div className="absolute -bottom-1 -right-1 bg-brand-500 text-white p-0.5 rounded-full border border-white">
-                                                <Icon name="check" size={8} />
-                                            </div>
-                                        )}
+                    <div className="p-4 bg-white/60 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setActiveChatId(null)} className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                                <Icon name="chevronRight" size={20} className="rotate-180" />
+                            </button>
+                            {(() => {
+                                const otherUser = activeChat && getOtherParticipant(activeChat);
+                                return otherUser ? (
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative">
+                                            <img src={otherUser.avatar} alt={otherUser.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover" />
+                                            {otherUser.verified && (
+                                                <div className="absolute -bottom-1 -right-1 bg-brand-500 text-white p-0.5 rounded-full border border-white">
+                                                    <Icon name="check" size={8} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900">{otherUser.name}</h3>
+                                            <p className="text-xs text-brand-600 flex items-center gap-1">
+                                                {activeChat?.listingId && <><Icon name="home" size={10} /> Property Inquiry</>}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-900">{otherUser.name}</h3>
-                                        <p className="text-xs text-brand-600 flex items-center gap-1">
-                                            {activeChat?.listingId && <><Icon name="home" size={10} /> Property Inquiry</>}
-                                        </p>
-                                    </div>
-                                </div>
-                            ) : null;
-                        })()}
+                                ) : null;
+                            })()}
+                        </div>
+                        {activeChatId && (
+                          <button
+                            onClick={() => handleDeleteConversation(activeChatId)}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                            title="Delete this conversation"
+                          >
+                            <Icon name="trash" size={20} />
+                          </button>
+                        )}
                     </div>
 
                     {/* Messages Area */}
