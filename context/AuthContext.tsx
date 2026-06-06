@@ -92,10 +92,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSupabaseUser(sUser);
             if (sUser) {
               const profile = await getUserProfile(sUser.id).catch(() => null);
-              if (profile) {
-                setUser({ ...profile, email: sUser.email } as any);
-              } else {
-                setUser(buildFallbackUser(sUser));
+              const currentUserDoc = profile ? { ...profile, email: sUser.email } : buildFallbackUser(sUser);
+              setUser(currentUserDoc as any);
+              
+              // Inject in-app welcome notification and simulated email trigger when the user signs up
+              const welcomeSentKey = `tym2muv_welcome_sent_${sUser.id}`;
+              if (!localStorage.getItem(welcomeSentKey)) {
+                const cachedNotifsRaw = localStorage.getItem('tym2muv_notifications');
+                let notifications = [];
+                try {
+                  notifications = cachedNotifsRaw ? JSON.parse(cachedNotifsRaw) : [];
+                } catch (_) {
+                  notifications = [];
+                }
+
+                const hasWelcomeNotification = notifications.some((n: any) => n.link === '#welcome-email');
+                if (!hasWelcomeNotification) {
+                  const welcomeNotif = {
+                    id: Date.now(),
+                    title: 'you’re in. welcome to tym2muv 🔑',
+                    text: `Hey ${currentUserDoc.name || 'friend'}! Your account is active. Click here to preview your official welcome deliverable and login guide.`,
+                    time: 'Just now',
+                    read: false,
+                    link: '#welcome-email'
+                  };
+                  localStorage.setItem('tym2muv_notifications', JSON.stringify([welcomeNotif, ...notifications]));
+                  
+                  // Track welcome email in a simulated outbox/deliveries store too
+                  const emailDelivery = {
+                    id: Date.now().toString(),
+                    toEmail: sUser.email || 'friend@tym2muv.com',
+                    toName: currentUserDoc.name || 'friend',
+                    subject: 'you’re in. welcome to tym2muv 🔑',
+                    sentAt: new Date().toISOString()
+                  };
+                  const cachedDeliveriesRaw = localStorage.getItem('tym2muv_sent_emails');
+                  let deliveries = [];
+                  try {
+                    deliveries = cachedDeliveriesRaw ? JSON.parse(cachedDeliveriesRaw) : [];
+                  } catch (_) {}
+                  localStorage.setItem('tym2muv_sent_emails', JSON.stringify([emailDelivery, ...deliveries]));
+
+                  localStorage.setItem(welcomeSentKey, 'true');
+                  
+                  // Dispatch custom events to update component states instantly
+                  window.dispatchEvent(new Event('welcome_email_received'));
+                  
+                  // Auto-trigger a beautiful popup preview of the welcome email so the user gets real-time response feedback
+                  setTimeout(() => {
+                    window.dispatchEvent(new Event('open_welcome_email'));
+                  }, 1200);
+                }
               }
             } else {
               setUser(null);

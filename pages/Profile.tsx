@@ -9,6 +9,7 @@ import AgentMonetizationDash from '../components/AgentMonetizationDash';
 import { useAuth } from '../context/AuthContext';
 import { useMixedContent } from '../hooks/useMixedContent';
 import { getOptimizedImageUrl } from '../utils/imageOptimization';
+import SimulatedInbox from '../components/SimulatedInbox';
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();

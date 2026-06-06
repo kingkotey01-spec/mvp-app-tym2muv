@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Icon from './Icon';
 import { Logo } from './Logo';
@@ -17,6 +17,7 @@ import InteractiveAdBanner from './InteractiveAdBanner';
 import CountrySelector from './CountrySelector';
 
 import NotificationDropdown from './NotificationDropdown';
+import WelcomeEmailModal from './WelcomeEmailModal';
 import MobileBottomNav from './MobileBottomNav';
 import { ComparisonDrawer } from './ComparisonDrawer';
 
@@ -127,6 +128,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const { location: userLocData, refreshLocation, isLoading: isLocating, needsCountrySelection } = useAppLocation();
 
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenWelcome = () => setWelcomeOpen(true);
+    window.addEventListener('open_welcome_email', handleOpenWelcome);
+    return () => window.removeEventListener('open_welcome_email', handleOpenWelcome);
+  }, []);
+
   const handleSearch = (query: string, filters?: SearchFilters) => {
     console.log("Searching for:", query, filters);
     
@@ -156,6 +165,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden bg-white font-sans">
       {needsCountrySelection && <CountrySelectionModal />}
+      
+      <WelcomeEmailModal isOpen={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
       
       {/* 3D Animated Background */}
       <FuturisticBackground />

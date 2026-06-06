@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { loginWithGoogle, loginWithLinkedIn, loginWithEmail, signupWithEmail, sendPasswordResetEmail } from '../services/supabaseService';
+import { sendWelcomeComms } from '../services/notificationSimulator';
 import Icon from '../components/Icon';
 import { Logo } from '../components/Logo';
 
@@ -75,6 +76,11 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
       setIsLoading(true);
       if (isSignUp) {
         const resultUser = await signupWithEmail(email, password, name, selectedRole);
+        try {
+          sendWelcomeComms(email, name, selectedRole);
+        } catch (e) {
+          console.error('Failed to trigger simulated welcome comms:', e);
+        }
         setMessage('Registration successful! Secure profile provisioned.');
         setTimeout(() => {
           navigate(resultUser?.id ? `/profile/${resultUser.id}` : '/profile/me');
@@ -170,8 +176,8 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
               {showForgotPassword
                 ? 'Reset Your Password'
                 : isSignUp 
-                  ? 'Create CaliberDesk Account' 
-                  : 'Welcome to CaliberDesk'
+                  ? 'Create tym2muv Account' 
+                  : 'Welcome to tym2muv'
               }
             </h1>
             <p className="text-slate-600 text-xs md:text-sm max-w-md mx-auto font-medium">
@@ -397,7 +403,7 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       className="mt-1 h-4 w-4 rounded border-purple-200 text-purple-600 focus:ring-purple-500 hover:border-purple-400 accent-purple-600 cursor-pointer"
                     />
                     <label id="signup-agree-label" htmlFor="signup-agree-checkbox" className="text-xs text-slate-700 font-semibold cursor-pointer leading-relaxed select-none">
-                      I consent to CaliberDesk's secure profile registration and agree to the <Link to="/info/terms" className="text-purple-600 hover:underline font-bold" target="_blank">Terms of Service</Link> and <Link to="/info/privacy" className="text-purple-600 hover:underline font-bold" target="_blank">Privacy Policy</Link>.
+                      I consent to tym2muv's secure profile registration and agree to the <Link to="/info/terms" className="text-purple-600 hover:underline font-bold" target="_blank">Terms of Service</Link> and <Link to="/info/privacy" className="text-purple-600 hover:underline font-bold" target="_blank">Privacy Policy</Link>.
                     </label>
                   </div>
                 )}

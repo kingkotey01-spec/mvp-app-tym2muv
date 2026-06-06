@@ -32,6 +32,21 @@ const NotificationDropdown = () => {
     }
   }, [notifications]);
 
+  useEffect(() => {
+    const handleWelcomeReceived = () => {
+      try {
+        const cached = localStorage.getItem('tym2muv_notifications');
+        if (cached) {
+          setNotifications(JSON.parse(cached));
+        }
+      } catch (e) {
+        console.error('Error syncing notifications on welcome event', e);
+      }
+    };
+    window.addEventListener('welcome_email_received', handleWelcomeReceived);
+    return () => window.removeEventListener('welcome_email_received', handleWelcomeReceived);
+  }, []);
+
   const unreadCount = notifications.filter((n: any) => !n.read).length;
 
   useEffect(() => {
@@ -56,9 +71,12 @@ const NotificationDropdown = () => {
     setNotifications([]);
   };
 
-  const handleNotificationClick = (id: number) => {
-    setNotifications((prev: any[]) => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const handleNotificationClick = (notif: any) => {
+    setNotifications((prev: any[]) => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
     setIsOpen(false);
+    if (notif.link === '#welcome-email') {
+      window.dispatchEvent(new Event('open_welcome_email'));
+    }
   };
 
   if (!isAuthenticated) return null;
@@ -111,8 +129,13 @@ const NotificationDropdown = () => {
                   {notifications.map((notif: any) => (
                     <Link 
                       key={notif.id}
-                      to={notif.link}
-                      onClick={() => handleNotificationClick(notif.id)}
+                      to={notif.link === '#welcome-email' ? '#' : notif.link}
+                      onClick={(e) => {
+                        if (notif.link === '#welcome-email') {
+                          e.preventDefault();
+                        }
+                        handleNotificationClick(notif);
+                      }}
                       className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-brand-50/30 font-medium' : ''}`}
                     >
                       <div className="flex gap-3">

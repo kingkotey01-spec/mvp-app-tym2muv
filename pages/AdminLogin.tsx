@@ -77,7 +77,7 @@ const AdminLogin: React.FC = () => {
               SECURE ADMIN GATEWAY
             </span>
             <h1 className="text-2xl md:text-3xl font-bold font-sans tracking-tight text-slate-900 mb-2">
-              CaliberDesk Control Panel
+              tym2muv Control Panel
             </h1>
             <p className="text-slate-600 text-xs md:text-sm max-w-md mx-auto font-medium">
               Please authenticate using authorized administrative credentials to access command consoles, moderation tools, and global listings.

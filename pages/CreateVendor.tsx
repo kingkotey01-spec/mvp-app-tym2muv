@@ -83,12 +83,12 @@ const CreateVendor: React.FC = () => {
         socials: {
           ...user.socials,
           phone: formData.phone,
-          website: formData.agencyName ? `https://caliberdesk.com/agent/${user.id}` : undefined
+          website: formData.agencyName ? `https://tym2muv.com/agent/${user.id}` : undefined
         }
       });
 
       // 2. Perform any additional metadata updates or direct Supabase inserts if necessary
-      // For standard setup in CaliberDesk, setting the role to 'Agent' is the primary trigger.
+      // For standard setup in tym2muv, setting the role to 'Agent' is the primary trigger.
       // We will update the role in profiles setting it to 'Agent'
       await updateUserRole(user.id, 'Agent');
 
