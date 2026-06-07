@@ -252,6 +252,47 @@ const ListingDetails: React.FC = () => {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setToastMessage("Link copied to clipboard! 📋");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      })
+      .catch((err) => {
+        console.error("Failed to copy link:", err);
+        setToastMessage("Failed to copy link. Please copy it from url bar.");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      });
+  };
+
+  const handleShareListing = async () => {
+    if (!listing) return;
+    const url = window.location.href;
+    const shareData = {
+      title: listing.title || 'Property on tym2muv',
+      text: `Check out this amazing property on tym2muv: ${listing.title} at ${listing.location}`,
+      url: url,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        setToastMessage("Shared successfully!");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error("Error sharing:", err);
+          copyToClipboard(url);
+        }
+      }
+    } else {
+      copyToClipboard(url);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans pb-24">
       {/* Header / Navigation */}
@@ -271,19 +312,14 @@ const ListingDetails: React.FC = () => {
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
               }}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-green-600 bg-green-50 hover:bg-green-100"
+              title="Share on WhatsApp"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg>
             </button>
             <button 
-              onClick={() => {
-                 if (navigator.share) {
-                    navigator.share({
-                        title: listing?.title || 'Property on tym2muv',
-                        url: window.location.href
-                    }).catch(console.error);
-                 }
-              }}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+              onClick={handleShareListing}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-brand-600 bg-brand-50 hover:bg-brand-100"
+              title="Share Listing"
             >
               <Icon name="share2" size={20} />
             </button>
@@ -292,6 +328,7 @@ const ListingDetails: React.FC = () => {
               className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
                 isSaved ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'hover:bg-slate-100 text-slate-700'
               }`}
+              title={isSaved ? "Saved to Favorites" : "Save Property"}
             >
               <Icon name="heart" size={20} className={isSaved ? "fill-red-500" : ""} />
             </button>
@@ -331,6 +368,46 @@ const ListingDetails: React.FC = () => {
                 <Icon name="clock" size={9} />
                 Posted {listing.datePosted}
               </p>
+            </div>
+
+            {/* Column 1 Row 2.5 - Quick Action Buttons */}
+            <div className="grid grid-cols-3 gap-3 py-3 border-b border-slate-100">
+              <button
+                onClick={handleToggleSave}
+                className={`py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all duration-200 flex items-center justify-center gap-2 border cursor-pointer hover:scale-[1.02] ${
+                  isSaved 
+                  ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100/80' 
+                  : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-slate-100'
+                }`}
+                title={isSaved ? "Saved to Favorites" : "Save Property"}
+              >
+                <Icon name="heart" size={14} className={isSaved ? "fill-red-500" : ""} />
+                <span>{isSaved ? 'Saved' : 'Save'}</span>
+              </button>
+
+              <button
+                onClick={handleShareListing}
+                className="py-2.5 px-3 bg-brand-50 text-brand-700 border border-brand-100 rounded-xl text-xs font-extrabold hover:bg-brand-100/80 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
+                title="Share Listing with friends"
+              >
+                <Icon name="share2" size={14} />
+                <span>Share</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const url = window.location.href;
+                  const text = `Check out this property on tym2muv: ${listing?.title || 'Property'} - ${url}`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+                className="py-2.5 px-3 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl text-xs font-extrabold hover:bg-emerald-100/80 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
+                title="Share via WhatsApp"
+              >
+                <svg className="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.004 0C5.372 0 0 5.372 0 12c0 2.112.551 4.164 1.597 5.977l-1.6 5.85 5.992-1.569c1.758.956 3.738 1.464 5.753 1.464H12c6.627 0 12-5.373 12-12s-5.373-12-12-12zm.172 21.84c-1.899 0-3.76-.51-5.385-1.472l-.387-.23-3.559.932.951-3.468-.252-.401c-1.057-1.685-1.616-3.64-1.614-5.65.004-5.831 4.75-10.575 10.584-10.575 2.825.001 5.48 1.1 7.48 3.102 1.999 2 3.098 4.66 3.095 7.487-.005 5.832-4.75 10.575-10.567 10.575zm5.794-7.904c-.318-.16-1.88-.928-2.179-1.037-.298-.11-.516-.16-.732.16-.217.32-.838 1.037-1.026 1.256-.189.218-.378.245-.696.086-1.423-.715-2.483-1.332-3.473-3.024-.26-.445.26-.413.743-1.378.08-.16.04-.3-.02-.46-.06-.16-.516-1.256-.708-1.71-.186-.45-.37-.387-.513-.394-.132-.007-.284-.007-.436-.007s-.4.057-.61.284c-.21.228-.802.784-.802 1.91s.816 2.21 1.026 2.49c.21.28 1.625 2.48 3.935 3.48.55.237 1.062.392 1.423.506.63.2 1.203.172 1.655.105.503-.075 1.547-.632 1.765-1.214.218-.58.218-1.08.152-1.185-.065-.105-.246-.16-.563-.32z"/>
+                </svg>
+                <span>WhatsApp</span>
+              </button>
             </div>
 
             {/* Column 1 Row 3 & 4 - Location */}
