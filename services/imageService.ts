@@ -1,44 +1,98 @@
-import { apiUpload } from '../utils/api';
-import { getOptimizedImageUrl } from '../utils/imageOptimization';
+import { supabase } from '../supabaseClient';
 
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-const API_KEY = import.meta.env.VITE_CLOUDINARY_API_KEY;
+const STORAGE_BUCKET = 'listings';
 
 /**
- * Uploads an image to Cloudinary
- * Returns the secure_url of the uploaded image (or public_id). We'll return secure_url for ease of use
- * or public_id if requested. Let's return public_id for storage compactness, but we must make sure all
- * rendering handles public IDs vs http URLs transparently via getOptimizedImageUrl.
+ * Uploads an image to Supabase Storage.
+ * Returns the public URL of the uploaded image.
  */
-export async function uploadImageToCloudinary(file: File, onProgress?: (progress: number) => void): Promise<string> {
-  // Validate file type and size before uploading
+export async function uploadImageToSupabase(
+  file: File,
+  path: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-  if (!allowedTypes.includes(file.type)) throw new Error('Only JPEG, PNG, and WebP images are allowed.');
-  if (file.size > 5 * 1024 * 1024) throw new Error('Image must be smaller than 5MB.');
-
-  if (!CLOUD_NAME) {
-    console.warn('Cloudinary configuration is missing. Falling back if necessary.');
-    throw new Error('Cloudinary configuration is missing');
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Only JPEG, PNG, and WebP images are allowed.');
   }
-
-  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
-  const formData = new FormData();
-  formData.append('file', file);
-  // Upload preset required for unsigned uploads
-  formData.append('upload_preset', UPLOAD_PRESET || 'default_preset');
-  if (API_KEY) {
-      formData.append('api_key', API_KEY);
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('Image must be smaller than 5MB.');
   }
 
   onProgress?.(10);
-  
-  const response = await apiUpload(url, formData);
+
+  const { error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type,
+    });
+
+  if (error) throw error;
 
   onProgress?.(100);
 
-  // Return the public ID to store in DB
-  return response.public_id || response.secure_url;
+  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
-export { getOptimizedImageUrl };
+/**
+ * Uploads an avatar image to Supabase Storage (avatars bucket).
+ */
+export async function uploadAvatarToSupabase(
+  file: File,
+  path: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Only JPEG, PNG, and WebP images are allowed.');
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('Avatar must be smaller than 2MB.');
+  }
+
+  onProgress?.(10);
+
+  const { error } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type,
+    });
+
+  if (error) throw error;
+
+  onProgress?.(100);
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/**
+ * Returns a URL with optional width/height query params for basic resizing.
+ * Supabase Storage supports width/height transform via the `transform` option.
+ */
+export function getSupabaseImageUrl(
+  url: string | undefined | null,
+  options: { width?: number; height?: number } = {}
+): string {
+  const fallback =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E";
+
+  if (!url) return fallback;
+
+  // Already an external URL (Unsplash, etc.) — return as-is
+  if (!url.includes('supabase.co/storage')) return url;
+
+  try {
+    const urlObj = new URL(url);
+    if (options.width) urlObj.searchParams.set('width', String(options.width));
+    if (options.height) urlObj.searchParams.set('height', String(options.height));
+    return urlObj.toString();
+  } catch {
+    return url;
+  }
+}

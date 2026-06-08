@@ -167,7 +167,7 @@ export function propertyUpload() {
     const startUpload = Date.now();
     const mockImgRes = http.post(`${host}/rest/v1/property_images`, JSON.stringify({
       property_id: propertyId,
-      image_url: `https://cloudinary.mock.com/stress/prop_${propertyId}/img_stress.jpg`
+      image_url: `https://your-project.supabase.co/storage/v1/object/public/listings/prop_${propertyId}/img_stress.jpg`
     }), {
       headers: commonHeaders,
       tags: { name: 'Stress_UploadImage' },

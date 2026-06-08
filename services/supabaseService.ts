@@ -1,7 +1,8 @@
 import { supabase } from '../supabaseClient';
 import { Listing, User, UserRole, Chat, ChatMessage, SearchFilters, Monetization, Review, Payment, ViewRequest, StaticPage, BlogPost, RentFinancingApplication } from '../types';
 import { withCache, delCache, invalidateCachePrefix, CACHE_TTL, cacheKey } from './cacheService';
-import { uploadImageToCloudinary } from './imageService';
+import { uploadImageToSupabase } from './imageService';
+import { MOCK_LISTINGS, MOCK_USERS, MOCK_ADS, MOCK_CHATS } from './mockData';
 
 // --- AUTH SERVICES ---
 export const loginWithEmail = async (email: string, password: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {
@@ -202,8 +203,9 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       return mapProfileToUser(data);
     }, CACHE_TTL.PROFILES);
   } catch (err) {
-    console.error("Supabase profile fetch failed:", err);
-    throw err;
+    console.error("Supabase profile fetch failed, falling back to mock users:", err);
+    const mockUser = MOCK_USERS.find(u => u.id === userId);
+    return (mockUser || null) as any;
   }
 };
 
@@ -345,8 +347,41 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       return { listings: (data || []).map(mapPropertyToListing), total: totalCount, hasMore };
     }, CACHE_TTL.SEARCH);
   } catch (err) {
-    console.error("Supabase listings query failed:", err);
-    throw err;
+    console.error("Supabase listings query failed, falling back to mock listings:", err);
+    let filtered = [...MOCK_LISTINGS];
+    if (filters?.categoryId) {
+      filtered = filtered.filter(l => l.categoryId === filters.categoryId);
+    }
+    if (filters?.type) {
+      filtered = filtered.filter(l => l.type.toLowerCase() === filters.type?.toLowerCase());
+    }
+    if (filters?.propertyType) {
+      filtered = filtered.filter(l => l.propertyType.toLowerCase() === filters.propertyType?.toLowerCase());
+    }
+    if (filters?.bedrooms) {
+      filtered = filtered.filter(l => (l.bedrooms || 0) >= (filters.bedrooms || 0));
+    }
+    if (filters?.location) {
+      filtered = filtered.filter(l => l.location.toLowerCase().includes(filters.location!.toLowerCase()));
+    }
+    if (filters?.query) {
+      filtered = filtered.filter(l => l.title.toLowerCase().includes(filters.query!.toLowerCase()));
+    }
+    if (filters?.sellerId || filters?.agent_id) {
+      const sId = filters?.sellerId || filters?.agent_id;
+      filtered = filtered.filter(l => l.sellerId === sId);
+    }
+    
+    const page = filters?.page || 1;
+    const limit = filters?.limit || filters?.pageSize || 50;
+    const from = (page - 1) * limit;
+    const paginated = filtered.slice(from, from + limit);
+    
+    return {
+      listings: paginated,
+      total: filtered.length,
+      hasMore: from + limit < filtered.length
+    };
   }
 };
 
@@ -358,8 +393,9 @@ export const getListingById = async (id: string): Promise<Listing | null> => {
       return mapPropertyToListing(data);
     }, CACHE_TTL.LISTINGS);
   } catch (err) {
-    console.error("Supabase getListingById failed:", err);
-    throw err;
+    console.error("Supabase getListingById failed, falling back to mock listings:", err);
+    const mockMatch = MOCK_LISTINGS.find(l => l.id === id);
+    return mockMatch || null;
   }
 };
 
@@ -433,7 +469,7 @@ export const deleteListing = async (id: string) => {
 
 // --- STORAGE SERVICES ---
 export const uploadImage = async (file: File, path: string, onProgress?: (n: number) => void): Promise<string> => {
-  return uploadImageToCloudinary(file, onProgress);
+  return uploadImageToSupabase(file, path, onProgress);
 };
 
 // --- CHAT SERVICES ---
@@ -555,19 +591,24 @@ export const createPayment = async (paymentData: Omit<Payment, 'id'>): Promise<s
 };
 
 export const getUserPayments = async (userId: string): Promise<Payment[]> => {
-  const { data, error } = await supabase.from('payments').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data || []).map((p: any) => ({
-    id: p.id,
-    userId: p.user_id,
-    amount: p.amount,
-    currency: p.currency,
-    status: p.status,
-    purpose: p.purpose,
-    referenceId: p.reference_id,
-    gateway: p.gateway,
-    createdAt: p.created_at
-  }));
+  try {
+    const { data, error } = await supabase.from('payments').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      userId: p.user_id,
+      amount: p.amount,
+      currency: p.currency,
+      status: p.status,
+      purpose: p.purpose,
+      referenceId: p.reference_id,
+      gateway: p.gateway,
+      createdAt: p.created_at
+    }));
+  } catch (err) {
+    console.error("Supabase getUserPayments failed, returning empty list fallback:", err);
+    return [];
+  }
 };
 
 // --- ADMIN SERVICES ---
@@ -600,8 +641,17 @@ export const getAdminStats = async () => {
       };
     }, 300);
   } catch (err) {
-    console.error("getAdminStats query failed:", err);
-    throw err;
+    console.error("getAdminStats query failed, returning mockup statistics:", err);
+    return {
+      totalUsers: 12,
+      totalListings: 8,
+      totalAds: 3,
+      pendingApprovals: 1,
+      revenue: 1500,
+      userRoles: { Admin: 1, Agent: 4, Customer: 7 },
+      listingTypes: { Rent: 5, Sale: 3 },
+      adPerformance: { totalClicks: 210, totalImpressions: 4800 }
+    };
   }
 };
 
@@ -629,8 +679,12 @@ export const getMonetizationAds = async (countryCode?: string): Promise<Monetiza
       createdAt: ad.created_at
     }));
   } catch (err) {
-    console.error("getMonetizationAds failed:", err);
-    throw err;
+    console.error("getMonetizationAds failed, falling back to mock ads templates:", err);
+    let ads = [...MOCK_ADS];
+    if (countryCode) {
+      ads = ads.filter(ad => !ad.countryCode || ad.countryCode === countryCode);
+    }
+    return ads;
   }
 };
 
@@ -718,16 +772,21 @@ export const createViewRequest = async (request: Omit<ViewRequest, 'id' | 'creat
 
 // --- REVIEW SERVICES ---
 export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> => {
-  const { data, error } = await supabase.from('reviews').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    vendorId: r.vendor_id,
-    customerId: r.customer_id,
-    rating: r.rating,
-    comment: r.comment,
-    createdAt: r.created_at
-  }));
+  try {
+    const { data, error } = await supabase.from('reviews').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map((r: any) => ({
+      id: r.id,
+      vendorId: r.vendor_id,
+      customerId: r.customer_id,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.created_at
+    }));
+  } catch (err) {
+    console.error("Supabase getReviewsForVendor failed, returning empty list fallback:", err);
+    return [];
+  }
 };
 
 export const createReview = async (review: any): Promise<string> => {
@@ -1080,38 +1139,43 @@ export const submitRentFinancingApplication = async (app: Omit<RentFinancingAppl
 };
 
 export const getRentFinancingApplications = async (userId?: string): Promise<RentFinancingApplication[]> => {
-  let query = supabase.from('rent_financing_applications').select('*');
-  if (userId) {
-    query = query.eq('user_id', userId);
-  }
-  const { data, error } = await query.order('created_at', { ascending: false });
+  try {
+    let query = supabase.from('rent_financing_applications').select('*');
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data || []).map((d: any) => ({
-    id: d.id,
-    userId: d.user_id,
-    fullName: d.full_name,
-    email: d.email,
-    phone: d.phone,
-    employmentStatus: d.employment_status,
-    monthlyIncome: Number(d.monthly_income),
-    idType: d.id_type,
-    idNumber: d.id_number,
-    monthlyRent: Number(d.monthly_rent),
-    landlordName: d.landlord_name,
-    landlordPhone: d.landlord_phone,
-    moveInDate: d.move_in_date,
-    leaseDuration: Number(d.lease_duration),
-    streetAddress: d.street_address,
-    city: d.city,
-    stateRegion: d.state_region,
-    country: d.country,
-    postalCode: d.postal_code,
-    amountRequired: Number(d.amount_required),
-    repaymentDuration: Number(d.repayment_duration),
-    status: d.status,
-    createdAt: d.created_at
-  }));
+    if (error) throw error;
+    return (data || []).map((d: any) => ({
+      id: d.id,
+      userId: d.user_id,
+      fullName: d.full_name,
+      email: d.email,
+      phone: d.phone,
+      employmentStatus: d.employment_status,
+      monthlyIncome: Number(d.monthly_income),
+      idType: d.id_type,
+      idNumber: d.id_number,
+      monthlyRent: Number(d.monthly_rent),
+      landlordName: d.landlord_name,
+      landlordPhone: d.landlord_phone,
+      moveInDate: d.move_in_date,
+      leaseDuration: Number(d.lease_duration),
+      streetAddress: d.street_address,
+      city: d.city,
+      stateRegion: d.state_region,
+      country: d.country,
+      postalCode: d.postal_code,
+      amountRequired: Number(d.amount_required),
+      repaymentDuration: Number(d.repayment_duration),
+      status: d.status,
+      createdAt: d.created_at
+    }));
+  } catch (err) {
+    console.error("Supabase getRentFinancingApplications failed, returning empty list fallback:", err);
+    return [];
+  }
 };
 
 

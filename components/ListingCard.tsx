@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +8,6 @@ import { generateListingTitle } from '../utils/listingUtils';
 import { useAuth } from '../context/AuthContext';
 import { useComparison } from '../context/ComparisonContext';
 import { getSymbolFromCode } from '../services/location';
-import { getOptimizedImageUrl } from '../utils/imageOptimization';
 import ResponsiveImage from './ResponsiveImage';
 import { getUserProfile } from '../services/supabaseService';
 

@@ -320,17 +320,16 @@ const PostAd: React.FC = () => {
   };
 
   const removeImage = (indexToRemove: number) => {
-    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
-    // Also need to remove from imageFiles if it was a new upload
-    // This is a bit tricky since images contains both URLs and base64 previews
-    // For simplicity, we'll just filter both by index if we assume they match
-    // But they don't necessarily match if some are existing URLs.
-    // Let's refine this:
     const imageToRemove = images[indexToRemove];
-    if (imageToRemove.startsWith('data:')) {
-        // It's a new file, find its index in imageFiles
-        // This is still not perfect but better
-        setImageFiles(prev => prev.filter((_, i) => i !== (indexToRemove - images.filter(img => img.startsWith('http')).length)));
+
+    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
+
+    if (imageToRemove && imageToRemove.startsWith('data:')) {
+      // Count how many existing http images come before this index
+      const existingHttpCount = images.slice(0, indexToRemove).filter(img => img.startsWith('http')).length;
+      // The position in imageFiles is the index minus the number of http images before it
+      const fileIndex = indexToRemove - existingHttpCount;
+      setImageFiles(prev => prev.filter((_, i) => i !== fileIndex));
     }
   };
 

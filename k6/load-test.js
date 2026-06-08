@@ -233,7 +233,7 @@ export function propertyUpload() {
 
       const imgRes = http.post(`${host}/rest/v1/property_images`, JSON.stringify({
         property_id: propertyId,
-        image_url: `https://cloudinary.mock.com/uploads/prop_${propertyId}/img_${i}.jpg`
+        image_url: `https://your-project.supabase.co/storage/v1/object/public/listings/prop_${propertyId}/img_${i}.jpg`
       }), {
         headers: commonHeaders,
         tags: { name: 'UploadListingImage' },
