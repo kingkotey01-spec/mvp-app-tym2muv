@@ -101,7 +101,7 @@ const mapProfileToUser = (profileData: any): User => {
     savedListings: profileData.savedListings || [],
     email: profileData.email || '',
     socials: profileData.socials || {},
-    agencyName: profileData.agency_name
+    agencyName: profileData.agency_name || profileData.socials?.agencyName || profileData.socials?.agency_name || undefined
   };
 };
 
@@ -222,7 +222,28 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
   
   if (Object.keys(dbUpdates).length > 0) {
     const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
-    if (error) throw error;
+    
+    if (error) {
+      const isMissingColumnError = error.code === '42703' || 
+                                   error.message?.includes('agency_name') || 
+                                   error.message?.includes('column') || 
+                                   error.message?.includes('schema cache');
+                                   
+      if (isMissingColumnError && dbUpdates.agency_name !== undefined) {
+        console.warn("Retrying profile update without direct agency_name column, falling back to 'socials' JSON attribute.");
+        const originalAgencyName = dbUpdates.agency_name;
+        delete dbUpdates.agency_name;
+        dbUpdates.socials = {
+          ...(dbUpdates.socials || {}),
+          agencyName: originalAgencyName
+        };
+        const { error: retryError } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
+        if (retryError) throw retryError;
+      } else {
+        throw error;
+      }
+    }
+    
     await delCache(cacheKey('profile', userId));
   }
 };
