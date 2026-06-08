@@ -19,7 +19,7 @@ import SkeletonCard from '../components/SkeletonCard';
 const ListingDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<User | null>(null);
   const [similarListings, setSimilarListings] = useState<Listing[]>([]);
@@ -85,7 +85,7 @@ const ListingDetails: React.FC = () => {
             metaOgDesc.setAttribute('property', 'og:description');
             document.head.appendChild(metaOgDesc);
           }
-          metaOgDesc.setAttribute('content', `${data.location} - ${data.bedrooms} Beds, ${data.bathrooms} Baths`);
+          metaOgDesc.setAttribute('content', `${data.location || 'Unknown Location'} - ${data.bedrooms || 0} Beds, ${data.bathrooms || 0} Baths`);
 
           let metaOgImage = document.querySelector('meta[property="og:image"]');
           if (!metaOgImage) {
@@ -104,7 +104,7 @@ const ListingDetails: React.FC = () => {
           const { listings: similar } = await getListings({
             categoryId: data.categoryId,
             limit: 4,
-            countryCode: data.location.split(',').pop()?.trim() || 'GH'
+            countryCode: (data.location || 'Accra, GH').split(',').pop()?.trim() || 'GH'
           });
           setSimilarListings(similar.filter(l => l.id !== id));
         } else {
@@ -168,7 +168,7 @@ const ListingDetails: React.FC = () => {
   const images = imagesList.filter(Boolean).length > 0 ? imagesList.filter(Boolean) as string[] : [FALLBACK_IMAGE];
   
   // Extract location parts
-  const locationParts = listing.location.split(',').map(p => p.trim());
+  const locationParts = (listing.location || 'Accra, GH').split(',').map(p => p.trim());
   const area = locationParts[0] || '';
   const city = locationParts[1] || '';
 

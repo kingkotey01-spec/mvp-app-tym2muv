@@ -80,6 +80,7 @@ const CreateVendor: React.FC = () => {
         name: formData.name,
         bio: formData.bio,
         location: formData.location,
+        agencyName: formData.agencyName,
         socials: {
           ...user.socials,
           phone: formData.phone,

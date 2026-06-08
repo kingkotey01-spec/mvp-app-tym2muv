@@ -82,11 +82,10 @@ const Profile: React.FC = () => {
         setUser(u);
         if (u) {
           // Set correct default active tab based on role
-          if (u.role === 'Tenant') {
-            setActiveTab('saved');
-          } else {
-            setActiveTab('listings');
-          }
+          const defaultTab =
+            u.role === 'Tenant' ? 'saved' :
+            (u.role === 'Agent' || u.role === 'Admin') ? 'listings' : 'reviews';
+          setActiveTab(defaultTab);
 
           // Fetch listings and reviews in parallel
           const [listingsRes, reviewsRes] = await Promise.all([
@@ -245,8 +244,10 @@ const Profile: React.FC = () => {
                             <span>({user.reviewCount} Reviews)</span>
                         </div>
                         <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                            <Icon name="activity" size={16} className="text-brand-500" />
-                            Member since {user.memberSince}
+                             <Icon name="activity" size={16} className="text-brand-500" />
+                             Member since {new Date(user.memberSince).toLocaleDateString('en-US', {
+                               month: 'long', year: 'numeric'
+                             })}
                         </div>
                     </div>
                 </div>
@@ -305,7 +306,7 @@ const Profile: React.FC = () => {
                       </button>
                     ) : null}
                     
-                    {user.role !== 'Tenant' && (
+                    {(user.role === 'Agent' || user.role === 'Admin') && (
                       <button 
                          onClick={() => setActiveTab('listings')}
                          className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'listings' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
@@ -319,6 +320,14 @@ const Profile: React.FC = () => {
                          className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'pro' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1.5`}
                       >
                           <Icon name="zap" size={16} className={activeTab === 'pro' ? 'text-brand-500' : 'text-slate-400'} /> Agent Pro
+                      </button>
+                    ) : null}
+                    {isMe ? (
+                      <button 
+                         onClick={() => setActiveTab('inbox')}
+                         className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'inbox' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1.5`}
+                      >
+                          <Icon name="mail" size={16} className={activeTab === 'inbox' ? 'text-brand-500' : 'text-slate-400'} /> Simulated Inbox
                       </button>
                     ) : null}
                     <button 
@@ -377,6 +386,8 @@ const Profile: React.FC = () => {
                         <p className="text-slate-500 mt-1">You haven't saved any listings to your favorites yet.</p>
                     </div>
                 )
+            ) : activeTab === 'inbox' ? (
+                <SimulatedInbox />
             ) : (
                 <div className="space-y-8">
                     {!isMe && currentUser && (

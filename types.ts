@@ -83,6 +83,7 @@ export interface SearchFilters {
   endDate?: string;
   query?: string;
   isAdminQuery?: boolean;
+  savedIds?: string[];
 }
 
 export type UserRole = 'Agent' | 'Customer' | 'Admin' | 'Tenant';
@@ -100,6 +101,7 @@ export interface User {
   verified: boolean;
   role: UserRole;
   savedListings?: string[]; // Array of saved listing IDs
+  agencyName?: string;
   socials: {
     whatsapp?: string;
     facebook?: string;

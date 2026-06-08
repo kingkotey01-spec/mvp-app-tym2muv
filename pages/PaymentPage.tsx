@@ -9,6 +9,20 @@ import { getSymbolFromCode } from '../services/location';
 import { generateIdempotencyKey } from '../utils/idempotency';
 import { logger } from '../utils/logger';
 
+const loadPaystackScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if ((window as any).PaystackPop) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const PaymentPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -18,6 +32,7 @@ const PaymentPage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showBankDetails, setShowBankDetails] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+  const [isLoadingListing, setIsLoadingListing] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -25,89 +40,81 @@ const PaymentPage: React.FC = () => {
       return;
     }
     const fetchListing = async () => {
+      setIsLoadingListing(true);
       if (id) {
-        const data = await getListingById(id);
-        setListing(data);
-        if (data && user) {
-          setIdempotencyKey(await generateIdempotencyKey(user.id, data.id, data.price));
+        try {
+          const data = await getListingById(id);
+          setListing(data);
+          if (data && user) {
+            setIdempotencyKey(await generateIdempotencyKey(user.id, data.id, data.price));
+          }
+        } catch (err) {
+          console.error("Error setting up payment details:", err);
         }
       }
+      setIsLoadingListing(false);
     };
     fetchListing();
   }, [id, user, navigate]);
 
-    const loadPaystackScript = () => {
-      return new Promise((resolve) => {
-        if ((window as any).PaystackPop) {
-          resolve(true);
-          return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://js.paystack.co/v1/inline.js';
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.body.appendChild(script);
+  // Trigger script load early
+  useEffect(() => {
+    loadPaystackScript();
+  }, []);
+
+  const processPaymentWithRetry = async (reference: string, retries = 3, delay = 1000): Promise<void> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('process-payment', {
+        body: { reference, listingId: listing!.id, idempotencyKey }
       });
-    };
+      
+      // 409 Conflict can be handled if idempotency checks out
+      if (error || !data?.success) {
+         throw new Error(data?.error || 'Payment verification failed');
+      }
+      setIsSuccess(true);
+    } catch (err: any) {
+      logger.error("Payment processing error", { error: err, reference, idempotencyKey });
+      
+      // Only retry on network errors or 5xx, wait, edge function invoke throws error if not 2xx.
+      // We'll just retry for any failure until retries exhausted.
+      if (retries > 0) {
+         logger.warn(`Retrying payment verification... ${retries} attempts left`);
+         await new Promise(resolve => setTimeout(resolve, delay));
+         return processPaymentWithRetry(reference, retries - 1, delay * 2); // Exponential backoff
+      }
+      
+      throw err;
+    }
+  };
+
+  const handlePaystackPayment = async () => {
+    if (!listing || !user || !idempotencyKey) return;
     
-    // Trigger script load early
-    useEffect(() => {
-      loadPaystackScript();
-    }, []);
-
-    const processPaymentWithRetry = async (reference: string, retries = 3, delay = 1000): Promise<void> => {
-      try {
-        const { data, error } = await supabase.functions.invoke('process-payment', {
-          body: { reference, listingId: listing!.id, idempotencyKey }
-        });
-        
-        // 409 Conflict can be handled if idempotency checks out
-        if (error || !data?.success) {
-           throw new Error(data?.error || 'Payment verification failed');
-        }
-        setIsSuccess(true);
-      } catch (err: any) {
-        logger.error("Payment processing error", { error: err, reference, idempotencyKey });
-        
-        // Only retry on network errors or 5xx, wait, edge function invoke throws error if not 2xx.
-        // We'll just retry for any failure until retries exhausted.
-        if (retries > 0) {
-           logger.warn(`Retrying payment verification... ${retries} attempts left`);
-           await new Promise(resolve => setTimeout(resolve, delay));
-           return processPaymentWithRetry(reference, retries - 1, delay * 2); // Exponential backoff
-        }
-        
-        throw err;
-      }
-    };
-
-    const handlePaystackPayment = async () => {
-      if (!listing || !user || !idempotencyKey) return;
-      
-      const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-      if (!PAYSTACK_KEY) {
-        alert('Payment is not configured. Please contact support.');
-        return;
-      }
-      
-      if (import.meta.env.PROD && !PAYSTACK_KEY.startsWith('pk_live_')) {
-        console.error('WARNING: Using Paystack test key in production!');
-      }
-      
-      const loaded = await loadPaystackScript();
-      if (!loaded || !(window as any).PaystackPop) {
-         alert("Could not load Paystack. Please check your connection.");
-         return;
-      }
-      
-      const handler = (window as any).PaystackPop.setup({
-        key: PAYSTACK_KEY,
-        email: user.email || user.socials?.email || 'customer@example.com',
-        amount: listing.price * 100, // Amount in kobo/pesewas
-        currency: listing.currency || 'GHS',
-        ref: `TYM_${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`,
-        callback: async (response: any) => {
-          setIsProcessing(true);
+    const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+    if (!PAYSTACK_KEY) {
+      alert('Payment is not configured. Please contact support.');
+      return;
+    }
+    
+    if (import.meta.env.PROD && !PAYSTACK_KEY.startsWith('pk_live_')) {
+      console.error('WARNING: Using Paystack test key in production!');
+    }
+    
+    const loaded = await loadPaystackScript();
+    if (!loaded || !(window as any).PaystackPop) {
+       alert("Could not load Paystack. Please check your connection.");
+       return;
+    }
+    
+    const handler = (window as any).PaystackPop.setup({
+      key: PAYSTACK_KEY,
+      email: user.email || user.socials?.email || 'customer@example.com',
+      amount: listing.price * 100, // Amount in kobo/pesewas
+      currency: listing.currency || 'GHS',
+      ref: `TYM_${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`,
+      callback: async (response: any) => {
+        setIsProcessing(true);
         try {
           await processPaymentWithRetry(response.reference);
         } catch (err) {
@@ -125,7 +132,36 @@ const PaymentPage: React.FC = () => {
     handler.openIframe();
   };
 
-  if (!listing) return <div className="p-10 text-center">Loading secure checkout...</div>;
+  if (isLoadingListing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Icon name="loader" size={40} className="animate-spin text-brand-600" />
+          <p className="text-slate-500 font-medium font-sans animate-pulse">Loading secure checkout...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!listing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
+        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full text-center border border-slate-100">
+          <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-100">
+            <Icon name="alertTriangle" size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2 font-display">Listing Not Found</h2>
+          <p className="text-slate-500 mb-6 text-sm">The property you are trying to pay for is unavailable or does not exist.</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all font-sans"
+          >
+            Go back Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isSuccess) {
     return (

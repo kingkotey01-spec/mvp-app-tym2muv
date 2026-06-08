@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export const Logo: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`flex items-center gap-1 sm:gap-2 group cursor-pointer ${className}`}>

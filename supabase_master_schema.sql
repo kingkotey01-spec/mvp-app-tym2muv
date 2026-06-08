@@ -28,6 +28,11 @@ CREATE TABLE profiles (
     avatar_url TEXT,
     phone_number TEXT,
     is_blocked BOOLEAN DEFAULT false,
+    bio TEXT,
+    agency_name TEXT,
+    location TEXT,
+    socials JSONB DEFAULT '{}',
+    email TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

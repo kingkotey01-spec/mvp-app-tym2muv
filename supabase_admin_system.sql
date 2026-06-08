@@ -143,8 +143,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 -- View aggregating key metrics for admin insight
 CREATE OR REPLACE VIEW public.admin_dashboard_metrics WITH (security_invoker = true) AS
 SELECT
-    (SELECT COUNT(*) FROM public.profiles WHERE role = 'tenant') AS total_users,
-    (SELECT COUNT(*) FROM public.profiles WHERE role = 'agent') AS total_agents,
+    (SELECT COUNT(*) FROM public.profiles WHERE role::text = 'tenant' OR role::text = 'user') AS total_users,
+    (SELECT COUNT(*) FROM public.profiles WHERE role::text = 'agent') AS total_agents,
     (SELECT COUNT(*) FROM public.properties) AS total_properties,
     (SELECT COUNT(*) FROM public.rental_requests) AS total_rental_requests,
     (SELECT COUNT(*) FROM public.reports WHERE status = 'open') AS open_reports;

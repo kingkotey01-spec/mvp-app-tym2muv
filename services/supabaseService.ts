@@ -99,7 +99,9 @@ const mapProfileToUser = (profileData: any): User => {
     verified: profileData.verified || false,
     role: mappedRole,
     savedListings: profileData.savedListings || [],
-    socials: profileData.socials || {}
+    email: profileData.email || '',
+    socials: profileData.socials || {},
+    agencyName: profileData.agency_name
   };
 };
 
@@ -215,6 +217,8 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
   if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar;
   if (updates.location !== undefined) dbUpdates.location = updates.location;
   if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
+  if (updates.socials !== undefined) dbUpdates.socials = updates.socials;
+  if ((updates as any).agencyName !== undefined) dbUpdates.agency_name = (updates as any).agencyName;
   
   if (Object.keys(dbUpdates).length > 0) {
     const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
@@ -320,6 +324,7 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       }
       
       if (filters?.categoryId) query = query.eq('category_id', filters.categoryId);
+      if (filters?.savedIds && filters.savedIds.length > 0) query = query.in('id', filters.savedIds);
       if (filters?.type) query = query.eq('listing_type', filters.type);
       if (filters?.propertyType) query = query.eq('property_type', filters.propertyType);
       if (filters?.bedrooms) query = query.gte('bedrooms', filters.bedrooms);

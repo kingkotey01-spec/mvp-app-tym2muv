@@ -63,7 +63,7 @@ const AgentDashboard: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <h1 className="text-2xl font-bold text-slate-900">Agent Dashboard</h1>
-          <Link to="/post-ad" className="px-6 py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition">
+          <Link to="/post" className="px-6 py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition">
               Post New Property
           </Link>
       </div>

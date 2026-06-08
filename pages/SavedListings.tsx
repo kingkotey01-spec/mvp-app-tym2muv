@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getListings } from '../services/supabaseService';
+import { getListings, getSavedListingIds } from '../services/supabaseService';
 import { Listing } from '../types';
 import ListingCard from '../components/ListingCard';
 import Icon from '../components/Icon';
@@ -11,16 +11,25 @@ const SavedListings: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.savedListings?.length) { 
+    if (!user) { 
         setLoading(false); 
         return; 
     }
     const fetchSaved = async () => {
-        // Technically we would query them properly but we just simulate or fetch list
-        // Supabase has in() which should be used. However the instructions said:
-        // "Fetch saved listings by IDs (requires RPC or IN query — see note below)"
-        // Since we don't have an endpoint for that, let's use the provided naive implementation
-        setLoading(false);
+        try {
+          const ids = await getSavedListingIds(user.id);
+          if (!ids.length) { 
+              setListings([]);
+              setLoading(false); 
+              return; 
+          }
+          const { listings: saved } = await getListings({ savedIds: ids, limit: 50 });
+          setListings(saved);
+        } catch (err) {
+          console.error('Error fetching saved listings:', err);
+        } finally {
+          setLoading(false);
+        }
     };
     fetchSaved();
   }, [user]);

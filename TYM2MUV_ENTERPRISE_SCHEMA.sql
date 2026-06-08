@@ -44,6 +44,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     is_verified BOOLEAN DEFAULT false,
     fcm_token TEXT,                           -- Mobile Push Notifications
     device_id TEXT,
+    bio TEXT,
+    agency_name TEXT,
+    location TEXT,
+    socials JSONB DEFAULT '{}',
+    email TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

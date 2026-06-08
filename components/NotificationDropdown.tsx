@@ -4,25 +4,34 @@ import Icon from './Icon';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
-const DEFAULT_NOTIFICATIONS = [
-  { id: 1, title: 'New Message', text: 'You have a new message from Agent John', time: '5m ago', read: false, link: '/chat' },
-  { id: 2, title: 'Property Update', text: 'Price dropped for "Luxury Villa in Cantonments"', time: '1h ago', read: false, link: '/listing/1' },
-  { id: 3, title: 'Payment Success', text: 'Your premium ad payment was successful.', time: '1d ago', read: true, link: '/profile/me' },
-];
-
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   const [notifications, setNotifications] = useState(() => {
+    const profileLink = user?.id ? `/profile/${user.id}` : '/profile/me';
+    const initNotifications = [
+      { id: 1, title: 'New Message', text: 'You have a new message from Agent John', time: '5m ago', read: false, link: '/chat' },
+      { id: 2, title: 'Property Update', text: 'Price dropped for "Luxury Villa in Cantonments"', time: '1h ago', read: false, link: '/listing/1' },
+      { id: 3, title: 'Payment Success', text: 'Your premium ad payment was successful.', time: '1d ago', read: true, link: profileLink },
+    ];
     try {
       const cached = localStorage.getItem('tym2muv_notifications');
-      return cached ? JSON.parse(cached) : DEFAULT_NOTIFICATIONS;
+      return cached ? JSON.parse(cached) : initNotifications;
     } catch (e) {
-      return DEFAULT_NOTIFICATIONS;
+      return initNotifications;
     }
   });
+
+  // Update existing /profile/me links once user profile is loaded
+  useEffect(() => {
+    if (user?.id) {
+      setNotifications((prev: any[]) => 
+        prev.map(n => n.link === '/profile/me' ? { ...n, link: `/profile/${user.id}` } : n)
+      );
+    }
+  }, [user]);
 
   useEffect(() => {
     try {

@@ -143,8 +143,8 @@ BEGIN
     RAISE EXCEPTION 'Access denied';
   END IF;
 
-  SELECT COUNT(*) INTO total_users FROM profiles WHERE role = 'tenant';
-  SELECT COUNT(*) INTO total_agents FROM profiles WHERE role = 'agent';
+  SELECT COUNT(*) INTO total_users FROM profiles WHERE role::text = 'tenant' OR role::text = 'user';
+  SELECT COUNT(*) INTO total_agents FROM profiles WHERE role::text = 'agent';
   SELECT COUNT(*) INTO total_properties FROM properties;
   SELECT COUNT(*) INTO active_rentals FROM rental_agreements WHERE status = 'active';
   SELECT COUNT(*) INTO pending_requests FROM rental_requests WHERE status = 'pending';

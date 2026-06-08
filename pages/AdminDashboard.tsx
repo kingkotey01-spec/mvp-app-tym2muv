@@ -61,7 +61,7 @@ import {
   clearMockData 
 } from '../utils/seedMockData';
 import { User, Listing, Monetization, StaticPage, BlogPost } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getSymbolFromCode } from '../services/location';
 
 const COLORS = ['#ea580c', '#3b82f6', '#10b981', '#f59e0b'];
@@ -394,10 +394,11 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-    u.socials?.email?.toLowerCase().includes(debouncedSearch.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    const term = debouncedSearch.toLowerCase();
+    return u.name.toLowerCase().includes(term) || 
+      (u.email || u.socials?.email || '').toLowerCase().includes(term);
+  });
 
   const filteredListings = listings; // Search is now done server-side
 
@@ -657,7 +658,7 @@ const AdminDashboard: React.FC = () => {
                           <img src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80'} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-100 shadow-sm" />
                           <div>
                             <div className="font-bold text-gray-950 text-sm">{user.name}</div>
-                            <div className="text-xs text-slate-500 font-medium">{user.socials?.email}</div>
+                            <div className="text-xs text-slate-500 font-medium">{user.email || user.socials?.email || '—'}</div>
                           </div>
                         </div>
                       </td>

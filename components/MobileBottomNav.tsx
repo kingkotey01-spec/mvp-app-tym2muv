@@ -12,7 +12,7 @@ const MobileBottomNav = () => {
     { name: 'Search', path: '/search', icon: 'search' },
     { name: 'Saved', path: '/saved', icon: 'heart' },
     { name: 'Chat', path: '/chat', icon: 'messageCircle' },
-    { name: 'Profile', path: isAuthenticated ? '/profile/me' : '/signin', icon: 'user' },
+    { name: 'Profile', path: isAuthenticated && user?.id ? `/profile/${user.id}` : '/signin', icon: 'user' },
   ];
 
   return (

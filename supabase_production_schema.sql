@@ -30,6 +30,9 @@ CREATE TABLE profiles (
     is_verified BOOLEAN DEFAULT false,
     bio TEXT,
     agency_name TEXT, -- only relevant if role=agent
+    location TEXT,
+    socials JSONB DEFAULT '{}',
+    email TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

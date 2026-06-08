@@ -147,50 +147,50 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
   };
 
   return (
-    <div id="signin-root-container" className="min-h-screen w-full flex items-center justify-center px-4 py-8 relative overflow-hidden bg-gradient-to-tr from-purple-100/80 via-fuchsia-50/60 to-indigo-100/80 animate-fade-in">
+    <div id="signin-root-container" className="min-h-screen w-full flex items-center justify-center px-4 py-4 relative overflow-hidden bg-gradient-to-tr from-purple-100/80 via-fuchsia-50/60 to-indigo-100/80 animate-fade-in">
       {/* Heavy Quantum Field Ambient Glows */}
-      <div className="absolute top-1/4 left-1/4 w-[350px] h-[350px] bg-gradient-to-tr from-purple-400/20 to-indigo-300/20 rounded-full blur-[90px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-fuchsia-400/10 rounded-full blur-[80px] pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/4 w-[250px] h-[250px] bg-gradient-to-tr from-purple-400/20 to-indigo-300/20 rounded-full blur-[80px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[250px] h-[250px] bg-fuchsia-400/10 rounded-full blur-[70px] pointer-events-none"></div>
 
-      <div id="signin-container-card" className="w-full max-w-md bg-white/75 backdrop-blur-xl border border-white/60 rounded-3xl shadow-[0_20px_50px_rgba(147,51,234,0.08),inset_0_1px_2px_0_rgba(255,255,255,0.7)] p-6 md:p-8 relative overflow-hidden">
+      <div id="signin-container-card" className="w-full max-w-sm bg-white/75 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_12px_40px_rgba(147,51,234,0.06),inset_0_1px_2px_0_rgba(255,255,255,0.7)] p-4 md:p-5 relative overflow-hidden">
         {/* Neon Laser Security Framing */}
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-400/30 to-transparent"></div>
         <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-400/20 to-transparent"></div>
 
         <div className="relative z-10 flex flex-col items-center">
-          <Link to="/" className="mb-2">
-            <Logo className="scale-100 transition-all duration-300" />
+          <Link to="/" className="mb-1">
+            <Logo className="scale-90 transition-all duration-300" />
           </Link>
           
-          <div className="text-center mb-4">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-purple-500/20 bg-purple-50 text-brand-600 text-[9px] font-mono font-bold tracking-wider uppercase mb-1.5">
+          <div className="text-center mb-3">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-purple-500/10 bg-purple-50/50 text-brand-600 text-[8px] font-mono font-bold tracking-wider uppercase mb-1">
               <span className="w-1 h-1 rounded-full bg-brand-600 animate-pulse"></span>
               {showForgotPassword 
-                ? 'SECURE PASSWORD RECOVERY'
+                ? 'SECURE RECOVERY'
                 : isSignUp 
                   ? 'SECURE REGISTRATION' 
                   : 'SECURE AUTHENTICATION'
               }
             </span>
-            <h1 className="text-lg md:text-xl font-bold font-sans tracking-tight text-slate-900 mb-1">
+            <h1 className="text-base md:text-lg font-bold font-sans tracking-tight text-slate-900 leading-tight mb-0.5">
               {showForgotPassword
                 ? 'Reset Your Password'
                 : isSignUp 
-                  ? 'Create tym2muv Account' 
+                  ? 'Create Account' 
                   : 'Welcome to tym2muv'
               }
             </h1>
-            <p className="text-slate-500 text-[11px] max-w-xs mx-auto font-medium">
+            <p className="text-slate-500 text-[10px] max-w-xs mx-auto leading-normal">
               {showForgotPassword
                 ? 'Enter your verified email below for recovery.'
                 : isSignUp 
-                  ? 'Join our hyper-growth global workforce matching talent with top agents.'
-                  : 'Access your secure candidate dashboard.'
+                  ? 'Join our hyper-growth secure portal today.'
+                  : 'Access your secure dashboard.'
               }
             </p>
           </div>
 
-          <div className="space-y-4 w-full">
+          <div className="space-y-2.5 w-full">
             {supabaseStatusError && (
               <div id="supabase-offline-warning" className="bg-amber-500/10 border border-amber-500/20 text-amber-900 p-4 rounded-2xl text-[11px] leading-relaxed shadow-sm">
                 <div className="flex items-start gap-3">
@@ -221,12 +221,12 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
 
             {/* Futuristic Role Switcher */}
             {!showForgotPassword && (
-              <div className="grid grid-cols-2 p-1 bg-slate-950/5 rounded-2xl border border-purple-100 shadow-inner">
+              <div className="grid grid-cols-2 p-0.5 bg-slate-950/5 rounded-xl border border-purple-100 shadow-inner">
                 <button
                   id="role-tenant-btn"
                   type="button"
                   onClick={() => setSelectedRole('Tenant')}
-                  className={`py-2 text-[10px] font-mono font-bold rounded-xl transition-all duration-300 ${
+                  className={`py-1.5 text-[9px] font-mono font-bold rounded-lg transition-all duration-300 ${
                     selectedRole === 'Tenant'
                       ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900'
@@ -238,7 +238,7 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                   id="role-agent-btn"
                   type="button"
                   onClick={() => setSelectedRole('Agent')}
-                  className={`py-2 text-[10px] font-mono font-bold rounded-xl transition-all duration-300 ${
+                  className={`py-1.5 text-[9px] font-mono font-bold rounded-lg transition-all duration-300 ${
                     selectedRole === 'Agent'
                       ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900'
@@ -251,12 +251,12 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
 
             {showForgotPassword ? (
               /* Forgotten Password Form */
-              <form onSubmit={handleForgotPasswordSubmit} className="space-y-3 w-full">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 tracking-wide block">Email Address</label>
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-2 w-full">
+                <div className="space-y-0.5">
+                  <label className="text-[10px] font-bold text-slate-700 tracking-wide block">Email Address</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Icon name="mail" size={14} />
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                      <Icon name="mail" size={13} />
                     </span>
                     <input
                       type="email"
@@ -264,16 +264,16 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       required
                       value={forgotPasswordEmail}
                       onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-xl text-xs focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
+                      className="w-full pl-8 pr-2.5 py-1.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-lg text-[11px] focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-1">
+                <div className="flex flex-col gap-1.5 pt-0.5">
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-sm hover:opacity-95 text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer font-sans"
+                    className="w-full py-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-sm hover:opacity-95 text-[11px] transition-all flex items-center justify-center gap-1 cursor-pointer font-sans"
                   >
                     {isLoading ? 'SENDING...' : 'Send Recovery Link'}
                   </button>
@@ -285,7 +285,7 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       setError(null);
                       setMessage(null);
                     }}
-                    className="w-full py-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 font-bold rounded-xl text-xs transition-all flex items-center justify-center cursor-pointer font-sans"
+                    className="w-full py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 font-bold rounded-lg text-[11px] transition-all flex items-center justify-center cursor-pointer font-sans"
                   >
                     Back to Sign In
                   </button>
@@ -293,13 +293,13 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
               </form>
             ) : (
               /* Credential Authentication form */
-              <form onSubmit={handleCredentialAuth} className="space-y-3 w-full">
+              <form onSubmit={handleCredentialAuth} className="space-y-2 w-full">
                 {isSignUp && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block">Full Name</label>
+                  <div className="space-y-0.5">
+                    <label className="text-[10px] font-bold text-slate-700 block">Full Name</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Icon name="user" size={14} />
+                      <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                        <Icon name="user" size={13} />
                       </span>
                       <input
                         type="text"
@@ -307,17 +307,17 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-xl text-xs focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
+                        className="w-full pl-8 pr-2.5 py-1.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-lg text-[11px] focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
                       />
                     </div>
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block">Email Address</label>
+                <div className="space-y-0.5">
+                  <label className="text-[10px] font-bold text-slate-700 block">Email Address</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Icon name="mail" size={14} />
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                      <Icon name="mail" size={13} />
                     </span>
                     <input
                       type="email"
@@ -325,14 +325,14 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-xl text-xs focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
+                      className="w-full pl-8 pr-2.5 py-1.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-lg text-[11px] focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-slate-700 block">Password</label>
+                    <label className="text-[10px] font-bold text-slate-700 block">Password</label>
                     {!isSignUp && (
                       <button
                         type="button"
@@ -341,15 +341,15 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                           setError(null);
                           setMessage(null);
                         }}
-                        className="text-[11px] font-bold text-purple-600 hover:text-purple-850 hover:underline transition-colors focus:outline-none cursor-pointer"
+                        className="text-[9px] font-bold text-purple-600 hover:text-purple-850 hover:underline transition-colors focus:outline-none cursor-pointer"
                       >
                         Forgot?
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Icon name="lock" size={14} />
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                      <Icon name="lock" size={13} />
                     </span>
                     <input
                       type="password"
@@ -357,22 +357,22 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-xl text-xs focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
+                      className="w-full pl-8 pr-2.5 py-1.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-lg text-[11px] focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
                     />
                   </div>
                 </div>
 
                 {isSignUp && (
-                  <div id="terms-checkbox-container" className="flex items-start gap-2 bg-purple-50/40 border border-purple-100/50 p-2.5 rounded-xl transition-all">
+                  <div id="terms-checkbox-container" className="flex items-start gap-1.5 bg-purple-50/40 border border-purple-100/50 p-1.5 rounded-lg transition-all">
                     <input
                       id="signup-agree-checkbox"
                       type="checkbox"
                       checked={agreedToTerms}
                       onChange={(e) => setAgreedToTerms(e.target.checked)}
-                      className="mt-0.5 h-3.5 w-3.5 rounded border-purple-200 text-purple-600 focus:ring-purple-500 hover:border-purple-400 accent-purple-600 cursor-pointer"
+                      className="mt-0.5 h-3 w-3 rounded border-purple-200 text-purple-600 focus:ring-purple-500 hover:border-purple-400 accent-purple-600 cursor-pointer"
                     />
-                    <label id="signup-agree-label" htmlFor="signup-agree-checkbox" className="text-[10px] text-slate-650 font-semibold cursor-pointer leading-tight select-none">
-                      I accept the <Link to="/info/terms" className="text-purple-600 hover:underline font-bold" target="_blank">Terms</Link> & <Link to="/info/privacy" className="text-purple-600 hover:underline font-bold" target="_blank">Privacy Policy</Link>.
+                    <label id="signup-agree-label" htmlFor="signup-agree-checkbox" className="text-[9px] text-slate-650 font-semibold cursor-pointer leading-tight select-none">
+                      I accept the <Link to="/info/terms" className="text-purple-600 hover:underline font-bold" target="_blank">Terms</Link> & <Link to="/info/privacy" className="text-purple-600 hover:underline font-bold" target="_blank">Privacy</Link>.
                     </label>
                   </div>
                 )}
@@ -380,7 +380,7 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                 <button
                   type="submit"
                   disabled={isLoading || (isSignUp && !agreedToTerms)}
-                  className="w-full py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md text-xs transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                  className="w-full py-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-sm text-[11px] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1 cursor-pointer mt-1"
                 >
                   {isLoading ? (
                     <span>PROCESSING...</span>
@@ -394,18 +394,18 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
             {/* Separator */}
             {!showForgotPassword && (
               <>
-                <div className="relative flex items-center justify-center my-2">
+                <div className="relative flex items-center justify-center my-1.5">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-slate-200"></div>
                   </div>
-                  <span className="relative px-3 bg-white/70 backdrop-blur-md text-[9px] font-mono font-bold text-slate-400 tracking-wider uppercase">
+                  <span className="relative px-2 bg-white/70 backdrop-blur-md text-[8px] font-mono font-bold text-slate-400 tracking-wider uppercase">
                     SOCIAL GATES
                   </span>
                 </div>
 
                 {/* Compact Social Buttons */}
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex justify-center items-center gap-4 py-1">
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex justify-center items-center gap-3 py-0.5">
                     {/* Google */}
                     <button
                       id="auth-google-btn"
@@ -413,9 +413,9 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       onClick={handleGoogleAuth}
                       disabled={isLoading || (isSignUp && !agreedToTerms)}
                       title={isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
-                      className="w-12 h-12 flex items-center justify-center bg-white border border-purple-100 hover:border-brand-500/30 rounded-2xl transition-all shadow-sm hover:scale-105 active:scale-95 disabled:opacity-40 group"
+                      className="w-9 h-9 flex items-center justify-center bg-white border border-purple-100 hover:border-brand-500/30 rounded-xl transition-all shadow-sm hover:scale-105 active:scale-95 disabled:opacity-40 group"
                     >
-                      <svg className="w-6 h-6 transition-transform group-hover:scale-105" viewBox="0 0 24 24">
+                      <svg className="w-4.5 h-4.5 transition-transform group-hover:scale-105" viewBox="0 0 24 24">
                         <path fill="#EA4335" d="M12 5.04c1.62 0 3.08.56 4.22 1.66l3.15-3.15C17.43 1.74 14.93 1 12 1 7.22 1 3.19 3.73 1.25 7.73l3.8 2.95C5.97 7.15 8.73 5.04 12 5.04z" />
                         <path fill="#4285F4" d="M23.49 12.27c0-.82-.07-1.61-.21-2.38H12v4.51h6.44c-.28 1.48-1.12 2.73-2.38 3.58l3.7 2.87c2.16-2 3.43-4.94 3.43-8.58z" />
                         <path fill="#FBBC05" d="M5.05 14.68c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.25 7.17C.45 8.78 0 10.59 0 12.5s.45 3.72 1.25 5.33l3.8-3.15z" />
@@ -430,33 +430,33 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       onClick={handleLinkedInAuth}
                       disabled={isLoading || (isSignUp && !agreedToTerms)}
                       title={isSignUp ? 'Sign up with LinkedIn' : 'Sign in with LinkedIn'}
-                      className="w-12 h-12 flex items-center justify-center bg-[#0A66C2] hover:bg-[#004182] border border-transparent rounded-2xl transition-all shadow-sm hover:scale-105 active:scale-95 disabled:opacity-40 group"
+                      className="w-9 h-9 flex items-center justify-center bg-[#0A66C2] hover:bg-[#004182] border border-transparent rounded-xl transition-all shadow-sm hover:scale-105 active:scale-95 disabled:opacity-40 group"
                     >
-                      <svg className="w-6 h-6 fill-current text-white transition-transform group-hover:scale-105" viewBox="0 0 24 24">
+                      <svg className="w-4.5 h-4.5 fill-current text-white transition-transform group-hover:scale-105" viewBox="0 0 24 24">
                         <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                       </svg>
                     </button>
                   </div>
 
                   {isSignUp && !agreedToTerms && (
-                    <p id="consent-warning-msg" className="text-center text-[9px] font-mono text-purple-650 font-bold tracking-wider animate-pulse">
+                    <p id="consent-warning-msg" className="text-center text-[8px] font-mono text-purple-650 font-bold tracking-wider animate-pulse">
                       ⚡ ACCEPT REGISTRATION TO LOG IN
                     </p>
                   )}
                 </div>
 
-                <div className="pt-2 text-center">
+                <div className="pt-1 text-center">
                   {isSignUp ? (
                     <Link
                       to="/signin"
-                      className="text-xs font-black text-purple-600 hover:text-purple-800 transition-colors hover:underline"
+                      className="text-[10px] font-black text-purple-600 hover:text-purple-800 transition-colors hover:underline"
                     >
                       Already have an account? Sign In
                     </Link>
                   ) : (
                     <Link
                       to="/signup"
-                      className="text-xs font-black text-purple-600 hover:text-purple-800 transition-colors hover:underline"
+                      className="text-[10px] font-black text-purple-600 hover:text-purple-800 transition-colors hover:underline"
                     >
                       Don't have an account? Sign Up
                     </Link>
