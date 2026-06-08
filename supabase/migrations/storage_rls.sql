@@ -40,10 +40,13 @@ USING (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Allow public (anon) read access to all listing images
-CREATE POLICY "listings_select_public"
-ON storage.objects FOR SELECT TO public
-USING (bucket_id = 'listings');
+-- Allow authenticated users to view storage object records of own folders ONLY (removes broad public listing security warnings)
+CREATE POLICY "listings_select_own"
+ON storage.objects FOR SELECT TO authenticated
+USING (
+  bucket_id = 'listings' 
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
 
 -- 3. avatars bucket policies
 
@@ -68,6 +71,10 @@ USING (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
-CREATE POLICY "avatars_select_public"
-ON storage.objects FOR SELECT TO public
-USING (bucket_id = 'avatars');
+-- Allow authenticated users to view storage object records of own folders ONLY (removes broad public listing security warnings)
+CREATE POLICY "avatars_select_own"
+ON storage.objects FOR SELECT TO authenticated
+USING (
+  bucket_id = 'avatars' 
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);

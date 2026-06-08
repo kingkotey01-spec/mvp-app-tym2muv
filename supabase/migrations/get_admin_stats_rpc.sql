@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION get_admin_dashboard_stats()
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_total_users INT;
@@ -17,6 +17,11 @@ DECLARE
   v_total_clicks INT;
   v_total_impressions INT;
 BEGIN
+  -- Strict assertion that the executing user is an Admin
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Access Denied: You must be an administrator to view admin dashboard statistics.';
+  END IF;
+
   SELECT count(*) INTO v_total_users FROM profiles;
   SELECT count(*) INTO v_total_listings FROM properties;
   SELECT count(*) INTO v_total_ads FROM monetization_ads;
@@ -48,7 +53,7 @@ CREATE OR REPLACE FUNCTION increment_ad_stat(ad_id uuid, field text)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF field = 'clicks' THEN

@@ -80,31 +80,31 @@ const Settings: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen">
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
-          <Icon name="chevronRight" size={24} className="rotate-180" />
+    <div className="container mx-auto px-4 py-4 max-w-xl min-h-screen">
+      <div className="flex items-center gap-4 mb-4">
+        <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500">
+          <Icon name="chevronRight" size={18} className="rotate-180" />
         </button>
-        <h1 className="text-3xl font-bold text-slate-900">Profile Settings</h1>
+        <h1 className="text-xl font-bold text-slate-900">Profile Settings</h1>
       </div>
 
-      <div className="glass-card rounded-3xl p-6 md:p-10 shadow-xl border border-slate-100">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="glass-card rounded-2xl p-4 md:p-6 shadow-md border border-slate-100">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Avatar Upload */}
-          <div className="flex flex-col items-center mb-8">
+          <div className="flex flex-col items-center mb-4">
             <div className="relative group">
               <img 
                 src={formData.avatar || 'https://via.placeholder.com/150'} 
                 alt="Profile" 
                 referrerPolicy="no-referrer"
-                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg bg-slate-100"
+                className="w-20 h-20 rounded-full object-cover border-2 border-white shadow-md bg-slate-100"
               />
               <button 
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <Icon name="camera" size={24} />
+                <Icon name="camera" size={18} />
               </button>
               <input 
                 type="file" 
@@ -114,65 +114,65 @@ const Settings: React.FC = () => {
                 onChange={handleImageUpload}
               />
             </div>
-            <p className="text-sm text-slate-500 mt-3">Click to change profile photo</p>
+            <p className="text-xs text-slate-500 mt-1.5">Click to change profile photo</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
               <input 
                 type="text" 
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 outline-none bg-white/60"
+                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 outline-none bg-white/60"
                 placeholder="Your name"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
               <input 
                 type="tel" 
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 outline-none bg-white/60"
+                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 outline-none bg-white/60"
                 placeholder="+233..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Location</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Location</label>
               <input 
                 type="text" 
                 name="location"
                 value={formData.location}
                 onChange={handleChange}
-                className="w-full border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 outline-none bg-white/60"
+                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 outline-none bg-white/60"
                 placeholder="City, Country"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Bio</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Bio</label>
               <textarea 
                 name="bio"
                 value={formData.bio}
                 onChange={handleChange}
-                rows={4}
-                className="w-full border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 outline-none bg-white/60"
+                rows={2}
+                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 outline-none bg-white/60 animate-none resize-none"
                 placeholder="Tell us about yourself..."
               ></textarea>
             </div>
           </div>
 
-          <div className="pt-6">
+          <div className="pt-4">
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-brand-600 text-white py-4 rounded-xl font-bold hover:bg-brand-700 shadow-xl shadow-brand-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-brand-600 text-white py-2.5 rounded-xl font-bold hover:bg-brand-700 text-xs shadow-md shadow-brand-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

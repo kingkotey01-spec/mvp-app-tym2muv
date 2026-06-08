@@ -9,7 +9,7 @@ import { getListingById, updateListing, createListing, uploadImage } from '../se
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { getSymbolFromCode } from '../services/location';
-import { generateAdDescription, suggestPriceRange, enhanceImage } from '../services/ai';
+import { generateAdDescription, enhanceImage } from '../services/ai';
 
 const PostAd: React.FC = () => {
   const navigate = useNavigate();
@@ -19,9 +19,7 @@ const PostAd: React.FC = () => {
   const { location } = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
-  const [isSuggestingPrice, setIsSuggestingPrice] = useState(false);
   const [enhancingImageIndex, setEnhancingImageIndex] = useState<number | null>(null);
-  const [suggestedPriceRange, setSuggestedPriceRange] = useState<{min: number, max: number} | null>(null);
 
   const [step, setStep] = useState(1);
   
@@ -158,27 +156,6 @@ const PostAd: React.FC = () => {
       }
     } finally {
       setIsGeneratingDesc(false);
-    }
-  };
-
-  const handleSuggestPrice = async () => {
-    setIsSuggestingPrice(true);
-    try {
-      const range = await suggestPriceRange({
-        propertyType: formData.propertyType,
-        type: formData.type,
-        bedrooms: formData.bedrooms,
-        bathrooms: formData.bathrooms,
-        sqft: formData.sqft,
-        location: formData.location,
-        currency: formData.currency
-      });
-      if (range) {
-        setSuggestedPriceRange(range);
-        setFormData(prev => ({ ...prev, price: Math.round((range.min + range.max) / 2).toString() }));
-      }
-    } finally {
-      setIsSuggestingPrice(false);
     }
   };
 
@@ -334,64 +311,64 @@ const PostAd: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 pt-6 pb-12 max-w-4xl min-h-screen">
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-slate-900 mb-3">List your property.</h1>
-        <p className="text-slate-500 text-lg">Find the perfect tenant or buyer with our professional listing tools.</p>
+    <div className="container mx-auto px-4 pt-3 pb-6 max-w-3xl min-h-[calc(100vh-80px)]">
+      <div className="text-center mb-4">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-1">List Your Property</h1>
+        <p className="text-slate-500 text-xs md:text-sm">Find the perfect tenant or buyer with our professional listing tools.</p>
       </div>
 
-      <div className="glass-card rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+      <div className="glass-card rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
         {/* Progress Bar */}
-        <div className="bg-slate-50/50 border-b border-slate-100 p-6 flex justify-between items-center px-4 md:px-12">
-           <div className={`flex items-center gap-2 ${step >= 1 ? 'text-brand-600 font-semibold' : 'text-slate-400'}`}>
-              <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm ${step >= 1 ? 'border-brand-600 bg-brand-50' : 'border-current'}`}>1</span>
+        <div className="bg-slate-50/50 border-b border-slate-100 p-3 flex justify-between items-center px-4 md:px-8">
+           <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-brand-600 font-semibold text-xs' : 'text-slate-400 text-xs'}`}>
+              <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${step >= 1 ? 'border-brand-600 bg-brand-50' : 'border-current'}`}>1</span>
               <span className="hidden sm:inline">Category</span>
            </div>
-           <div className="h-[2px] bg-slate-200 flex-1 mx-4">
+           <div className="h-[2px] bg-slate-200 flex-1 mx-2">
              <div className="h-full bg-brand-500 transition-all duration-300" style={{ width: step >= 2 ? '50%' : step >= 3 ? '100%' : '0%' }}></div>
            </div>
-           <div className={`flex items-center gap-2 ${step >= 2 ? 'text-brand-600 font-semibold' : 'text-slate-400'}`}>
-              <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm ${step >= 2 ? 'border-brand-600 bg-brand-50' : 'border-current'}`}>2</span>
-              <span className="hidden sm:inline">Details</span>
+           <div className={`flex items-center gap-1.5 ${step >= 2 ? 'text-brand-600 font-semibold text-xs' : 'text-slate-400 text-xs'}`}>
+               <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${step >= 2 ? 'border-brand-600 bg-brand-50' : 'border-current'}`}>2</span>
+               <span className="hidden sm:inline">Details</span>
            </div>
-           <div className="h-[2px] bg-slate-200 flex-1 mx-4">
+           <div className="h-[2px] bg-slate-200 flex-1 mx-2">
              <div className="h-full bg-brand-500 transition-all duration-300" style={{ width: step >= 3 ? '100%' : '0%' }}></div>
            </div>
-           <div className={`flex items-center gap-2 ${step >= 3 ? 'text-brand-600 font-semibold' : 'text-slate-400'}`}>
-              <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm ${step >= 3 ? 'border-brand-600 bg-brand-50' : 'border-current'}`}>3</span>
-              <span className="hidden sm:inline">Photos</span>
+           <div className={`flex items-center gap-1.5 ${step >= 3 ? 'text-brand-600 font-semibold text-xs' : 'text-slate-400 text-xs'}`}>
+               <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${step >= 3 ? 'border-brand-600 bg-brand-50' : 'border-current'}`}>3</span>
+               <span className="hidden sm:inline">Photos</span>
            </div>
         </div>
 
-        <div className="p-6 md:p-10">
+        <div className="p-4 md:p-6">
           {step === 1 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => handleCategorySelect(cat.id, cat.name)}
-                  className="group p-6 border border-slate-200 rounded-2xl hover:border-brand-500 hover:bg-brand-50/50 hover:shadow-lg transition-all flex flex-col items-center gap-4 text-center bg-white/60"
+                  className="group p-3 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50/50 hover:shadow-md transition-all flex flex-col items-center gap-2.5 text-center bg-white/60"
                 >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${cat.color} bg-opacity-20 group-hover:scale-110 transition-transform`}>
-                    <Icon name={cat.iconName} size={32} variant="3d" className="drop-shadow-sm" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cat.color} bg-opacity-20 group-hover:scale-105 transition-transform`}>
+                    <Icon name={cat.iconName} size={20} variant="3d" className="drop-shadow-sm" />
                   </div>
-                  <span className="text-sm font-semibold text-slate-700 group-hover:text-brand-700">{cat.name}</span>
+                  <span className="text-xs font-semibold text-slate-700 group-hover:text-brand-700">{cat.name}</span>
                 </button>
               ))}
             </div>
           )}
 
           {step === 2 && (
-            <div className="space-y-8 max-w-2xl mx-auto animate-fade-in">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4 max-w-2xl mx-auto animate-fade-in">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Listing Type</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Listing Type</label>
                     <div className="flex gap-2">
                        {['Rent', 'Sale'].map(type => (
                           <button
                             key={type}
                             onClick={() => setFormData(prev => ({ ...prev, type }))}
-                            className={`flex-1 py-3 rounded-xl font-bold border-2 transition-all ${formData.type === type ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-slate-500 border-slate-200 hover:border-brand-200'}`}
+                            className={`flex-1 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${formData.type === type ? 'bg-brand-500 text-white border-brand-500 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-brand-200'}`}
                           >
                              {type}
                           </button>
@@ -399,12 +376,12 @@ const PostAd: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Property Type</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Property Type</label>
                     <select 
                       name="propertyType"
                       value={formData.propertyType}
                       onChange={handleChange}
-                      className="w-full border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60"
+                      className="w-full border border-slate-300 rounded-xl p-2 md:p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60"
                     >
                       {formData.categoryId === 'houses' && (
                         <>
@@ -451,171 +428,155 @@ const PostAd: React.FC = () => {
                </div>
 
                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Property Title (Auto-generated)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Property Title (Auto-generated)</label>
                   <input 
                     type="text" 
                     name="title"
                     value={formData.title}
                     readOnly
-                    className="w-full border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-slate-50 text-slate-500 cursor-not-allowed" 
+                    className="w-full border border-slate-200 rounded-xl p-2 md:p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-slate-50 text-slate-500 cursor-not-allowed" 
                     placeholder="Title will be generated automatically" 
                   />
                </div>
                
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <div className="flex justify-between items-end mb-2">
-                      <label className="block text-sm font-bold text-slate-700">Price {formData.type === 'Rent' ? '(Monthly)' : ''}</label>
-                      <button
-                        type="button"
-                        onClick={handleSuggestPrice}
-                        disabled={isSuggestingPrice || !formData.location || !formData.propertyType}
-                        className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 disabled:opacity-50"
-                      >
-                        {isSuggestingPrice ? <Icon name="loader" size={14} className="animate-spin" /> : <Icon name="sparkles" size={14} />}
-                        Suggest Price
-                      </button>
+                    <div className="mb-1">
+                      <label className="block text-xs font-bold text-slate-700">Price {formData.type === 'Rent' ? '(Monthly)' : ''}</label>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex rounded-xl shadow-sm border border-slate-300 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-transparent">
                       <select
                         name="currency"
                         value={formData.currency}
                         onChange={handleChange}
-                        className="border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60 w-24"
+                        className="bg-slate-100 text-slate-800 font-bold px-2 py-2 border-r border-slate-200 outline-none cursor-pointer focus:bg-slate-200 transition-colors w-20 text-center shrink-0 text-xs"
                       >
                         {Array.from(new Set(['USD', 'GHS', 'NGN', 'KES', 'ZAR', 'EGP', 'MAD', 'ETB', 'TZS', 'UGX', 'RWF', 'XOF', 'XAF', 'ZMW', 'EUR', 'GBP', location.currency || 'USD'])).map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
-                      <div className="relative flex-1">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                          {getSymbolFromCode(formData.currency)}
-                        </span>
-                        <input 
-                          type="number" 
-                          name="price"
-                          value={formData.price}
-                          onChange={handleChange}
-                          className="w-full border border-slate-300 rounded-xl p-4 pl-8 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
-                          placeholder="0.00" 
-                        />
+                      <div className="flex items-center bg-slate-50 px-2.5 border-r border-slate-200 text-slate-600 font-bold text-xs select-none shrink-0 min-w-[2.5rem] justify-center">
+                        {getSymbolFromCode(formData.currency)}
                       </div>
+                      <input 
+                        type="number" 
+                        name="price"
+                        value={formData.price}
+                        onChange={handleChange}
+                        className="w-full p-2.5 outline-none text-slate-950 font-bold text-sm bg-white" 
+                        placeholder="0.00" 
+                      />
                     </div>
-                    {suggestedPriceRange && (
-                      <p className="text-xs text-brand-600 mt-2 font-medium">
-                        Suggested range: {getSymbolFromCode(formData.currency)}{suggestedPriceRange.min.toLocaleString()} - {getSymbolFromCode(formData.currency)}{suggestedPriceRange.max.toLocaleString()}
-                      </p>
-                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Bedrooms</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Bedrooms</label>
                     <input 
                       type="number" 
                       name="bedrooms"
                       value={formData.bedrooms}
                       onChange={handleChange}
-                      className="w-full border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
+                      className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
                       placeholder="0" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Bathrooms</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Bathrooms</label>
                     <input 
                       type="number" 
                       name="bathrooms"
                       value={formData.bathrooms}
                       onChange={handleChange}
-                      className="w-full border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
+                      className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
                       placeholder="0" 
                     />
                   </div>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Square Footage (Sq Ft)</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Square Footage (Sq Ft)</label>
                     <input 
                       type="number" 
                       name="sqft"
                       value={formData.sqft}
                       onChange={handleChange}
-                      className="w-full border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
+                      className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
                       placeholder="e.g. 1200" 
                     />
                   </div>
-                  <div className="flex flex-col gap-4 pt-2">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-row flex-wrap gap-x-4 gap-y-1.5 pt-4">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, furnished: !prev.furnished }))}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${formData.furnished ? 'bg-brand-500' : 'bg-slate-200'}`}
+                        className={`w-10 h-5 rounded-full transition-colors relative flex items-center ${formData.furnished ? 'bg-brand-500' : 'bg-slate-200'}`}
                       >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.furnished ? 'left-7' : 'left-1'}`}></div>
+                        <div className={`absolute w-4 h-4 rounded-full bg-white transition-all ${formData.furnished ? 'left-[22px]' : 'left-0.5'}`}></div>
                       </button>
-                      <span className="text-sm font-bold text-slate-700">Furnished</span>
+                      <span className="text-xs font-bold text-slate-700">Furnished</span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, parking: !prev.parking }))}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${formData.parking ? 'bg-brand-500' : 'bg-slate-200'}`}
+                        className={`w-10 h-5 rounded-full transition-colors relative flex items-center ${formData.parking ? 'bg-brand-500' : 'bg-slate-200'}`}
                       >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.parking ? 'left-7' : 'left-1'}`}></div>
+                        <div className={`absolute w-4 h-4 rounded-full bg-white transition-all ${formData.parking ? 'left-[22px]' : 'left-0.5'}`}></div>
                       </button>
-                      <span className="text-sm font-bold text-slate-700">Parking Available</span>
+                      <span className="text-xs font-bold text-slate-700">Parking</span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, petsAllowed: !prev.petsAllowed }))}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${formData.petsAllowed ? 'bg-brand-500' : 'bg-slate-200'}`}
+                        className={`w-10 h-5 rounded-full transition-colors relative flex items-center ${formData.petsAllowed ? 'bg-brand-500' : 'bg-slate-200'}`}
                       >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.petsAllowed ? 'left-7' : 'left-1'}`}></div>
+                        <div className={`absolute w-4 h-4 rounded-full bg-white transition-all ${formData.petsAllowed ? 'left-[22px]' : 'left-0.5'}`}></div>
                       </button>
-                      <span className="text-sm font-bold text-slate-700">Pets Allowed</span>
+                      <span className="text-xs font-bold text-slate-700">Pets Ok</span>
                     </div>
                   </div>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Year Built</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Year Built</label>
                     <input 
                       type="number" 
                       name="yearBuilt"
                       value={formData.yearBuilt}
                       onChange={handleChange}
-                      className="w-full border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
+                      className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
                       placeholder="e.g. 2020" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Virtual Tour URL (Optional)</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Virtual Tour URL (Optional)</label>
                     <input 
                       type="url" 
                       name="virtualTourUrl"
                       value={formData.virtualTourUrl}
                       onChange={handleChange}
-                      className="w-full border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
+                      className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
                       placeholder="https://my.matterport.com/..." 
                     />
                   </div>
                 </div>
 
-                <div className="p-4 bg-brand-50 rounded-2xl border border-brand-100">
+                <div className="p-2.5 bg-brand-50 rounded-xl border border-brand-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-brand-900">Premium Listing</h4>
-                      <p className="text-xs text-brand-600">Premium listings stay live for 91 days and get top ranking for the first 10 days.</p>
+                      <h4 className="font-bold text-xs text-brand-900">Premium Listing</h4>
+                      <p className="text-[10px] text-brand-600">Premium listings stay live for 91 days and get top ranking for the first 10 days.</p>
                     </div>
                     <button
                       onClick={() => setFormData(prev => ({ ...prev, isPremium: !prev.isPremium }))}
-                      className={`w-14 h-7 rounded-full transition-colors relative ${formData.isPremium ? 'bg-brand-600' : 'bg-slate-300'}`}
+                      className={`w-10 h-5.5 rounded-full transition-colors relative flex items-center shrink-0 ${formData.isPremium ? 'bg-brand-600' : 'bg-slate-300'}`}
                     >
-                      <div className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${formData.isPremium ? 'left-8' : 'left-1'}`}></div>
+                      <div className={`absolute w-4.5 h-4.5 rounded-full bg-white transition-all ${formData.isPremium ? 'left-[20px]' : 'left-0.5'}`}></div>
                     </button>
                   </div>
                 </div>
 
                <div>
-                 <label className="block text-sm font-bold text-slate-700 mb-2">Location</label>
+                 <label className="block text-xs font-bold text-slate-700 mb-1">Location</label>
                  <LocationSelect 
                     value={formData.location}
                     onChange={handleLocationChange}
@@ -625,12 +586,12 @@ const PostAd: React.FC = () => {
 
                <div className="relative">
                   <div className="flex justify-between items-end mb-2">
-                    <label className="block text-sm font-bold text-slate-700">Description</label>
+                    <label className="block text-xs font-bold text-slate-700">Description</label>
                     <button
                       type="button"
                       onClick={handleGenerateDescription}
                       disabled={isGeneratingDesc || !formData.location || !formData.propertyType}
-                      className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 disabled:opacity-50"
+                      className="text-[10px] font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 disabled:opacity-50"
                     >
                       {isGeneratingDesc ? <Icon name="loader" size={14} className="animate-spin" /> : <Icon name="sparkles" size={14} />}
                       AI Generate
@@ -640,33 +601,33 @@ const PostAd: React.FC = () => {
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    rows={6} 
-                    className="w-full border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
+                    rows={3} 
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white/60" 
                     placeholder="Describe your item..."
                   ></textarea>
                </div>
 
                <div className="flex justify-between pt-6 border-t border-slate-100">
-                  <button onClick={() => setStep(1)} className="text-slate-500 hover:text-slate-900 font-medium px-4 py-2">Back</button>
-                  <button onClick={() => setStep(3)} className="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all">Next: Photos</button>
+                  <button onClick={() => setStep(1)} className="text-slate-500 hover:text-slate-900 font-medium px-4 py-1.5 text-xs">Back</button>
+                  <button onClick={() => setStep(3)} className="bg-brand-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all">Next: Photos</button>
                </div>
             </div>
           )}
 
           {step === 3 && (
-            <div className="space-y-8 max-w-4xl mx-auto animate-fade-in">
+            <div className="space-y-4 max-w-2xl mx-auto animate-fade-in">
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-3 border-dashed border-slate-200 rounded-3xl hover:bg-slate-50 hover:border-brand-400 transition-all cursor-pointer group text-center ${images.length > 0 ? 'py-8 p-6' : 'p-16'}`}
+                className={`border-2 border-dashed border-slate-200 rounded-2xl hover:bg-slate-50 hover:border-brand-400 transition-all cursor-pointer group text-center ${images.length > 0 ? 'py-4 p-4' : 'py-8 p-8'}`}
               >
-                 <div className="mx-auto w-16 h-16 bg-brand-50 text-brand-500 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
-                    <Icon name="camera" size={24} />
+                 <div className="mx-auto w-10 h-10 bg-brand-50 text-brand-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-sm">
+                    <Icon name="camera" size={18} />
                  </div>
-                 <h3 className="font-bold text-xl text-slate-900 mb-2">
+                 <h3 className="font-bold text-sm text-slate-900 mb-1">
                     {images.length > 0 ? 'Add More Photos' : 'Upload Photos'}
                  </h3>
-                 <p className="text-slate-500">Drag and drop or click to browse</p>
-                 <p className="text-xs text-slate-400 mt-2 uppercase tracking-wider font-medium">Supports JPG, PNG</p>
+                 <p className="text-xs text-slate-500">Drag and drop or click to browse</p>
+                 <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-medium">Supports JPG, PNG</p>
                  <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -680,8 +641,8 @@ const PostAd: React.FC = () => {
               {/* Image Grid */}
               {images.length > 0 && (
                 <div>
-                    <h4 className="text-sm font-bold text-slate-700 mb-3">{images.length} Photos Selected</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <h4 className="text-xs font-bold text-slate-700 mb-2">{images.length} Photos Selected</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         {images.map((img, index) => (
                             <div key={index} className="relative aspect-square rounded-2xl overflow-hidden group border border-slate-200 shadow-sm bg-slate-100">
                                 <img src={img} alt={`Preview ${index}`} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
@@ -716,13 +677,13 @@ const PostAd: React.FC = () => {
               )}
 
                <div className="flex justify-between pt-8 border-t border-slate-100 relative">
-                  <button onClick={() => setStep(2)} className="text-slate-500 hover:text-slate-900 font-medium px-4 py-2">Back</button>
+                  <button onClick={() => setStep(2)} className="text-slate-500 hover:text-slate-900 font-medium px-4 py-1.5 text-xs">Back</button>
                   
                   <div className="flex flex-col items-end gap-2">
                       <button 
                         onClick={handlePublish}
                         disabled={images.length === 0 || isSubmitting}
-                        className={`bg-brand-600 text-white px-10 py-4 rounded-xl font-bold hover:bg-brand-700 shadow-xl shadow-brand-500/30 transform hover:-translate-y-0.5 transition-all flex items-center gap-2 ${(images.length === 0 || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`bg-brand-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all flex items-center gap-2 ${(images.length === 0 || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                          {isSubmitting ? (
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
