@@ -1,9 +1,10 @@
 
 import React, { Component, ReactNode, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import Layout from './components/Layout';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './components/Toast';
 import { LocationProvider } from './context/LocationContext';
 import { ComparisonProvider } from './context/ComparisonContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -141,18 +142,45 @@ const EnvValidator: React.FC<{ children: ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const OAuthRedirectHandler: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, isAuthReady } = useAuth();
+
+  React.useEffect(() => {
+    if (isAuthReady && isAuthenticated) {
+      const oauthRedirect = localStorage.getItem('oauth_redirect');
+      const oauthPendingVendor = localStorage.getItem('oauth_pending_vendor');
+      
+      if (oauthRedirect || oauthPendingVendor === 'true') {
+        localStorage.removeItem('oauth_redirect');
+        localStorage.removeItem('oauth_pending_vendor');
+        
+        if (oauthPendingVendor === 'true' || oauthRedirect === '/post') {
+          navigate('/create-vendor', { replace: true });
+        } else if (oauthRedirect && oauthRedirect !== '/signin' && oauthRedirect !== '/signup') {
+          navigate(oauthRedirect, { replace: true });
+        }
+      }
+    }
+  }, [isAuthenticated, isAuthReady, navigate]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <EnvValidator>
         <AuthProvider>
-          <LocationProvider>
-            <ComparisonProvider>
-              <Router>
-                <ScrollToTop />
-              <Layout>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
+          <ToastProvider>
+            <LocationProvider>
+              <ComparisonProvider>
+                <Router>
+                  <ScrollToTop />
+                  <OAuthRedirectHandler />
+                <Layout>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/signin" element={<SignIn defaultTab="signin" />} />
                   <Route path="/signup" element={<SignIn defaultTab="signup" />} />
@@ -221,6 +249,7 @@ const App: React.FC = () => {
           </Router>
           </ComparisonProvider>
         </LocationProvider>
+        </ToastProvider>
       </AuthProvider>
       </EnvValidator>
     </ErrorBoundary>

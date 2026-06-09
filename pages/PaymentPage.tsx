@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { getListingById } from '../services/supabaseService';
 import { supabase } from '../supabaseClient';
 import { Listing } from '../types';
@@ -27,6 +28,7 @@ const PaymentPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [listing, setListing] = useState<Listing | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -93,7 +95,7 @@ const PaymentPage: React.FC = () => {
     
     const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
     if (!PAYSTACK_KEY) {
-      alert('Payment is not configured. Please contact support.');
+      toast('Payment option is not fully configured yet. Please contact support.', 'warning');
       return;
     }
     
@@ -103,7 +105,7 @@ const PaymentPage: React.FC = () => {
     
     const loaded = await loadPaystackScript();
     if (!loaded || !(window as any).PaystackPop) {
-       alert("Could not load Paystack. Please check your connection.");
+       toast("Could not load Paystack. Please check your network connection.", "error");
        return;
     }
     
@@ -119,13 +121,13 @@ const PaymentPage: React.FC = () => {
           await processPaymentWithRetry(response.reference);
         } catch (err) {
           console.error("Payment failed", err);
-          alert('Payment could not be verified. Please contact support with reference: ' + response.reference);
+          toast('Payment could not be verified. Please contact support with reference: ' + response.reference, 'error');
         } finally {
           setIsProcessing(false);
         }
       },
       onClose: () => {
-        alert("Payment cancelled.");
+        toast("Payment checkout closed.", "info");
       }
     });
 

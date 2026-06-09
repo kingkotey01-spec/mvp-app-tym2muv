@@ -6,6 +6,7 @@ import { supabase } from '../supabaseClient';
 import Icon from '../components/Icon';
 import { sanitizeString } from '../services/security';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import ErrorBanner from '../components/ErrorBanner';
 import SkeletonCard from '../components/SkeletonCard';
 import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
@@ -13,6 +14,7 @@ import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
 const Chat: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { user: currentUser } = useAuth();
+  const { toast, confirm } = useToast();
   const [chats, setChats] = useState<ChatType[]>([]);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -141,7 +143,14 @@ const Chat: React.FC = () => {
   };
 
   const handleDeleteConversation = async (chatId: string) => {
-    if (!window.confirm("Are you sure you want to delete this conversation and all its messages? This action is permanent!")) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Conversation',
+      message: 'Are you sure you want to delete this conversation and all its messages? This action is permanent.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      danger: true
+    });
+    if (!isConfirmed) return;
 
     try {
       // Delete messages first to resolve foreign key constraints
@@ -153,15 +162,23 @@ const Chat: React.FC = () => {
       setChats(prev => prev.filter(c => c.id !== chatId));
       setActiveChatId(null);
       setMessages([]);
+      toast('Conversation deleted successfully.', 'success');
     } catch (err: any) {
       console.error("Error deleting conversation:", err);
-      alert("Failed to delete conversation: " + (err.message || err));
+      toast("Failed to delete conversation. Please try again.", 'error');
     }
   };
 
   const handleClearAllConversations = async () => {
     if (!currentUser || chats.length === 0) return;
-    if (!window.confirm("Are you sure you want to clear and delete ALL conversations and messages from your inbox? This cannot be undone!")) return;
+    const isConfirmed = await confirm({
+      title: 'Clear All',
+      message: 'Are you sure you want to clear and delete ALL conversations from your inbox? This cannot be undone.',
+      confirmLabel: 'Clear All',
+      cancelLabel: 'Cancel',
+      danger: true
+    });
+    if (!isConfirmed) return;
 
     try {
       const chatIds = chats.map(c => c.id);
@@ -177,9 +194,10 @@ const Chat: React.FC = () => {
       setChats([]);
       setActiveChatId(null);
       setMessages([]);
+      toast('Inbox cleared successfully.', 'success');
     } catch (err: any) {
       console.error("Error clearing inbox:", err);
-      alert("Failed to clear inbox: " + (err.message || err));
+      toast("Failed to clear inbox. Please try again.", 'error');
     }
   };
 

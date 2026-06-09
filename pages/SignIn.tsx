@@ -12,6 +12,10 @@ interface SignInProps {
 const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Where to redirect after successful auth (set by ProtectedRoute or the Post button)
+  const from: string = (location.state as any)?.from?.pathname || '/';
+  const pendingVendor: boolean = !!(location.state as any)?.pendingVendor;
 
   const [error, setError] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<string | null>(null);
@@ -74,6 +78,23 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
 
     try {
       setIsLoading(true);
+      
+      const getPostAuthPath = (resultUser: any) => {
+        if (pendingVendor || from === '/post') {
+          return '/create-vendor';
+        }
+        
+        const searchParams = new URLSearchParams(location.search);
+        const queryRedirect = searchParams.get('redirect');
+        if (queryRedirect) return queryRedirect;
+
+        if (from && from !== '/' && from !== '/signin' && from !== '/signup') {
+          return from;
+        }
+
+        return resultUser?.id ? `/profile/${resultUser.id}` : '/profile/me';
+      };
+
       if (isSignUp) {
         const resultUser = await signupWithEmail(email, password, name, selectedRole);
         try {
@@ -83,13 +104,13 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
         }
         setMessage('Registration successful! Secure profile provisioned.');
         setTimeout(() => {
-          navigate(resultUser?.id ? `/profile/${resultUser.id}` : '/profile/me');
+          navigate(getPostAuthPath(resultUser), { replace: true });
         }, 1500);
       } else {
         const resultUser = await loginWithEmail(email, password, selectedRole);
         setMessage('Authentication successful! Welcome back.');
         setTimeout(() => {
-          navigate(resultUser?.id ? `/profile/${resultUser.id}` : '/profile/me');
+          navigate(getPostAuthPath(resultUser), { replace: true });
         }, 1100);
       }
     } catch (err: any) {
@@ -125,6 +146,12 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
       setIsLoading(true);
       setError(null);
       localStorage.setItem('oauth_selected_role', selectedRole);
+      if (pendingVendor) {
+        localStorage.setItem('oauth_pending_vendor', 'true');
+      }
+      if (from) {
+        localStorage.setItem('oauth_redirect', from);
+      }
       await loginWithGoogle();
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google.');
@@ -138,6 +165,12 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
       setIsLoading(true);
       setError(null);
       localStorage.setItem('oauth_selected_role', selectedRole);
+      if (pendingVendor) {
+        localStorage.setItem('oauth_pending_vendor', 'true');
+      }
+      if (from) {
+        localStorage.setItem('oauth_redirect', from);
+      }
       await loginWithLinkedIn();
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with LinkedIn.');

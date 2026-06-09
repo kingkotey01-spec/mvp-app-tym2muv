@@ -5,14 +5,19 @@ import { useAuth } from '../context/AuthContext';
 
 const MobileBottomNav = () => {
   const location = useLocation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isAuthReady, user } = useAuth();
+
+  // Determine the correct profile path once auth is fully resolved
+  const profilePath = isAuthReady
+    ? (isAuthenticated && user?.id ? `/profile/${user.id}` : '/signin')
+    : '/'; // while loading, keep them on home so tapping doesn't redirect prematurely
   
   const navItems = [
     { name: 'Home', path: '/', icon: 'home' },
     { name: 'Search', path: '/search', icon: 'search' },
     { name: 'Saved', path: '/saved', icon: 'heart' },
     { name: 'Chat', path: '/chat', icon: 'messageCircle' },
-    { name: 'Profile', path: isAuthenticated && user?.id ? `/profile/${user.id}` : '/signin', icon: 'user' },
+    { name: 'Profile', path: profilePath, icon: 'user' },
   ];
 
   return (

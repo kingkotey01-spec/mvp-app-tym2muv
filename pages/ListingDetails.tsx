@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getListingById, getUserProfile, getListings, toggleSavedListing, createViewRequest } from '../services/supabaseService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { Listing, User } from '../types';
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
@@ -20,6 +21,7 @@ const ListingDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<User | null>(null);
   const [similarListings, setSimilarListings] = useState<Listing[]>([]);
@@ -42,7 +44,7 @@ const ListingDetails: React.FC = () => {
 
   const submitReport = () => {
     if (!reportReason) {
-      alert('Please select a reason.');
+      toast('Please select a reason for reporting.', 'warning');
       return;
     }
     // Mock submit

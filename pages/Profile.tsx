@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getUserProfile, getListings, getReviewsForVendor, createReview } from '../services/supabaseService';
 import { User, Listing, Review } from '../types';
 import ListingCard from '../components/ListingCard';
@@ -7,13 +7,16 @@ import AdCard from '../components/AdCard';
 import Icon from '../components/Icon';
 import AgentMonetizationDash from '../components/AgentMonetizationDash';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { useMixedContent } from '../hooks/useMixedContent';
 import { getOptimizedImageUrl } from '../utils/imageOptimization';
 import SimulatedInbox from '../components/SimulatedInbox';
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const { user: currentUser, loading: authLoading, logout } = useAuth();
+  const navigate = useNavigate();
+  const { user: currentUser, isAuthReady, isAuthenticated, logout } = useAuth();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | undefined>(undefined);
   const [listings, setListings] = useState<Listing[]>([]);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
@@ -45,31 +48,29 @@ const Profile: React.FC = () => {
     let active = true;
 
     const fetchProfileData = async () => {
-      let targetId: string | undefined = undefined;
+      // --- FIX: Wait until auth is fully resolved before doing anything ---
+      // If auth is still initialising, hold in loading state and wait for next render
+      if (!isAuthReady) {
+        if (active) setIsLoading(true);
+        return;
+      }
 
-      if (userId === 'me') {
-        if (authLoading) {
-          if (active) setIsLoading(true);
+      let targetId: string | undefined;
+
+      if (userId === 'me' || !userId) {
+        // "me" route: must have a logged-in user
+        if (!isAuthenticated) {
+          // Auth is ready but no user session → send to sign-in
+          navigate('/signin', { replace: true });
           return;
         }
         if (!currentUser) {
-          if (active) {
-            setUser(undefined);
-            setIsLoading(false);
-          }
+          // Session exists, but profile document is still loading inside AuthContext
           return;
         }
         targetId = currentUser.id;
       } else {
         targetId = userId;
-      }
-
-      if (!targetId) {
-        if (active) {
-          setUser(undefined);
-          setIsLoading(false);
-        }
-        return;
       }
 
       window.scrollTo(0, 0);
@@ -79,7 +80,7 @@ const Profile: React.FC = () => {
         const u = await getUserProfile(targetId);
         if (!active) return;
 
-        setUser(u);
+        setUser(u ?? undefined);
         if (u) {
           // Set correct default active tab based on role
           const defaultTab =
@@ -120,7 +121,7 @@ const Profile: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [userId, currentUser, authLoading]);
+  }, [userId, currentUser?.id, isAuthReady, isAuthenticated]);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -130,7 +131,7 @@ const Profile: React.FC = () => {
       }).catch(console.error);
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('Profile link copied to clipboard!');
+      toast('Profile link copied to clipboard!', 'success');
     }
   };
 
@@ -161,13 +162,13 @@ const Profile: React.FC = () => {
       setReviewRating(5);
     } catch (error) {
       console.error("Error submitting review:", error);
-      alert("Failed to submit review. Please try again.");
+      toast("Failed to submit review. Please try again.", "error");
     } finally {
       setIsSubmittingReview(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !isAuthReady) {
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
             <div className="animate-spin text-brand-500 mb-4"><Icon name="loader" size={40} /></div>

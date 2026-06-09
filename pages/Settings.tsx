@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { updateUserProfile, uploadImage } from '../services/supabaseService';
 import Icon from '../components/Icon';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 const Settings: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -41,9 +43,10 @@ const Settings: React.FC = () => {
       try {
         const url = await uploadImage(file, `avatars/${user.id}/${Date.now()}_${file.name}`);
         setFormData(prev => ({ ...prev, avatar: url }));
+        toast('Profile picture uploaded!', 'success');
       } catch (error) {
         console.error("Error uploading avatar:", error);
-        alert("Failed to upload image.");
+        toast("Failed to upload image. Please try again.", "error");
       } finally {
         setIsSubmitting(false);
       }
@@ -67,11 +70,11 @@ const Settings: React.FC = () => {
         }
       });
       await refreshUser();
-      alert("Profile updated successfully!");
+      toast("Profile updated successfully!", "success");
       navigate(`/profile/${user.id}`);
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Failed to update profile.");
+      toast("Failed to update profile. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
     }

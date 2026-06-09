@@ -113,7 +113,7 @@ const SearchPage: React.FC = () => {
     if (changed) {
       navigate(`/search?${params.toString()}`, { replace: true });
     }
-  }, [debouncedFilters]);
+  }, [debouncedFilters, navigate, location.search, query]);
 
   const handleFilterChange = (field: keyof typeof localFilters, value: string) => {
     setLocalFilters(prev => ({ ...prev, [field]: value }));

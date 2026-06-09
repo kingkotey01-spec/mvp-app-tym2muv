@@ -125,7 +125,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const currentYear = new Date().getFullYear();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isAuthReady } = useAuth();
   const { location: userLocData, refreshLocation, isLoading: isLocating, needsCountrySelection } = useAppLocation();
 
   const [welcomeOpen, setWelcomeOpen] = useState(false);
@@ -211,7 +211,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                     {/* Post Button */}
                     <Link 
-                      to={isAuthenticated && (user?.role !== 'Agent' && user?.role !== 'Admin') ? "/create-vendor" : "/post"} 
+                      to={
+                        !isAuthenticated
+                          ? '/signin'
+                          : (user?.role === 'Agent' || user?.role === 'Admin')
+                            ? '/post'
+                            : '/create-vendor'
+                      }
+                      state={!isAuthenticated ? { from: { pathname: '/post' }, pendingVendor: true } : undefined}
                       className="flex items-center justify-center w-9 h-9 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all shadow-md shadow-red-500/15 hover:shadow-red-500/25 hover:scale-105 active:scale-95 flex-shrink-0"
                       title="Post Listing"
                     >
@@ -237,7 +244,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <Icon name="messageCircle" size={20} className="w-5 h-5" />
                         <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 border border-white rounded-full"></span>
                         </Link>
-                        <Link to={user?.id ? `/profile/${user.id}` : "/profile/me"} className="w-9 h-9 rounded-full bg-slate-100 p-0.5 border border-slate-200 cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all flex-shrink-0">
+                        <Link to={isAuthReady && user?.id ? `/profile/${user.id}` : "/profile/me"} className="w-9 h-9 rounded-full bg-slate-100 p-0.5 border border-slate-200 cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all flex-shrink-0">
                         <img src={user?.avatar || 'https://via.placeholder.com/150'} alt="User" referrerPolicy="no-referrer" className="w-full h-full rounded-full object-cover" />
                         </Link>
                     </>

@@ -90,7 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             const sUser = session?.user ?? null;
             setSupabaseUser(sUser);
+            
             if (sUser) {
+              setLoading(true);
               const profile = await getUserProfile(sUser.id).catch(() => null);
               const currentUserDoc = profile ? { ...profile, email: sUser.email } : buildFallbackUser(sUser);
               setUser(currentUserDoc as any);

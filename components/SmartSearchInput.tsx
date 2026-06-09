@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
+import { useToast } from './Toast';
 import { CATEGORIES } from '../constants';
 import { SearchFilters } from '../types';
 import LocationSelect from './LocationSelect';
@@ -18,6 +19,7 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
   onSearch,
   variant = 'simple'
 }) => {
+  const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
@@ -99,7 +101,7 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
   const handleVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Voice search is not supported in your browser.");
+      toast("Voice search is not supported in your browser.", "info");
       return;
     }
 

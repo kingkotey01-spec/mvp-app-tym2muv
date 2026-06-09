@@ -97,8 +97,13 @@ const CreateVendor: React.FC = () => {
       // Since 'profiles' table stores most fields, we'll run a custom update for agency_name or license if the columns are there, 
       // or we can just save agency_name inside the bio/meta
       
-      // We also refresh user context so role changes immediately
+      // Bust the profile cache so the new 'Agent' role is fetched fresh
+      // (delCache is called inside updateUserRole, but refreshUser uses the supabase
+      //  session directly and may pull a stale in-memory cache entry)
       await refreshUser();
+
+      // Small delay so AuthContext re-renders with the new role before PostAd checks it
+      await new Promise(res => setTimeout(res, 300));
 
       // Redirect directly to the post-ad page!
       navigate('/post', { replace: true });

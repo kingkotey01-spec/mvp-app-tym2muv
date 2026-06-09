@@ -7,6 +7,7 @@ import { generateListingTitle } from '../utils/listingUtils';
 import { sanitizeString, validateListingData, checkRateLimit } from '../services/security';
 import { getListingById, updateListing, createListing, uploadImage } from '../services/supabaseService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { useLocation } from '../context/LocationContext';
 import { getSymbolFromCode } from '../services/location';
 import { generateAdDescription, enhanceImage } from '../services/ai';
@@ -15,7 +16,8 @@ const PostAd: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
-  const { user } = useAuth();
+  const { user, isAuthReady } = useAuth();
+  const { toast } = useToast();
   const { location } = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
@@ -23,12 +25,13 @@ const PostAd: React.FC = () => {
 
   const [step, setStep] = useState(1);
   
-  // Redirect buyers to create a vendor account
+  // Redirect buyers to create a vendor account — only after auth is fully resolved
   useEffect(() => {
+    if (!isAuthReady) return; // wait for auth to finish loading
     if (user && user.role !== 'Agent' && user.role !== 'Admin') {
       navigate('/create-vendor', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, isAuthReady, navigate]);
 
   const [formData, setFormData] = useState({
     categoryId: '',
@@ -163,7 +166,7 @@ const PostAd: React.FC = () => {
     e.stopPropagation();
     const imageToEnhance = images[index];
     if (!imageToEnhance.startsWith('data:')) {
-      alert("Can only enhance newly uploaded images.");
+      toast("Can only enhance newly uploaded images.", "warning");
       return;
     }
 
@@ -177,6 +180,16 @@ const PostAd: React.FC = () => {
           newImages[index] = enhanced;
           return newImages;
         });
+        toast("Image enhanced automatically with Gemini AI!", "success");
+      } else {
+        toast("Could not enhance image. Please try again.", "info");
+      }
+    } catch (error: any) {
+      console.error("Error enhancing image:", error);
+      if (error.message?.toLowerCase().includes('fetch') || error.message?.toLowerCase().includes('cors') || error.message?.toLowerCase().includes('origin')) {
+        toast("Enhancement failed due to Cloud Referrer restriction on your API key.", "error");
+      } else {
+        toast("Failed to enhance image. Please review your API key configuration.", "error");
       }
     } finally {
       setEnhancingImageIndex(null);
@@ -189,7 +202,7 @@ const PostAd: React.FC = () => {
     if (!user) return;
     
     if (!checkRateLimit('post_listing', 5, 3600000)) {
-      alert("You have reached the limit of 5 listings per hour. Please try again later.");
+      toast("You have reached the limit of 5 listings per hour. Please try again later.", "error");
       return;
     }
 
@@ -201,7 +214,7 @@ const PostAd: React.FC = () => {
 
     const validation = validateListingData(listingDataToValidate);
     if (!validation.valid) {
-      alert("Please fix the following errors:\n" + validation.errors.join('\n'));
+      toast(validation.errors[0] || "Please fill in all required fields correctly.", "error");
       return;
     }
 
@@ -252,7 +265,7 @@ const PostAd: React.FC = () => {
       navigate('/profile');
     } catch (error) {
       console.error("Error publishing ad:", error);
-      alert("Failed to publish ad. Please try again.");
+      toast("Failed to publish listing. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
       setUploadProgress(null);
@@ -270,11 +283,11 @@ const PostAd: React.FC = () => {
 
       for (const file of files) {
         if (!ALLOWED_TYPES.includes(file.type)) {
-          alert(`${file.name} is not a supported format. Use JPG, PNG, or WebP.`);
+          toast(`${file.name} format is not supported. Use JPG, PNG, or WebP.`, "error");
           continue;
         }
         if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-          alert(`${file.name} exceeds ${MAX_SIZE_MB}MB. Please compress the image.`);
+          toast(`${file.name} exceeds ${MAX_SIZE_MB}MB. Please compress the image.`, "error");
           continue;
         }
         validFiles.push(file);
@@ -302,10 +315,8 @@ const PostAd: React.FC = () => {
     setImages(prev => prev.filter((_, index) => index !== indexToRemove));
 
     if (imageToRemove && imageToRemove.startsWith('data:')) {
-      // Count how many existing http images come before this index
-      const existingHttpCount = images.slice(0, indexToRemove).filter(img => img.startsWith('http')).length;
-      // The position in imageFiles is the index minus the number of http images before it
-      const fileIndex = indexToRemove - existingHttpCount;
+      // Find how many data: URIs come before this index
+      const fileIndex = images.slice(0, indexToRemove).filter(img => img.startsWith('data:')).length;
       setImageFiles(prev => prev.filter((_, i) => i !== fileIndex));
     }
   };

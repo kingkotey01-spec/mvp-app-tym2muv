@@ -63,10 +63,12 @@ import {
 import { User, Listing, Monetization, StaticPage, BlogPost } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSymbolFromCode } from '../services/location';
+import { useToast } from '../components/Toast';
 
 const COLORS = ['#ea580c', '#3b82f6', '#10b981', '#f59e0b'];
 
 const AdminDashboard: React.FC = () => {
+  const { toast, confirm } = useToast();
   const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'listings' | 'monetization' | 'pages'>('analytics');
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -213,22 +215,36 @@ const AdminDashboard: React.FC = () => {
       fetchData();
     } catch (err) {
       console.error('Failed to save CMS item:', err);
-      alert('Error saving data. Please verify fields.');
+      toast('Error saving data. Please verify fields and try again.', 'error');
     } finally {
       setCmsLoading(false);
     }
   };
 
   const handleDeletePage = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this static page? Users will no longer be able to load it.')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Static Page',
+      message: 'Are you sure you want to delete this static page? Users will no longer be able to load it.',
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (isConfirmed) {
       await deleteStaticPage(id);
+      toast('Static page deleted.', 'success');
       fetchData();
     }
   };
 
   const handleDeletePost = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this blog post?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Blog Post',
+      message: 'Are you sure you want to delete this blog post?',
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (isConfirmed) {
       await deleteBlogPost(id);
+      toast('Blog post deleted.', 'success');
       fetchData();
     }
   };
@@ -312,8 +328,15 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleDeleteListing = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this listing?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Listing',
+      message: 'Are you sure you want to delete this listing?',
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (isConfirmed) {
       await deleteListing(id);
+      toast('Listing deleted successfully.', 'success');
       fetchData();
     }
   };
@@ -348,23 +371,32 @@ const AdminDashboard: React.FC = () => {
 
       if (editingAd) {
         await updateMonetizationAd(editingAd.id, adData);
+        toast('Monetization ad updated successfully.', 'success');
       } else {
         await createMonetizationAd(adData);
+        toast('Monetization ad created successfully.', 'success');
       }
       setShowAdModal(false);
       setEditingAd(null);
       fetchData();
     } catch (error) {
       console.error('Error saving ad:', error);
-      alert('Error saving ad. Please try again.');
+      toast('Error saving ad. Please try again.', 'error');
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDeleteAd = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this ad?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Monetization Ad',
+      message: 'Are you sure you want to delete this ad?',
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (isConfirmed) {
       await deleteMonetizationAd(id);
+      toast('Monetization ad deleted.', 'success');
       fetchData();
     }
   };
@@ -476,13 +508,44 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
             <button 
-              onClick={async () => { if(window.confirm('Seed mock data?')) { await seedMockData(); fetchData(); } }}
+              onClick={async () => { 
+                const isConfirmed = await confirm({
+                  title: 'Seed Mock Data',
+                  message: 'Are you sure you want to seed mock data? This will insert new simulation records.',
+                  confirmLabel: 'Seed'
+                });
+                if (isConfirmed) {
+                  try {
+                    await seedMockData();
+                    toast('Mock data seeded successfully.', 'success');
+                    fetchData();
+                  } catch (e) {
+                    toast('Failed to seed data.', 'error');
+                  }
+                }
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors text-sm"
             >
               Seed Mock Data
             </button>
             <button 
-              onClick={async () => { if(window.confirm('CLEAR ALL DATA? This is irreversible!')) { await clearMockData(); fetchData(); } }}
+              onClick={async () => { 
+                const isConfirmed = await confirm({
+                  title: 'CLEAR ALL DATA',
+                  message: 'Are you sure you want to CLEAR ALL DATA? This is completely irreversible!',
+                  confirmLabel: 'Clear All',
+                  danger: true
+                });
+                if (isConfirmed) {
+                  try {
+                    await clearMockData();
+                    toast('All data cleared successfully.', 'success');
+                    fetchData();
+                  } catch (e) {
+                    toast('Failed to clear data.', 'error');
+                  }
+                }
+              }}
               className="px-4 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors text-sm"
             >
               Clear Data

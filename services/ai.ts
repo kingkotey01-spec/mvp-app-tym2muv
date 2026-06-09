@@ -108,11 +108,6 @@ export const enhanceImage = async (base64Image: string, mimeType: string): Promi
     return null;
   } catch (error: any) {
     console.error("Error enhancing image:", error);
-    if (error.message?.toLowerCase().includes('fetch') || error.message?.toLowerCase().includes('cors') || error.message?.toLowerCase().includes('origin')) {
-      alert("Image enhancement failed due to a CORS or Origin error. This usually means your Gemini API Key has 'HTTP referrers' restrictions enabled in Google Cloud Console. Please set the restriction to 'None' or add this app's URL to the allowed list.");
-    } else {
-      alert("Failed to enhance image. Please check your API key and try again.");
-    }
-    return null;
+    throw error;
   }
 };
