@@ -191,9 +191,9 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-8"> {/* Standardized padding */}
+    <div className="min-h-screen pb-4"> {/* Standardized padding */}
       {/* Cover Photo Area with Parallax Effect */}
-      <div className="h-56 md:h-72 bg-gradient-to-br from-brand-600 via-purple-600 to-fuchsia-500 relative overflow-hidden">
+      <div className="h-32 md:h-44 bg-gradient-to-br from-brand-600 via-purple-600 to-fuchsia-500 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           <div className="absolute inset-0 bg-black/10"></div>
           
@@ -202,50 +202,50 @@ const Profile: React.FC = () => {
           <div className="absolute bottom-10 left-10 w-48 h-48 bg-fuchsia-400/20 rounded-full blur-2xl animate-float-medium"></div>
       </div>
 
-      <div className="container mx-auto px-4 -mt-20 md:-mt-28 relative z-10 animate-slide-up">
-        <div className="glass-strong rounded-[2.5rem] p-6 md:p-10 shadow-2xl ring-1 ring-white/60">
-            <div className="flex flex-col lg:flex-row items-start lg:items-end gap-6 mb-10">
+      <div className="container mx-auto px-2 -mt-12 md:-mt-16 relative z-10 animate-slide-up">
+        <div className="glass-strong rounded-3xl p-4 md:p-6 shadow-xl ring-1 ring-white/60">
+            <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4 mb-5">
                 {/* Avatar */}
                 <div className="relative group">
                     <div className="absolute -inset-1 bg-gradient-to-br from-brand-400 to-fuchsia-500 rounded-full opacity-70 blur group-hover:opacity-100 transition duration-500"></div>
-                    <img src={getOptimizedImageUrl(user.avatar, { width: 300, height: 300, crop: 'thumb' })} alt={user.name} referrerPolicy="no-referrer" className="relative w-32 h-32 md:w-44 md:h-44 rounded-full border-4 border-white shadow-xl object-cover bg-slate-100" />
+                    <img src={getOptimizedImageUrl(user.avatar, { width: 220, height: 220, crop: 'thumb' })} alt={user.name} referrerPolicy="no-referrer" className="relative w-22 h-22 md:w-28 md:h-28 rounded-full border-2 border-white shadow-lg object-cover bg-slate-100" />
                     {user.verified && (
-                        <div className="absolute bottom-2 right-2 bg-brand-500 text-white p-2 rounded-full border-4 border-white shadow-sm" title="Verified User">
-                            <Icon name="check" size={18} />
+                        <div className="absolute bottom-1 right-1 bg-brand-500 text-white p-1 rounded-full border-2 border-white shadow-sm" title="Verified User">
+                            <Icon name="check" size={12} />
                         </div>
                     )}
                 </div>
 
                 {/* User Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight font-display">{user.name}</h1>
-                        <button onClick={handleShare} className="p-2 text-slate-400 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 rounded-full transition-colors" title="Share Profile">
-                           <Icon name="send" size={16} />
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <h1 className="text-xl md:text-3xl font-bold text-slate-900 tracking-tight font-display">{user.name}</h1>
+                        <button onClick={handleShare} className="p-1 text-slate-400 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 rounded-full transition-colors" title="Share Profile">
+                           <Icon name="send" size={14} />
                         </button>
                     </div>
                     
                     {user.role === 'Agent' && user.agencyName && (
-                        <div className="flex items-center gap-2 text-brand-600 font-bold mb-3">
-                            <Icon name="building" size={18} />
+                        <div className="flex items-center gap-1.5 text-brand-600 text-xs font-bold mb-1.5">
+                            <Icon name="building" size={14} />
                             <span>{user.agencyName}</span>
                         </div>
                     )}
                     
-                    <p className="text-slate-600 text-lg mb-5 max-w-2xl leading-relaxed">{user.bio}</p>
+                    <p className="text-slate-600 text-xs md:text-sm mb-3 max-w-2xl leading-relaxed">{user.bio}</p>
                     
-                    <div className="flex flex-wrap gap-4 md:gap-8 text-sm text-slate-500">
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                            <Icon name="mapPin" size={16} className="text-brand-500" />
+                    <div className="flex flex-wrap gap-2 md:gap-4 text-[11px] md:text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                            <Icon name="mapPin" size={14} className="text-brand-500" />
                             {user.location}
                         </div>
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                            <Icon name="star" size={16} className="text-yellow-500" />
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                            <Icon name="star" size={14} className="text-yellow-500" />
                             <span className="font-bold text-slate-900">{user.rating}</span> 
                             <span>({user.reviewCount} Reviews)</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                             <Icon name="activity" size={16} className="text-brand-500" />
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                             <Icon name="activity" size={14} className="text-brand-500" />
                              Member since {new Date(user.memberSince).toLocaleDateString('en-US', {
                                month: 'long', year: 'numeric'
                              })}
@@ -254,54 +254,54 @@ const Profile: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col gap-4 w-full lg:w-auto mt-4 lg:mt-0">
-                   <div className="flex gap-3">
+                <div className="flex flex-col gap-2 w-full lg:w-auto mt-2 lg:mt-0">
+                   <div className="flex gap-2">
                       {isMe ? (
                         <>
-                          <Link to="/settings" className="flex-1 lg:flex-none bg-brand-600 text-white px-8 py-3 rounded-2xl hover:bg-brand-700 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-bold shadow-md shadow-brand-500/20">
-                             <Icon name="settings" size={20} /> Edit Profile
+                          <Link to="/settings" className="flex-1 lg:flex-none bg-brand-600 text-white px-4 py-2 rounded-xl hover:bg-brand-700 hover:shadow-md transition-all flex items-center justify-center gap-1.5 font-bold shadow-sm text-xs">
+                             <Icon name="settings" size={16} /> Edit Profile
                           </Link>
                           <button 
                             onClick={async () => {
                               await logout();
                               window.location.href = '/';
                             }}
-                            className="flex-1 lg:flex-none bg-red-50 text-red-600 px-6 py-3 rounded-2xl hover:bg-red-100 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-bold shadow-md shadow-red-500/10"
+                            className="flex-1 lg:flex-none bg-red-50 text-red-600 px-4 py-2 rounded-xl hover:bg-red-100 hover:shadow-md transition-all flex items-center justify-center gap-1.5 font-bold shadow-sm text-xs"
                           >
-                            <Icon name="logout" size={20} /> Logout
+                            <Icon name="logout" size={16} /> Logout
                           </button>
                         </>
                       ) : (
                         <>
                           {user.socials?.whatsapp && (
-                              <a href={`https://wa.me/${user.socials.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex-1 lg:flex-none bg-[#25D366] text-white px-6 py-3 rounded-2xl hover:bg-[#128C7E] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-bold shadow-md shadow-green-500/20">
-                                 <Icon name="whatsapp" size={20} /> Chat
+                              <a href={`https://wa.me/${user.socials.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex-1 lg:flex-none bg-[#25D366] text-white px-4 py-2 rounded-xl hover:bg-[#128C7E] hover:shadow-md transition-all flex items-center justify-center gap-1.5 font-bold shadow-sm text-xs">
+                                 <Icon name="whatsapp" size={16} /> Chat
                               </a>
                           )}
-                          <Link to={`/chat?to=${user.id}`} className="flex-1 lg:flex-none bg-slate-900 text-white px-6 py-3 rounded-2xl hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-bold shadow-md shadow-slate-900/20">
-                              <Icon name="messageCircle" size={20} /> Message
+                          <Link to={`/chat?to=${user.id}`} className="flex-1 lg:flex-none bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 hover:shadow-md transition-all flex items-center justify-center gap-1.5 font-bold shadow-sm text-xs">
+                              <Icon name="messageCircle" size={16} /> Message
                           </Link>
                         </>
                       )}
                    </div>
                    
                    {/* Social Row */}
-                   <div className="flex justify-center lg:justify-end gap-3">
-                      {user.socials?.facebook && <a href={`https://facebook.com/${user.socials.facebook}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1877F2] hover:text-white transition-all hover:scale-110"><Icon name="facebook" size={20} /></a>}
-                      {user.socials?.instagram && <a href={`https://instagram.com/${user.socials.instagram}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-red-500 hover:to-purple-500 hover:text-white transition-all hover:scale-110"><Icon name="instagram" size={20} /></a>}
-                      {user.socials?.twitter && <a href={`https://twitter.com/${user.socials.twitter}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1DA1F2] hover:text-white transition-all hover:scale-110"><Icon name="twitter" size={20} /></a>}
-                      {user.socials?.linkedin && <a href="#" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#0A66C2] hover:text-white transition-all hover:scale-110"><Icon name="linkedin" size={20} /></a>}
+                   <div className="flex justify-center lg:justify-end gap-1.5">
+                      {user.socials?.facebook && <a href={`https://facebook.com/${user.socials.facebook}`} target="_blank" rel="noreferrer" className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1877F2] hover:text-white transition-all"><Icon name="facebook" size={14} /></a>}
+                      {user.socials?.instagram && <a href={`https://instagram.com/${user.socials.instagram}`} target="_blank" rel="noreferrer" className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-red-500 hover:to-purple-500 hover:text-white transition-all"><Icon name="instagram" size={14} /></a>}
+                      {user.socials?.twitter && <a href={`https://twitter.com/${user.socials.twitter}`} target="_blank" rel="noreferrer" className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#1DA1F2] hover:text-white transition-all"><Icon name="twitter" size={14} /></a>}
+                      {user.socials?.linkedin && <a href="#" className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-[#0A66C2] hover:text-white transition-all"><Icon name="linkedin" size={14} /></a>}
                    </div>
                 </div>
             </div>
 
             {/* Content Tabs */}
-            <div className="border-b border-slate-200 mb-8 overflow-x-auto no-scrollbar">
-                <div className="flex gap-8 whitespace-nowrap">
+            <div className="border-b border-slate-200 mb-4 overflow-x-auto no-scrollbar">
+                <div className="flex gap-4 whitespace-nowrap">
                     {user.role === 'Tenant' && isMe ? (
                       <button 
                          onClick={() => setActiveTab('saved')}
-                         className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'saved' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                         className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'saved' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                       >
                           Saved Properties ({savedListings.length})
                       </button>
@@ -310,7 +310,7 @@ const Profile: React.FC = () => {
                     {(user.role === 'Agent' || user.role === 'Admin') && (
                       <button 
                          onClick={() => setActiveTab('listings')}
-                         className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'listings' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                         className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'listings' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                       >
                           Properties ({listings.length})
                       </button>
@@ -318,22 +318,22 @@ const Profile: React.FC = () => {
                     {user.role === 'Agent' && isMe ? (
                       <button 
                          onClick={() => setActiveTab('pro')}
-                         className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'pro' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1.5`}
+                         className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'pro' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1`}
                       >
-                          <Icon name="zap" size={16} className={activeTab === 'pro' ? 'text-brand-500' : 'text-slate-400'} /> Agent Pro
+                          <Icon name="zap" size={13} className={activeTab === 'pro' ? 'text-brand-500' : 'text-slate-400'} /> Agent Pro
                       </button>
                     ) : null}
                     {isMe ? (
                       <button 
                          onClick={() => setActiveTab('inbox')}
-                         className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'inbox' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1.5`}
+                         className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'inbox' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1`}
                       >
-                          <Icon name="mail" size={16} className={activeTab === 'inbox' ? 'text-brand-500' : 'text-slate-400'} /> Simulated Inbox
+                          <Icon name="mail" size={13} className={activeTab === 'inbox' ? 'text-brand-500' : 'text-slate-400'} /> Simulated Inbox
                       </button>
                     ) : null}
                     <button 
                        onClick={() => setActiveTab('reviews')}
-                       className={`pb-4 px-2 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'reviews' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                       className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'reviews' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                     >
                         Reviews ({user.reviewCount})
                     </button>

@@ -1107,73 +1107,155 @@ export const deleteBlogPost = async (id: string): Promise<void> => {
 
 // --- RENT FINANCING SERVICES ---
 
+const getLocalApplications = (userId?: string): RentFinancingApplication[] => {
+  try {
+    const raw = localStorage.getItem('rent_financing_applications');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as RentFinancingApplication[];
+    if (userId) {
+      return parsed.filter(app => app.userId === userId);
+    }
+    return parsed;
+  } catch (err) {
+    console.error('Failed to parse local rent financing applications:', err);
+    return [];
+  }
+};
+
+const saveLocalApplication = (app: RentFinancingApplication): void => {
+  try {
+    const current = getLocalApplications();
+    const updated = [app, ...current.filter(item => item.id !== app.id)];
+    localStorage.setItem('rent_financing_applications', JSON.stringify(updated));
+  } catch (err) {
+    console.error('Failed to save local rent financing application:', err);
+  }
+};
+
 export const submitRentFinancingApplication = async (app: Omit<RentFinancingApplication, 'id' | 'createdAt' | 'status'>): Promise<RentFinancingApplication> => {
   const nowString = new Date().toISOString();
-  const { data, error } = await supabase.from('rent_financing_applications').insert({
-    user_id: app.userId,
-    full_name: app.fullName,
+  const localId = 'local-rf-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
+  
+  const localApp: RentFinancingApplication = {
+    id: localId,
+    userId: app.userId,
+    fullName: app.fullName,
     email: app.email,
     phone: app.phone,
-    employment_status: app.employmentStatus,
-    monthly_income: app.monthlyIncome,
-    id_type: app.idType,
-    id_number: app.idNumber,
-    monthly_rent: app.monthlyRent,
-    landlord_name: app.landlordName,
-    landlord_phone: app.landlordPhone,
-    move_in_date: app.moveInDate,
-    lease_duration: app.leaseDuration,
-    street_address: app.streetAddress,
+    employmentStatus: app.employmentStatus,
+    monthlyIncome: Number(app.monthlyIncome),
+    idType: app.idType,
+    idNumber: app.idNumber,
+    monthlyRent: Number(app.monthlyRent),
+    landlordName: app.landlordName,
+    landlordPhone: app.landlordPhone,
+    moveInDate: app.moveInDate,
+    leaseDuration: Number(app.leaseDuration),
+    streetAddress: app.streetAddress,
     city: app.city,
-    state_region: app.stateRegion,
+    stateRegion: app.stateRegion,
     country: app.country,
-    postal_code: app.postalCode,
-    amount_required: app.amountRequired,
-    repayment_duration: app.repaymentDuration,
+    postalCode: app.postalCode,
+    amountRequired: Number(app.amountRequired),
+    repaymentDuration: Number(app.repaymentDuration),
     status: 'pending',
-    created_at: nowString
-  }).select().single();
-
-  if (error) throw error;
-  if (!data) throw new Error('Failed to insert rent financing application');
-
-  return {
-    id: data.id,
-    userId: data.user_id,
-    fullName: data.full_name,
-    email: data.email,
-    phone: data.phone,
-    employmentStatus: data.employment_status,
-    monthlyIncome: Number(data.monthly_income),
-    idType: data.id_type,
-    idNumber: data.id_number,
-    monthlyRent: Number(data.monthly_rent),
-    landlordName: data.landlord_name,
-    landlordPhone: data.landlord_phone,
-    moveInDate: data.move_in_date,
-    leaseDuration: Number(data.lease_duration),
-    streetAddress: data.street_address,
-    city: data.city,
-    stateRegion: data.state_region,
-    country: data.country || app.country, // support any returned profiles key
-    postalCode: data.postal_code,
-    amountRequired: Number(data.amount_required),
-    repaymentDuration: Number(data.repayment_duration),
-    status: data.status,
-    createdAt: data.created_at
+    createdAt: nowString
   };
+
+  try {
+    const supabasePromise = (async () => {
+      const { data, error } = await supabase.from('rent_financing_applications').insert({
+        user_id: app.userId,
+        full_name: app.fullName,
+        email: app.email,
+        phone: app.phone,
+        employment_status: app.employmentStatus,
+        monthly_income: app.monthlyIncome,
+        id_type: app.idType,
+        id_number: app.idNumber,
+        monthly_rent: app.monthlyRent,
+        landlord_name: app.landlordName,
+        landlord_phone: app.landlordPhone,
+        move_in_date: app.moveInDate,
+        lease_duration: app.leaseDuration,
+        street_address: app.streetAddress,
+        city: app.city,
+        state_region: app.stateRegion,
+        country: app.country,
+        postal_code: app.postalCode,
+        amount_required: app.amountRequired,
+        repayment_duration: app.repaymentDuration,
+        status: 'pending',
+        created_at: nowString
+      }).select().single();
+
+      if (error) throw error;
+      if (!data) throw new Error('No data returned');
+      return data;
+    })();
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase request timed out')), 3000)
+    );
+
+    const data = await Promise.race([supabasePromise, timeoutPromise]);
+    
+    const savedApp: RentFinancingApplication = {
+      id: data.id,
+      userId: data.user_id,
+      fullName: data.full_name,
+      email: data.email,
+      phone: data.phone,
+      employmentStatus: data.employment_status,
+      monthlyIncome: Number(data.monthly_income),
+      idType: data.id_type,
+      idNumber: data.id_number,
+      monthlyRent: Number(data.monthly_rent),
+      landlordName: data.landlord_name,
+      landlordPhone: data.landlord_phone,
+      moveInDate: data.move_in_date,
+      leaseDuration: Number(data.lease_duration),
+      streetAddress: data.street_address,
+      city: data.city,
+      stateRegion: data.state_region,
+      country: data.country || app.country,
+      postalCode: data.postal_code,
+      amountRequired: Number(data.amount_required),
+      repaymentDuration: Number(data.repayment_duration),
+      status: data.status as any,
+      createdAt: data.created_at
+    };
+
+    saveLocalApplication(savedApp);
+    return savedApp;
+
+  } catch (err) {
+    console.warn("Supabase rent financing application submission failed, utilizing local storage fallback:", err);
+    saveLocalApplication(localApp);
+    return localApp;
+  }
 };
 
 export const getRentFinancingApplications = async (userId?: string): Promise<RentFinancingApplication[]> => {
+  const localApps = getLocalApplications(userId);
   try {
-    let query = supabase.from('rent_financing_applications').select('*');
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const supabasePromise = (async () => {
+      let query = supabase.from('rent_financing_applications').select('*');
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    })();
 
-    if (error) throw error;
-    return (data || []).map((d: any) => ({
+    const timeoutPromise = new Promise<any[]>((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase request timed out')), 1500)
+    );
+
+    const data = await Promise.race([supabasePromise, timeoutPromise]);
+
+    const mapped: RentFinancingApplication[] = data.map((d: any) => ({
       id: d.id,
       userId: d.user_id,
       fullName: d.full_name,
@@ -1198,9 +1280,21 @@ export const getRentFinancingApplications = async (userId?: string): Promise<Ren
       status: d.status,
       createdAt: d.created_at
     }));
+
+    // Cache or sync local apps: merge them so local-only submissions are preserved
+    const combined = [...mapped];
+    for (const localApp of localApps) {
+      if (!combined.some(c => c.id === localApp.id)) {
+        combined.push(localApp);
+      }
+    }
+    // Re-sort combined by date descending
+    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return combined;
+
   } catch (err) {
-    console.error("Supabase getRentFinancingApplications failed, returning empty list fallback:", err);
-    return [];
+    console.warn("Supabase getRentFinancingApplications failed or timed out, returning local fallback:", err);
+    return localApps;
   }
 };
 

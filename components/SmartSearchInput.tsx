@@ -216,48 +216,48 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
           {/* Overlay to close on click outside */}
           <div className="fixed inset-0 z-40" onClick={() => setShowFilters(false)}></div>
           
-          <div className="absolute top-full left-0 mt-3 w-full bg-white border border-slate-200 rounded-3xl shadow-[0_20px_40px_-10px_rgba(147,51,234,0.15)] p-6 z-50 animate-fade-in">
-            <div className="flex justify-between items-center mb-5">
-               <h3 className="font-bold text-slate-800 flex items-center gap-2 font-display">
-                 <Icon name="sliders" size={18} className="text-brand-600" /> Filter Options
+          <div className="absolute top-full left-0 md:left-auto md:right-0 mt-1.5 w-full max-w-sm bg-white border border-slate-200 rounded-2xl shadow-xl p-3.5 z-50 animate-fade-in">
+            <div className="flex justify-between items-center mb-3">
+               <h3 className="font-bold text-xs text-slate-800 flex items-center gap-1.5 font-display">
+                 <Icon name="sliders" size={14} className="text-brand-600" /> Filter Options
                </h3>
-               <button onClick={handleResetFilters} className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline">
+               <button onClick={handleResetFilters} className="text-[10px] font-semibold text-brand-600 hover:text-brand-700 hover:underline">
                  Reset All
                </button>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-3">
               {/* Price Range */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Price Range</label>
-                <div className="flex gap-3">
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Price Range</label>
+                <div className="flex gap-2">
                   <div className="relative w-1/2">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">$</span>
                     <input 
                         type="number" 
                         placeholder="Min" 
                         value={filters.minPrice ?? ''}
                         onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 font-medium"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 font-medium"
                     />
                   </div>
                   <div className="relative w-1/2">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">$</span>
                     <input 
                         type="number" 
                         placeholder="Max" 
                         value={filters.maxPrice ?? ''}
                         onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 font-medium"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 font-medium"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Category & Location Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Category</label>
+                    <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Category</label>
                     <div className="relative">
                         <select 
                         value={filters.categoryId || ''} 
@@ -270,7 +270,7 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
                             propertyType: val === 'houses' ? 'Apartment' : val === 'land' ? 'Land' : val === 'offices' ? 'Office' : val === 'warehouses' ? 'Warehouse' : undefined
                           }));
                         }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 appearance-none font-medium"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 appearance-none font-medium"
                         >
                         <option value="">Any Category</option>
                         <option value="houses">Houses & Apartments</option>
@@ -278,13 +278,13 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
                         <option value="offices">Offices & Shops</option>
                         <option value="warehouses">Warehouses & Storage</option>
                         </select>
-                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <Icon name="chevronRight" size={12} className="rotate-90" />
+                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <Icon name="chevronRight" size={10} className="rotate-90" />
                         </div>
                     </div>
                  </div>
                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Location</label>
+                    <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Location</label>
                     <LocationSelect 
                         value={filters.location || ''}
                         onChange={(val) => handleFilterChange('location', val)}
@@ -294,14 +294,14 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
               </div>
 
               {/* Property Type & Beds Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Property Type</label>
+                    <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Property Type</label>
                     <div className="relative">
                         <select 
                         value={filters.propertyType || ''} 
                         onChange={(e) => handleFilterChange('propertyType', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 appearance-none font-medium"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 appearance-none font-medium"
                         >
                         <option value="">Any Type</option>
                         <option value="Apartment">Apartment</option>
@@ -315,18 +315,18 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
                         <option value="Commercial">Commercial</option>
                         <option value="Retail">Retail</option>
                         </select>
-                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <Icon name="chevronRight" size={12} className="rotate-90" />
+                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <Icon name="chevronRight" size={10} className="rotate-90" />
                         </div>
                     </div>
                  </div>
                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Beds</label>
+                    <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Beds</label>
                     <div className="relative">
                         <select 
                         value={filters.bedrooms || ''} 
                         onChange={(e) => handleFilterChange('bedrooms', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 appearance-none font-medium"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 appearance-none font-medium"
                         >
                         <option value="">Any</option>
                         <option value="1">1+</option>
@@ -335,17 +335,17 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
                         <option value="4">4+</option>
                         <option value="5">5+</option>
                         </select>
-                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <Icon name="chevronRight" size={12} className="rotate-90" />
+                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <Icon name="chevronRight" size={10} className="rotate-90" />
                         </div>
                     </div>
                  </div>
               </div>
               
-              <div className="pt-4 border-t border-slate-100">
+              <div className="pt-2.5 border-t border-slate-100">
                 <button 
                   onClick={handleApplyFilters}
-                  className="w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:shadow-fuchsia-500/25 transition-all transform hover:-translate-y-0.5"
+                  className="w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white font-bold py-2 rounded-xl text-xs hover:shadow-md hover:shadow-fuchsia-500/20 transition-all transform hover:-translate-y-0.5"
                 >
                   Apply Filters
                 </button>

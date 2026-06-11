@@ -322,15 +322,15 @@ const PostAd: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 pt-3 pb-6 max-w-3xl min-h-[calc(100vh-80px)]">
-      <div className="text-center mb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-1">List Your Property</h1>
-        <p className="text-slate-500 text-xs md:text-sm">Find the perfect tenant or buyer with our professional listing tools.</p>
+    <div className="container mx-auto px-2 pt-2 pb-4 max-w-2xl min-h-[calc(100vh-100px)]">
+      <div className="text-center mb-2.5">
+        <h1 className="text-lg md:text-xl font-bold text-slate-900 mb-0.5">List Your Property</h1>
+        <p className="text-slate-500 text-xs">Find the perfect tenant or buyer with our professional listing tools.</p>
       </div>
 
       <div className="glass-card rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
         {/* Progress Bar */}
-        <div className="bg-slate-50/50 border-b border-slate-100 p-3 flex justify-between items-center px-4 md:px-8">
+        <div className="bg-slate-50/50 border-b border-slate-100 p-2 flex justify-between items-center px-4 md:px-6">
            <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-brand-600 font-semibold text-xs' : 'text-slate-400 text-xs'}`}>
               <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${step >= 1 ? 'border-brand-600 bg-brand-50' : 'border-current'}`}>1</span>
               <span className="hidden sm:inline">Category</span>
@@ -351,7 +351,7 @@ const PostAd: React.FC = () => {
            </div>
         </div>
 
-        <div className="p-4 md:p-6">
+        <div className="p-3 md:p-4">
           {step === 1 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in">
               {CATEGORIES.map(cat => (

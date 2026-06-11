@@ -125,7 +125,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const currentYear = new Date().getFullYear();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isAuthenticated, isAuthReady, logout } = useAuth();
   const { location: userLocData, refreshLocation, isLoading: isLocating, needsCountrySelection } = useAppLocation();
 
   const [welcomeOpen, setWelcomeOpen] = useState(false);
@@ -210,20 +210,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <CountrySelector />
 
                     {/* Post Button */}
-                    <Link 
-                      to={
-                        !isAuthenticated
-                          ? '/signin'
-                          : (user?.role === 'Agent' || user?.role === 'Admin')
-                            ? '/post'
-                            : '/create-vendor'
-                      }
-                      state={!isAuthenticated ? { from: { pathname: '/post' }, pendingVendor: true } : undefined}
-                      className="flex items-center justify-center w-9 h-9 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all shadow-md shadow-red-500/15 hover:shadow-red-500/25 hover:scale-105 active:scale-95 flex-shrink-0"
+                    <button 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (!isAuthenticated || !user || user.role === 'Tenant' || user.role === 'Customer') {
+                          await logout();
+                          navigate('/signup', { state: { role: 'Tenant' } });
+                        } else if (user.role === 'Agent' || user.role === 'Admin') {
+                          navigate('/post');
+                        } else {
+                          navigate('/create-vendor');
+                        }
+                      }}
+                      className="flex items-center justify-center w-9 h-9 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all shadow-md shadow-red-500/15 hover:shadow-red-500/25 hover:scale-105 active:scale-95 flex-shrink-0 cursor-pointer"
                       title="Post Listing"
                     >
                       <Icon name="plus" size={18} strokeWidth={3} className="w-[18px] h-[18px]" />
-                    </Link>
+                    </button>
 
                     {/* Auth */}
                     {isAuthenticated ? (

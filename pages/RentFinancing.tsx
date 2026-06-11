@@ -212,32 +212,32 @@ const RentFinancing: React.FC = () => {
   };
 
   return (
-    <div id="rent-financing-view" className="py-8 min-h-screen bg-slate-50/50">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div id="rent-financing-view" className="py-4 md:py-6 min-h-screen bg-slate-50/50">
+      <div className="container mx-auto px-3 max-w-7xl animate-fade-in">
         
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 border-b border-slate-100 pb-4">
           <div>
-            <span className="inline-flex items-center gap-1.5 bg-brand-50 border border-brand-100 text-brand-700 px-3.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase mb-3">
-              <Icon name="zap" size={12} className="text-brand-500 animate-pulse" />
-              CaliberRent Financing Center
+            <span className="inline-flex items-center gap-1 bg-brand-50 border border-brand-100 text-brand-700 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase mb-1.5 animate-pulse">
+              <Icon name="zap" size={10} className="text-brand-500" />
+              Tym2Muv Rent Financing Center
             </span>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 font-display">
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-800 font-display">
               Flexible Rent Financing
             </h1>
-            <p className="text-slate-500 text-xs mt-1 leading-relaxed max-w-xl">
-              Don't let massive landlord advance demands slow you down. Apply for instant rental capital and spread your payments comfortably across up to 36 months.
+            <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed max-w-lg">
+              Don't let massive landlord advance demands slow you down. Apply for instant rental capital and spread your payments comfortably.
             </p>
           </div>
           
           {/* Navigation Tabs */}
-          <div className="flex bg-white border border-slate-205 p-1 rounded-2xl shadow-sm">
+          <div className="flex bg-white border border-slate-200 p-0.5 rounded-xl shadow-xs self-start sm:self-auto">
             <button
               id="tab-apply-btn"
               onClick={() => setActiveTab('apply')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'apply'
-                  ? 'bg-brand-600 text-white shadow-md'
+                  ? 'bg-brand-600 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -246,9 +246,9 @@ const RentFinancing: React.FC = () => {
             <button
               id="tab-history-btn"
               onClick={() => setActiveTab('history')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'history'
-                  ? 'bg-brand-600 text-white shadow-md'
+                  ? 'bg-brand-600 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -259,7 +259,7 @@ const RentFinancing: React.FC = () => {
 
         {/* Application Form Tab */}
         {activeTab === 'apply' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             
             {/* Main Application Form Inputs */}
             <div className="lg:col-span-2 space-y-6">
@@ -301,61 +301,61 @@ const RentFinancing: React.FC = () => {
               <form onSubmit={handleFormSubmit} className="space-y-6">
                 
                 {/* 1. Personal Information */}
-                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 mb-2 pb-3 border-b border-slate-50">
-                    <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                      <Icon name="user" size={16} />
+                <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-100 shadow-xs space-y-3">
+                  <div className="flex items-center gap-2 mb-1 pb-2 border-b border-slate-100">
+                    <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                      <Icon name="user" size={14} />
                     </div>
-                    <h3 className="font-bold text-slate-800 text-sm sm:text-base">Personal Information</h3>
+                    <h3 className="font-bold text-slate-800 text-xs sm:text-sm">Personal Information</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
                       <input
                         type="text"
                         name="fullName"
                         value={formData.fullName}
                         onChange={handleInputChange}
                         placeholder="John Doe"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-medium transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500 pointer-events-auto"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Email Address</label>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="johndoe@email.com"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-medium transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Phone Number</label>
                       <input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
                         placeholder="+233 20 123 4567"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-medium transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Employment Status</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Employment Status</label>
                       <select
                         name="employmentStatus"
                         value={formData.employmentStatus}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-bold text-slate-800 transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none cursor-pointer"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-bold text-slate-800 transition-colors outline-none cursor-pointer focus:bg-white"
                       >
                         {EMPLOYMENT_STATUSES.map(status => (
                           <option key={status.id} value={status.id}>{status.name}</option>
@@ -364,26 +364,26 @@ const RentFinancing: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="md:col-span-1">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Monthly Income ({userLoc.symbol})</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Monthly Income ({userLoc.symbol})</label>
                       <input
                         type="number"
                         name="monthlyIncome"
                         value={formData.monthlyIncome}
                         onChange={handleInputChange}
                         placeholder="4500"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-medium transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Verification ID Type</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Verification ID Type</label>
                       <select
                         name="idType"
                         value={formData.idType}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-bold text-slate-800 transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none cursor-pointer"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-bold text-slate-800 transition-colors outline-none cursor-pointer focus:bg-white"
                       >
                         {ID_TYPES.map(type => (
                           <option key={type.id} value={type.id}>{type.name}</option>
@@ -391,14 +391,14 @@ const RentFinancing: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID Document Number</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">ID Document Number</label>
                       <input
                         type="text"
                         name="idNumber"
                         value={formData.idNumber}
                         onChange={handleInputChange}
                         placeholder="GHA-123456789-0"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-medium transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
@@ -406,34 +406,34 @@ const RentFinancing: React.FC = () => {
                 </div>
 
                 {/* 2. Rent Details */}
-                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 mb-2 pb-3 border-b border-slate-50">
-                    <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
-                      <Icon name="tag" size={16} />
+                <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-100 shadow-xs space-y-3">
+                  <div className="flex items-center gap-2 mb-1 pb-2 border-b border-slate-100">
+                    <div className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                      <Icon name="tag" size={14} />
                     </div>
-                    <h3 className="font-bold text-slate-800 text-sm sm:text-base">Rent & Landlord Details</h3>
+                    <h3 className="font-bold text-slate-800 text-xs sm:text-sm">Rent & Landlord Details</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Monthly Rent ({userLoc.symbol})</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Monthly Rent ({userLoc.symbol})</label>
                       <input
                         type="number"
                         name="monthlyRent"
                         value={formData.monthlyRent}
                         onChange={handleInputChange}
                         placeholder="1200"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Lease Duration (Months)</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Lease Duration (Months)</label>
                       <select
                         name="leaseDuration"
                         value={formData.leaseDuration}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-bold text-slate-800 transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none cursor-pointer"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-bold text-slate-800 transition-colors outline-none cursor-pointer focus:bg-white"
                       >
                         <option value="6">6 Months</option>
                         <option value="12">12 Months</option>
@@ -443,39 +443,39 @@ const RentFinancing: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Landlord Name</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Landlord Name</label>
                       <input
                         type="text"
                         name="landlordName"
                         value={formData.landlordName}
                         onChange={handleInputChange}
                         placeholder="Alhaji Kwesi"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Landlord Contact Phone</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Landlord Contact Phone</label>
                       <input
                         type="tel"
                         name="landlordPhone"
                         value={formData.landlordPhone}
                         onChange={handleInputChange}
                         placeholder="+233 24 987 6543"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Expected Move-in Date</label>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Expected Move-in Date</label>
                       <input
                         type="date"
                         name="moveInDate"
                         value={formData.moveInDate}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none cursor-pointer text-slate-850"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none cursor-pointer text-slate-800 focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
@@ -483,61 +483,61 @@ const RentFinancing: React.FC = () => {
                 </div>
 
                 {/* 3. Property Address */}
-                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 mb-2 pb-3 border-b border-slate-50">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                      <Icon name="mapPin" size={16} />
+                <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-100 shadow-xs space-y-3">
+                  <div className="flex items-center gap-2 mb-1 pb-2 border-b border-slate-100">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <Icon name="mapPin" size={14} />
                     </div>
-                    <h3 className="font-bold text-slate-800 text-sm sm:text-base">Property Address</h3>
+                    <h3 className="font-bold text-slate-800 text-xs sm:text-sm">Property Address</h3>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Street Address</label>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Street Address</label>
                     <input
                       type="text"
                       name="streetAddress"
                       value={formData.streetAddress}
                       onChange={handleInputChange}
                       placeholder="Ring Road Central, Plot 42"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                      className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                       required
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">City / Town</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">City / Town</label>
                       <input
                         type="text"
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
                         placeholder="Accra"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Region / State</label>
+                    <div className="sm:col-span-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Region / State</label>
                       <input
                         type="text"
                         name="stateRegion"
                         value={formData.stateRegion}
                         onChange={handleInputChange}
                         placeholder="Greater Accra"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                         required
                       />
                     </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Postal Code</label>
+                    <div className="sm:col-span-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Postal Code</label>
                       <input
                         type="text"
                         name="postalCode"
                         value={formData.postalCode}
                         onChange={handleInputChange}
                         placeholder="GA-184"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs sm:text-sm font-semibold transition-all focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold transition-colors outline-none focus:bg-white focus:ring-1 focus:ring-brand-500"
                       />
                     </div>
                   </div>
@@ -549,16 +549,16 @@ const RentFinancing: React.FC = () => {
                     id="submit-financing-application-btn"
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-4 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-extrabold text-sm tracking-wide rounded-2xl shadow-xl shadow-indigo-500/10 hover:shadow-indigo-500/25 active:scale-98 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-extrabold text-xs tracking-wide rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/25 active:scale-98 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
-                        <Icon name="loader" size={18} className="animate-spin" />
+                        <Icon name="loader" size={14} className="animate-spin" />
                         <span>Processing Instant Verification...</span>
                       </>
                     ) : (
                       <>
-                        <Icon name="shieldCheck" size={18} />
+                        <Icon name="shieldCheck" size={14} />
                         <span>Submit Secure Rent Financing Application</span>
                       </>
                     )}
@@ -570,23 +570,23 @@ const RentFinancing: React.FC = () => {
 
             {/* Live Repayment Calculator Card (Static/Floating Sidebar) */}
             <div className="lg:col-span-1">
-              <div className="sticky top-24 bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-md space-y-6">
+              <div className="sticky top-20 bg-white rounded-2xl p-4 border border-slate-100 shadow-xs space-y-4">
                 
-                <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-                  <div className="w-9 h-9 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center">
-                    <Icon name="creditCard" size={18} />
+                <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
+                  <div className="w-7 h-7 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center flex-shrink-0">
+                    <Icon name="creditCard" size={14} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-sm">Loan details</h3>
-                    <p className="text-[10px] text-slate-450 font-medium">Interactive Rent Term Estimator</p>
+                    <h3 className="font-bold text-slate-800 text-xs">Loan details</h3>
+                    <p className="text-[9px] text-slate-500 font-medium">Interactive Rent Term Estimator</p>
                   </div>
                 </div>
 
                 {/* Amount Required Slider */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-500 uppercase tracking-wider">Amount Required</span>
-                    <span className="font-extrabold text-slate-900 border border-slate-100 bg-slate-50 px-2.5 py-1 rounded-lg text-xs">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-black text-slate-500 uppercase tracking-wider">Amount Required</span>
+                    <span className="font-extrabold text-slate-900 border border-slate-100 bg-slate-50 px-2 py-0.5 rounded text-[10px]">
                       {userLoc.symbol}{formData.amountRequired.toLocaleString()}
                     </span>
                   </div>
@@ -599,20 +599,20 @@ const RentFinancing: React.FC = () => {
                     step={100}
                     value={formData.amountRequired}
                     onChange={(e) => handleSliderChange('amountRequired', parseInt(e.target.value, 10))}
-                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-600"
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-600"
                   />
 
-                  <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400">
+                  <div className="flex justify-between text-[9px] font-mono font-bold text-slate-400">
                     <span>{userLoc.symbol}{minAmount}</span>
                     <span>{userLoc.symbol}{maxAmount}</span>
                   </div>
                 </div>
 
                 {/* Repayment Duration Slider */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-500 uppercase tracking-wider">Repayment period</span>
-                    <span className="font-extrabold text-slate-900 border border-slate-100 bg-slate-50 px-2.5 py-1 rounded-lg text-xs">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-black text-slate-500 uppercase tracking-wider">Repayment period</span>
+                    <span className="font-extrabold text-slate-900 border border-slate-100 bg-slate-50 px-2 py-0.5 rounded text-[10px]">
                       {formData.repaymentDuration} Months
                     </span>
                   </div>
@@ -625,58 +625,58 @@ const RentFinancing: React.FC = () => {
                     step={1}
                     value={formData.repaymentDuration}
                     onChange={(e) => handleSliderChange('repaymentDuration', parseInt(e.target.value, 10))}
-                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-600"
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-600"
                   />
 
-                  <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400">
+                  <div className="flex justify-between text-[9px] font-mono font-bold text-slate-400">
                     <span>1 Month</span>
                     <span>36 Months max</span>
                   </div>
                 </div>
 
                 {/* Estimated Repayments breakdown */}
-                <div className="bg-brand-50/50 p-4 rounded-3xl border border-brand-100/30 space-y-3">
-                  <span className="text-[10px] font-extrabold tracking-wider uppercase text-slate-400 block">estimated loan cost</span>
+                <div className="bg-brand-50/40 p-3 rounded-xl border border-brand-100/20 space-y-2.5">
+                  <span className="text-[9px] font-extrabold tracking-wider uppercase text-slate-400 block">estimated loan cost</span>
                   
-                  <div className="flex justify-between items-center text-xs">
+                  <div className="flex justify-between items-center text-[11px]">
                     <span className="font-medium text-slate-600">Principal Amount</span>
                     <span className="font-bold text-slate-800">{userLoc.symbol}{formData.amountRequired.toLocaleString()}</span>
                   </div>
 
-                  <div className="flex justify-between items-center text-xs">
+                  <div className="flex justify-between items-center text-[11px]">
                     <span className="font-medium text-slate-600">Estimated Rate</span>
                     <span className="font-bold text-indigo-700">{interestRate}% / month</span>
                   </div>
 
-                  <div className="flex justify-between items-center text-xs pb-3 border-b border-brand-100/50">
+                  <div className="flex justify-between items-center text-[11px] pb-2 border-b border-brand-100/30">
                     <span className="font-medium text-slate-600">Total Interest ({formData.repaymentDuration}m)</span>
                     <span className="font-bold text-slate-800">{userLoc.symbol}{Math.round(totalInterest).toLocaleString()}</span>
                   </div>
 
-                  <div className="flex justify-between items-center pt-1">
+                  <div className="flex justify-between items-center pt-0.5">
                     <div>
-                      <span className="text-xs font-bold text-slate-900">Monthly Repayment</span>
-                      <span className="text-[9px] block text-slate-450 leading-tight">Interest inclusive</span>
+                      <span className="text-xs font-bold text-slate-900 block leading-tight">Monthly Repayment</span>
+                      <span className="text-[8px] text-slate-500 leading-none">Interest inclusive</span>
                     </div>
-                    <span className="text-xl font-black text-brand-700 font-display">
+                    <span className="text-lg font-black text-brand-700 font-display">
                       {userLoc.symbol}{Math.round(monthlyRepayment).toLocaleString()}
                     </span>
                   </div>
                 </div>
 
                 {/* Highlight badges for trust */}
-                <div className="space-y-2.5 pt-1">
-                  <div className="flex gap-2.5 items-start text-xs">
-                    <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Icon name="check" size={12} />
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex gap-2 items-start text-xs">
+                    <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Icon name="check" size={10} />
                     </div>
-                    <p className="text-slate-500 text-[11px] leading-tight font-medium"><strong>No early payoff fees.</strong> Settle principal early at zero extra penalties.</p>
+                    <p className="text-slate-500 text-[10px] leading-tight font-medium"><strong>No early payoff fees.</strong> Settle principal early at zero penalty.</p>
                   </div>
-                  <div className="flex gap-2.5 items-start text-xs">
-                    <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Icon name="check" size={12} />
+                  <div className="flex gap-2 items-start text-xs">
+                    <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Icon name="check" size={10} />
                     </div>
-                    <p className="text-slate-500 text-[11px] leading-tight font-medium"><strong>Direct disbursement.</strong> Approved capital sent directly to your landlord.</p>
+                    <p className="text-slate-500 text-[10px] leading-tight font-medium"><strong>Direct disbursement.</strong> Approved capital sent directly to landlord.</p>
                   </div>
                 </div>
 

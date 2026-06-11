@@ -55,19 +55,9 @@ export default defineConfig(({ mode }) => {
           main: path.resolve(__dirname, 'index.html'),
         },
         output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('@supabase')) {
-                return 'vendor-supabase';
-              }
-              if (id.includes('framer-motion') || id.includes('motion')) {
-                return 'vendor-motion';
-              }
-              if (id.includes('recharts') || id.includes('d3')) {
-                return 'vendor-charts';
-              }
-              // Let Rollup handle the rest (React, etc) to prevent circular dependency warnings and optimize splitting
-            }
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-supabase': ['@supabase/supabase-js'],
           }
         }
       }

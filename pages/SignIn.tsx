@@ -35,7 +35,10 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
   React.useEffect(() => {
     setIsSignUp(defaultTab === 'signup' || location.pathname === '/signup');
     setShowForgotPassword(false);
-  }, [location.pathname, defaultTab]);
+    if (location.state?.role === 'Tenant') {
+      setSelectedRole('Tenant');
+    }
+  }, [location.pathname, location.state, defaultTab]);
 
   React.useEffect(() => {
     const probeSupabase = async () => {

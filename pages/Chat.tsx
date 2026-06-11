@@ -219,16 +219,16 @@ const Chat: React.FC = () => {
        <div className="glass-card rounded-3xl shadow-lg border border-slate-200 h-full overflow-hidden flex">
           
           {/* Sidebar / Inbox List */}
-          <div className={`${activeChatId ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col border-r border-slate-200 bg-white/50`}>
-             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-800">Messages</h2>
+          <div className={`${activeChatId ? 'hidden md:flex' : 'flex'} w-full md:w-72 lg:w-80 flex-col border-r border-slate-200 bg-white/50`}>
+             <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-sm font-extrabold text-slate-800">Messages</h2>
                 {chats.length > 0 && (
                   <button 
                     onClick={handleClearAllConversations}
-                    className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50/55 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 border border-red-100"
+                    className="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50/55 hover:bg-red-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1 border border-red-100"
                     title="Clear entire messages inbox"
                   >
-                    <Icon name="trash" size={13} /> Clear Inbox
+                    <Icon name="trash" size={11} /> Clear All
                   </button>
                 )}
              </div>
@@ -251,21 +251,21 @@ const Chat: React.FC = () => {
                                 <div 
                                     key={chat.id}
                                     onClick={() => setActiveChatId(chat.id)}
-                                    className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors ${activeChatId === chat.id ? 'bg-brand-50/50 border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}
+                                    className={`p-3 border-b border-slate-55 cursor-pointer hover:bg-slate-50 transition-colors ${activeChatId === chat.id ? 'bg-brand-50/50 border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}
                                 >
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-2.5">
                                         <img 
                                           src={otherUser?.avatar || 'https://via.placeholder.com/50'} 
                                           alt={otherUser?.name} 
                                           referrerPolicy="no-referrer"
-                                          className="w-12 h-12 rounded-full object-cover bg-slate-200"
+                                          className="w-10 h-10 rounded-full object-cover bg-slate-200"
                                         />
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-baseline mb-1">
-                                                <h3 className="font-bold text-slate-900 truncate">{otherUser?.name || 'User'}</h3>
-                                                <span className="text-xs text-slate-400">{chat.lastMessageTime}</span>
+                                            <div className="flex justify-between items-baseline mb-0.5">
+                                                <h3 className="font-bold text-xs text-slate-900 truncate">{otherUser?.name || 'User'}</h3>
+                                                <span className="text-[10px] text-slate-400">{chat.lastMessageTime}</span>
                                             </div>
-                                            <p className={`text-sm truncate ${isUnread ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
+                                            <p className={`text-xs truncate ${isUnread ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
                                                 {chat.lastMessage}
                                             </p>
                                         </div>
@@ -282,7 +282,7 @@ const Chat: React.FC = () => {
               {activeChatId ? (
                   <>
                     {/* Header */}
-                    <div className="p-4 bg-white/60 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between shadow-sm">
+                    <div className="p-3 bg-white/60 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
                             <button onClick={() => setActiveChatId(null)} className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full">
                                 <Icon name="chevronRight" size={20} className="rotate-180" />
@@ -321,18 +321,18 @@ const Chat: React.FC = () => {
                     </div>
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
                         {messages.map((msg) => {
                             const isMe = msg.senderId === currentUser?.id;
                             return (
                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[75%] px-5 py-3 rounded-2xl ${
+                                    <div className={`max-w-[75%] px-3.5 py-2 rounded-2xl ${
                                         isMe 
                                         ? 'bg-brand-600 text-white rounded-tr-sm' 
                                         : 'bg-white text-slate-800 shadow-sm border border-slate-100 rounded-tl-sm'
                                     }`}>
-                                        <p className="text-sm">{msg.text}</p>
-                                        <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>{msg.timestamp}</p>
+                                        <p className="text-xs md:text-sm leading-normal">{msg.text}</p>
+                                        <p className={`text-[10px] mt-0.5 text-right ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>{msg.timestamp}</p>
                                     </div>
                                 </div>
                             );
@@ -341,24 +341,24 @@ const Chat: React.FC = () => {
                     </div>
 
                     {/* Input Area */}
-                    <div className="p-4 bg-white/60 backdrop-blur-sm border-t border-slate-200">
+                    <div className="p-2.5 bg-white/60 backdrop-blur-sm border-t border-slate-200">
                         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                            <button type="button" className="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">
-                                <Icon name="plus" size={24} />
+                            <button type="button" className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">
+                                <Icon name="plus" size={18} />
                             </button>
                             <input 
                                 type="text" 
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
                                 placeholder="Type a message..." 
-                                className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none"
+                                className="flex-1 bg-slate-100 border-none rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-500 outline-none"
                             />
                             <button 
                                 type="submit" 
                                 disabled={!messageInput.trim()}
-                                className="p-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-brand-500/20"
+                                className="p-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-brand-500/20"
                             >
-                                <Icon name="send" size={20} />
+                                <Icon name="send" size={16} />
                             </button>
                         </form>
                     </div>

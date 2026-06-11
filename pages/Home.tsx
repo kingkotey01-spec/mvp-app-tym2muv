@@ -249,35 +249,35 @@ const Home: React.FC = () => {
       <div className="container mx-auto px-4 max-w-7xl space-y-6 animate-slide-up relative z-10">
          
           {/* Stunning Premium Home Hero Banner */}
-          <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#8607C1] to-[#3B0058] text-white p-8 md:p-14 shadow-2xl shadow-[#8607C1]/15 border border-[#CF8EED]/20 mt-2">
+          <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8607C1] to-[#3B0058] text-white p-5 md:p-8 shadow-lg shadow-[#8607C1]/10 border border-[#CF8EED]/20 mt-2">
             {/* Visual background layers & Neon glows */}
             <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 pointer-events-none"></div>
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#00ffcc]/10 rounded-full blur-[110px] pointer-events-none animate-pulse"></div>
-            <div className="absolute bottom-0 left-10 w-[250px] h-[250px] bg-[#ff007f]/5 rounded-full blur-[100px] pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#00ffcc]/10 rounded-full blur-[80px] pointer-events-none animate-pulse"></div>
+            <div className="absolute bottom-0 left-10 w-[150px] h-[150px] bg-[#ff007f]/5 rounded-full blur-[80px] pointer-events-none"></div>
             
-            <div className="relative z-10 max-w-3xl flex flex-col gap-6">
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight md:leading-none font-wix text-white">
+            <div className="relative z-10 max-w-2xl flex flex-col gap-3">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight md:leading-none font-wix text-white">
                 Perspective Change? <span className="whitespace-nowrap">It's <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-400">tym2muv.</span></span>
               </h1>
               
-              <p className="text-slate-200 text-[13px] md:text-sm max-w-xl leading-relaxed font-wix font-medium">
+              <p className="text-slate-200 text-xs max-w-lg leading-relaxed font-wix font-medium">
                 Stop doom scrolling apps that ghost you. Lock down your next aesthetic upgrade and drop the link to the group chat.
               </p>
 
               {/* Trust Badge Indicators */}
-              <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-[10px] md:text-xs font-mono text-slate-400">
-                <div className="flex items-center gap-1.5">
-                  <Icon name="check" size={14} className="text-[#00ffcc]" />
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[10px] md:text-[11px] font-mono text-slate-300">
+                <div className="flex items-center gap-1">
+                  <Icon name="check" size={12} className="text-[#00ffcc]" />
                   <span>5,000+ Daily Verified Listings</span>
                 </div>
-                <div className="w-1 h-1 bg-slate-800 rounded-full hidden sm:block"></div>
-                <div className="flex items-center gap-1.5">
-                  <Icon name="shield" size={14} className="text-[#ff007f]" />
+                <div className="w-0.5 h-0.5 bg-slate-700 rounded-full hidden sm:block"></div>
+                <div className="flex items-center gap-1">
+                  <Icon name="shield" size={12} className="text-[#ff007f]" />
                   <span>100% Secure Transactions</span>
                 </div>
-                <div className="w-1 h-1 bg-slate-800 rounded-full hidden sm:block"></div>
-                <div className="flex items-center gap-1.5">
-                  <Icon name="messageCircle" size={14} className="text-sky-400" />
+                <div className="w-0.5 h-0.5 bg-slate-700 rounded-full hidden sm:block"></div>
+                <div className="flex items-center gap-1">
+                  <Icon name="messageCircle" size={12} className="text-sky-400" />
                   <span>Real-time Seller Connect</span>
                 </div>
               </div>
@@ -286,17 +286,17 @@ const Home: React.FC = () => {
 
           {/* Category Quick Filter Bento section */}
           <section className="mt-1">
-            <div className="glass-card rounded-[2.2rem] p-6 md:p-8 shadow-sm border border-slate-100/50 bg-white/45 backdrop-blur-md">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
+            <div className="glass-card rounded-3xl p-4 md:p-5 shadow-sm border border-slate-100/50 bg-white/45 backdrop-blur-md">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 mb-4">
                 <div>
-                  <h2 className="text-xl font-display font-medium text-slate-900 tracking-tight flex items-center gap-2.5">
-                    <Icon name="sliders" size={20} className="text-brand-600 animate-pulse" />
+                  <h2 className="text-base font-display font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <Icon name="sliders" size={16} className="text-brand-600 animate-pulse" />
                     How can we help you today?
                   </h2>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   {
                     id: 'houses',
@@ -334,23 +334,23 @@ const Home: React.FC = () => {
                   <Link
                     key={cat.id}
                     to={`/search?categoryId=${cat.id}`}
-                    className="group relative overflow-hidden rounded-3xl p-5 sm:p-6 border border-slate-200/60 bg-white/80 hover:border-transparent transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between min-h-[155px] duration-300"
+                    className="group relative overflow-hidden rounded-2xl p-4 border border-slate-200/60 bg-white/80 hover:border-transparent transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between min-h-[125px] duration-300"
                   >
                     {/* Hover subtle overlay */}
                     <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500 from-purple-500 to-indigo-600" />
                     
                     <div className="flex justify-between items-start z-10">
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${cat.lightBg} ${cat.textColor} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
-                        <Icon name={cat.icon} size={20} />
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${cat.lightBg} ${cat.textColor} group-hover:scale-105 transition-transform duration-300 shadow-sm`}>
+                        <Icon name={cat.icon} size={16} />
                       </div>
                       <span className="text-slate-300 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all duration-300">
-                        <Icon name="chevronRight" size={18} />
+                        <Icon name="chevronRight" size={14} />
                       </span>
                     </div>
 
-                    <div className="mt-4 relative z-10">
-                      <h3 className="font-bold text-slate-800 text-sm sm:text-base group-hover:text-brand-700 transition-colors tracking-tight">{cat.name}</h3>
-                      <p className="text-slate-400 text-xs mt-1.5 leading-relaxed group-hover:text-slate-600 transition-colors">{cat.description}</p>
+                    <div className="mt-3 relative z-10">
+                      <h3 className="font-bold text-slate-800 text-xs sm:text-sm group-hover:text-brand-700 transition-colors tracking-tight">{cat.name}</h3>
+                      <p className="text-slate-400 text-[11px] mt-1 leading-normal group-hover:text-slate-600 transition-colors">{cat.description}</p>
                     </div>
                   </Link>
                 ))}
@@ -360,23 +360,23 @@ const Home: React.FC = () => {
 
           {/* Muv Now, Pay Monthly Rent Financing Program */}
           <section className="mt-1 animate-slide-up">
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#8607C1] to-[#240035] text-white p-8 md:p-12 border border-[#CF8EED]/20 shadow-2xl shadow-[#8607C1]/10">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8607C1] to-[#240035] text-white p-5 md:p-7 border border-[#CF8EED]/20 shadow-lg shadow-[#8607C1]/10">
               {/* Decorative Glows */}
-              <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
-              <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-[#fb00ff]/5 rounded-full blur-[100px] pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-[150px] h-[150px] bg-[#fb00ff]/5 rounded-full blur-[80px] pointer-events-none"></div>
 
-              <div className="relative z-10 flex flex-col gap-8">
+              <div className="relative z-10 flex flex-col gap-5">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-[#CF8EED]/10 pb-6">
-                  <div className="space-y-2">
-                    <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-full text-[10px] md:text-xs font-semibold tracking-wider font-mono lowercase">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] animate-ping"></span>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-[#CF8EED]/10 pb-4">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wider font-mono lowercase">
+                      <span className="w-1 h-1 rounded-full bg-[#39FF14] animate-ping"></span>
                       tym2muv rent financing program
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-black font-sans tracking-tight text-white leading-tight lowercase">
+                    <h2 className="text-lg md:text-xl font-black font-sans tracking-tight text-white leading-tight lowercase">
                       muv now, pay monthly.
                     </h2>
-                    <p className="text-slate-200 text-xs md:text-sm max-w-xl lowercase">
+                    <p className="text-slate-350 text-[11px] md:text-xs max-w-xl lowercase leading-relaxed">
                       struggling with huge upfront landlord advances? select any verified listings, we'll cover the landlord upfront while you pay us in stress-free monthly tiers.
                     </p>
                   </div>
@@ -384,50 +384,50 @@ const Home: React.FC = () => {
                     <Link
                       id="apply-financing-home-banner-btn"
                       to="/rent-financing"
-                      className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-450 hover:opacity-90 font-extrabold text-xs md:text-sm text-slate-950 px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-500/10 duration-200 transition-all hover:scale-[1.02] active:scale-98 w-full md:w-auto lowercase"
+                      className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-450 hover:opacity-90 font-extrabold text-xs text-slate-950 px-4.5 py-2.5 rounded-lg shadow-md shadow-emerald-500/10 duration-200 transition-all hover:scale-[1.01] active:scale-99 w-full md:w-auto lowercase"
                     >
                       <span>calculate & apply now</span>
-                      <Icon name="chevronRight" size={16} />
+                      <Icon name="chevronRight" size={13} />
                     </Link>
                   </div>
                 </div>
 
                 {/* 3 Step breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                   {/* Step 1 */}
-                  <div className="group relative overflow-hidden rounded-2xl bg-black/25 border border-white/10 p-6 flex flex-col gap-4 hover:border-emerald-500/30 transition-all duration-300">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-950 text-[#00ffcc] font-mono font-bold text-sm border border-white/10 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                  <div className="group relative overflow-hidden rounded-xl bg-black/25 border border-white/10 p-4 flex flex-col gap-2.5 hover:border-emerald-500/20 transition-all duration-300">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-950 text-[#00ffcc] font-mono font-bold text-xs border border-white/10 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
                       01
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-white text-sm md:text-base tracking-tight"><span className="text-[#00ffcc]">find the vibe:</span> browse 100% verified listings.</h3>
-                      <p className="text-slate-200 text-xs leading-relaxed lowercase">
+                    <div className="space-y-0.5">
+                      <h3 className="font-bold text-white text-xs md:text-sm tracking-tight"><span className="text-[#00ffcc]">find the vibe:</span> browse 100% verified listings.</h3>
+                      <p className="text-slate-350 text-[11px] leading-relaxed lowercase">
                         every listing on tym2muv goes through robust background validation to ensure what you see is what you lock down.
                       </p>
                     </div>
                   </div>
 
                   {/* Step 2 */}
-                  <div className="group relative overflow-hidden rounded-2xl bg-black/25 border border-white/10 p-6 flex flex-col gap-4 hover:border-[#ff007f]/30 transition-all duration-300">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-950 text-[#ff007f] font-mono font-bold text-sm border border-white/10 group-hover:bg-pink-500 group-hover:text-slate-950 transition-all">
+                  <div className="group relative overflow-hidden rounded-xl bg-black/25 border border-white/10 p-4 flex flex-col gap-2.5 hover:border-[#ff007f]/20 transition-all duration-300">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-950 text-[#ff007f] font-mono font-bold text-xs border border-white/10 group-hover:bg-pink-500 group-hover:text-slate-950 transition-all">
                       02
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-white text-sm md:text-base tracking-tight"><span className="text-[#ff007f]">we pay upfront:</span> tym2muv covers the landlord's required advance.</h3>
-                      <p className="text-slate-200 text-xs leading-relaxed lowercase">
+                    <div className="space-y-0.5">
+                      <h3 className="font-bold text-white text-xs md:text-sm tracking-tight"><span className="text-[#ff007f]">we pay upfront:</span> tym2muv covers the landlord's required advance.</h3>
+                      <p className="text-slate-350 text-[11px] leading-relaxed lowercase">
                         no more saving up for 12 or 24 months of advance rent files. we handle the full upfront check for you instantly.
                       </p>
                     </div>
                   </div>
 
                   {/* Step 3 */}
-                  <div className="group relative overflow-hidden rounded-2xl bg-black/25 border border-white/10 p-6 flex flex-col gap-4 hover:border-sky-500/30 transition-all duration-300">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-950 text-sky-400 font-mono font-bold text-sm border border-white/10 group-hover:bg-sky-400 group-hover:text-slate-950 transition-all">
+                  <div className="group relative overflow-hidden rounded-xl bg-black/25 border border-white/10 p-4 flex flex-col gap-2.5 hover:border-sky-500/20 transition-all duration-300">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-950 text-sky-400 font-mono font-bold text-xs border border-white/10 group-hover:bg-sky-400 group-hover:text-slate-950 transition-all">
                       03
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-white text-sm md:text-base tracking-tight"><span className="text-sky-400">move in & pay monthly:</span> you move in immediately and pay a predictable, stress-free monthly rate.</h3>
-                      <p className="text-slate-200 text-xs leading-relaxed lowercase">
+                    <div className="space-y-0.5">
+                      <h3 className="font-bold text-white text-xs md:text-sm tracking-tight"><span className="text-sky-400">move in & pay monthly:</span> you move in immediately and pay a predictable, stress-free monthly rate.</h3>
+                      <p className="text-slate-350 text-[11px] leading-relaxed lowercase">
                         take full control of your liquidity. split your rent over predictable, easy-to-manage monthly installments.
                       </p>
                     </div>

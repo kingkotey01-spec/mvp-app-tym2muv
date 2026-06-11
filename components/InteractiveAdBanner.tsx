@@ -2,18 +2,29 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from './Icon';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const InteractiveAdBanner: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
 
-  const handleClaim = (e: React.MouseEvent) => {
+  const handleClaim = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsClaimed(true);
-    // In a real app, this would trigger a modal or redirect
-    setTimeout(() => setIsClaimed(false), 3000);
+    
+    setTimeout(async () => {
+      setIsClaimed(false);
+      if (!isAuthenticated || !user || user.role === 'Tenant' || user.role === 'Customer') {
+        await logout();
+        navigate('/signup', { state: { role: 'Tenant' } });
+      } else {
+        navigate('/post');
+      }
+    }, 1000);
   };
 
   return (
@@ -100,10 +111,9 @@ const InteractiveAdBanner: React.FC = () => {
               <span className="text-brand-400 font-bold text-[8px] sm:text-[10px] uppercase tracking-widest animate-pulse">Save 50% Now</span>
             </div>
             
-            <Link 
-              to="/post"
+            <button 
               onClick={handleClaim}
-              className={`relative group/btn overflow-hidden px-4 sm:px-10 py-2 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-2xl flex items-center justify-center gap-2 sm:gap-3 active:scale-95 ${
+              className={`relative group/btn overflow-hidden px-4 sm:px-10 py-2 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-2xl flex items-center justify-center gap-2 sm:gap-3 active:scale-95 cursor-pointer ${
                 isClaimed 
                   ? 'bg-emerald-500 text-white' 
                   : 'bg-white text-slate-950 hover:bg-brand-50'
@@ -135,7 +145,7 @@ const InteractiveAdBanner: React.FC = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </Link>
+            </button>
           </div>
         </div>
 

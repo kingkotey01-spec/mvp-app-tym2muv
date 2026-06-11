@@ -345,13 +345,13 @@ const ListingDetails: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+      <div className="max-w-7xl mx-auto px-3 py-3 md:py-4 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8 items-start">
           {/* Section 1: Column 1 */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Column 1 Row 1 - Property Name */}
             <div className="space-y-0.5">
-              <h1 className="text-xl lg:text-2xl font-black text-slate-900 leading-tight font-display">
+              <h1 className="text-lg lg:text-xl font-black text-slate-900 leading-tight font-display">
                 {generateListingTitle({ 
                   bedrooms: listing.bedrooms, 
                   propertyType: listing.propertyType
@@ -360,39 +360,39 @@ const ListingDetails: React.FC = () => {
             </div>
 
             {/* Column 1 Row 2 - Price */}
-            <div className="py-1.5 border-b border-slate-100">
-              <div className="text-lg lg:text-xl font-black text-brand-600 flex items-baseline gap-1">
-                <span className="text-xs font-bold">{getSymbolFromCode(listing.currency || 'USD')}</span>
+            <div className="py-1 border-b border-slate-100">
+              <div className="text-base lg:text-lg font-black text-brand-600 flex items-baseline gap-1">
+                <span className="text-2xs font-bold">{getSymbolFromCode(listing.currency || 'USD')}</span>
                 {listing.price.toLocaleString()}
                 {listing.type === 'Rent' && <span className="text-[10px] font-medium text-slate-400">/mo</span>}
               </div>
               <p className="text-[8px] text-slate-400 mt-0.5 flex items-center gap-1.5">
-                <Icon name="clock" size={9} />
+                <Icon name="clock" size={8} />
                 Posted {listing.datePosted}
               </p>
             </div>
 
             {/* Column 1 Row 2.5 - Quick Action Buttons */}
-            <div className="grid grid-cols-3 gap-3 py-3 border-b border-slate-100">
+            <div className="grid grid-cols-3 gap-2.5 py-2 border-b border-slate-100">
               <button
                 onClick={handleToggleSave}
-                className={`py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all duration-200 flex items-center justify-center gap-2 border cursor-pointer hover:scale-[1.02] ${
+                className={`py-1.5 px-2 rounded-lg text-2xs font-extrabold transition-all duration-200 flex items-center justify-center gap-1.5 border cursor-pointer hover:bg-slate-50 ${
                   isSaved 
-                  ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100/80' 
-                  : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-slate-100'
+                  ? 'bg-red-50 text-red-600 border-red-100' 
+                  : 'bg-slate-50 text-slate-650 border-slate-100'
                 }`}
                 title={isSaved ? "Saved to Favorites" : "Save Property"}
               >
-                <Icon name="heart" size={14} className={isSaved ? "fill-red-500" : ""} />
+                <Icon name="heart" size={12} className={isSaved ? "fill-red-500" : ""} />
                 <span>{isSaved ? 'Saved' : 'Save'}</span>
               </button>
 
               <button
                 onClick={handleShareListing}
-                className="py-2.5 px-3 bg-brand-50 text-brand-700 border border-brand-100 rounded-xl text-xs font-extrabold hover:bg-brand-100/80 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
-                title="Share Listing with friends"
+                className="py-1.5 px-2 bg-brand-50 text-brand-700 border border-brand-100 rounded-lg text-2xs font-extrabold hover:bg-brand-100/50 cursor-pointer transition-all duration-200 flex items-center justify-center gap-1.5"
+                title="Share Listing"
               >
-                <Icon name="share2" size={14} />
+                <Icon name="share2" size={12} />
                 <span>Share</span>
               </button>
 
@@ -402,10 +402,10 @@ const ListingDetails: React.FC = () => {
                   const text = `Check out this property on tym2muv: ${listing?.title || 'Property'} - ${url}`;
                   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                 }}
-                className="py-2.5 px-3 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl text-xs font-extrabold hover:bg-emerald-100/80 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
+                className="py-1.5 px-2 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-2xs font-extrabold hover:bg-emerald-110/30 cursor-pointer transition-all duration-200 flex items-center justify-center gap-1.5"
                 title="Share via WhatsApp"
               >
-                <svg className="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-3 h-3 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12.004 0C5.372 0 0 5.372 0 12c0 2.112.551 4.164 1.597 5.977l-1.6 5.85 5.992-1.569c1.758.956 3.738 1.464 5.753 1.464H12c6.627 0 12-5.373 12-12s-5.373-12-12-12zm.172 21.84c-1.899 0-3.76-.51-5.385-1.472l-.387-.23-3.559.932.951-3.468-.252-.401c-1.057-1.685-1.616-3.64-1.614-5.65.004-5.831 4.75-10.575 10.584-10.575 2.825.001 5.48 1.1 7.48 3.102 1.999 2 3.098 4.66 3.095 7.487-.005 5.832-4.75 10.575-10.567 10.575zm5.794-7.904c-.318-.16-1.88-.928-2.179-1.037-.298-.11-.516-.16-.732.16-.217.32-.838 1.037-1.026 1.256-.189.218-.378.245-.696.086-1.423-.715-2.483-1.332-3.473-3.024-.26-.445.26-.413.743-1.378.08-.16.04-.3-.02-.46-.06-.16-.516-1.256-.708-1.71-.186-.45-.37-.387-.513-.394-.132-.007-.284-.007-.436-.007s-.4.057-.61.284c-.21.228-.802.784-.802 1.91s.816 2.21 1.026 2.49c.21.28 1.625 2.48 3.935 3.48.55.237 1.062.392 1.423.506.63.2 1.203.172 1.655.105.503-.075 1.547-.632 1.765-1.214.218-.58.218-1.08.152-1.185-.065-.105-.246-.16-.563-.32z"/>
                 </svg>
                 <span>WhatsApp</span>
@@ -413,38 +413,38 @@ const ListingDetails: React.FC = () => {
             </div>
 
             {/* Column 1 Row 3 & 4 - Location */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               {/* Row 3 - Location City */}
-              <div className="p-2.5 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center text-brand-600 shadow-sm shrink-0">
-                  <Icon name="building" size={12} />
+              <div className="p-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded bg-white flex items-center justify-center text-brand-600 shadow-xs shrink-0">
+                  <Icon name="building" size={10} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider truncate">City</p>
-                  <p className="text-[11px] font-bold text-slate-800 truncate">{city || 'N/A'}</p>
+                  <p className="text-[10px] font-bold text-slate-800 truncate">{city || 'N/A'}</p>
                 </div>
               </div>
               {/* Row 4 - Location Area or Suburb */}
-              <div className="p-2.5 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center text-brand-600 shadow-sm shrink-0">
-                  <Icon name="mapPin" size={12} />
+              <div className="p-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded bg-white flex items-center justify-center text-brand-600 shadow-xs shrink-0">
+                  <Icon name="mapPin" size={10} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider truncate">Area / Suburb</p>
-                  <p className="text-[11px] font-bold text-slate-800 truncate">{area || 'N/A'}</p>
+                  <p className="text-[10px] font-bold text-slate-800 truncate">{area || 'N/A'}</p>
                 </div>
               </div>
             </div>
 
             {/* Column 1 Row 5 - Description */}
-            <div className="space-y-1.5">
-              <p className="text-slate-500 text-[11px] leading-relaxed font-sans whitespace-pre-wrap">
-                {listing.description || `This stunning ${listing.propertyType.toLowerCase()} located in the heart of ${listing.location} offers a perfect blend of modern luxury and comfort. Featuring ${listing.bedrooms} spacious bedrooms and ${listing.bathrooms} elegant bathrooms, this property is ideal for those seeking a premium lifestyle.`}
+            <div className="space-y-1">
+              <p className="text-slate-500 text-[10px] sm:text-[11px] leading-relaxed font-sans whitespace-pre-wrap">
+                {listing.description || `This stunning ${listing.propertyType.toLowerCase()} located in the heart of ${listing.location} offers a perfect blend of modern luxury and comfort.`}
               </p>
             </div>
 
             {/* Column 1 Row 5.5 - Property Details Grid */}
-            <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100">
+            <div className="grid grid-cols-2 gap-3 py-2 border-y border-slate-100">
                {listing.sqft && (
                  <div className="flex items-center gap-3">
                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500">
@@ -488,14 +488,14 @@ const ListingDetails: React.FC = () => {
             {/* Seller Card (Agent Details) */}
             <div 
               onClick={() => navigate(`/profile/${seller?.id}`)}
-              className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4 cursor-pointer hover:bg-slate-100 transition-all group"
+              className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 space-y-3 cursor-pointer hover:bg-slate-100 transition-all group"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <div className="relative">
                   <img 
-                    src={getOptimizedImageUrl(seller?.avatar, { width: 96, height: 96, crop: 'thumb' })} 
+                    src={getOptimizedImageUrl(seller?.avatar, { width: 80, height: 80, crop: 'thumb' })} 
                     alt={seller?.name} 
-                    className="w-12 h-12 rounded-lg object-cover border-2 border-white shadow-md group-hover:shadow-lg transition-all"
+                    className="w-10 h-10 rounded-lg object-cover border-2 border-white shadow-xs group-hover:shadow-sm"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -503,50 +503,50 @@ const ListingDetails: React.FC = () => {
                     }}
                   />
                   {seller?.verified && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-brand-500 text-white rounded-full border-2 border-white flex items-center justify-center shadow-sm">
-                      <Icon name="shieldCheck" size={8} />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-brand-500 text-white rounded-full border border-white flex items-center justify-center shadow-xs">
+                      <Icon name="shieldCheck" size={6} />
                     </div>
                   )}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{seller?.name}</h3>
-                  <p className="text-[10px] text-slate-500 font-medium">{seller?.role}</p>
+                  <h3 className="text-xs font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{seller?.name}</h3>
+                  <p className="text-[9px] text-slate-550 font-medium">{seller?.role}</p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Icon name="star" size={10} className="text-amber-400 fill-amber-400" />
+                    <Icon name="star" size={8} className="text-amber-400 fill-amber-400" />
                     <span className="text-[10px] font-black text-slate-700">{seller?.rating}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 grid grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
+              <div className="pt-2 grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
                 <button 
                   onClick={handleChat}
-                  className="px-3 py-3 bg-slate-900 hover:bg-black text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                  className="px-2 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
                 >
-                  <Icon name="messageCircle" size={16} />
+                  <Icon name="messageCircle" size={14} />
                   Message
                 </button>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <button 
                     onClick={() => triggerSafetyCheck(() => handleRequestView())}
                     disabled={isDeliveryRequested}
-                    className="flex-1 px-3 py-3 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                    className="flex-1 px-2 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
                   >
                     {isDeliveryRequested ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        <Icon name="calendar" size={16} />
-                        Book Viewing
+                        <Icon name="calendar" size={14} />
+                        Book View
                       </>
                     )}
                   </button>
                   {seller?.socials?.phone && (
                     <button 
                       onClick={() => triggerSafetyCheck(() => window.location.href = `tel:${seller.socials.phone}`)}
-                      className="flex-none w-12 py-3 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-2"
+                      className="flex-none w-10 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-all flex items-center justify-center"
                     >
-                      <Icon name="phone" size={16} />
+                      <Icon name="phone" size={14} />
                     </button>
                   )}
                 </div>
@@ -559,9 +559,9 @@ const ListingDetails: React.FC = () => {
           </div>
 
           {/* Section 2: Column 2 */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Column 2 Row 1 - Displayed Property Image with Tags */}
-            <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-xl group">
+            <div className="relative aspect-[16/10] rounded-xl overflow-hidden shadow-md group">
               <AnimatePresence mode="wait">
                 <motion.img 
                   key={activeImage}
@@ -584,75 +584,75 @@ const ListingDetails: React.FC = () => {
               </AnimatePresence>
               
               {/* Tags on Image */}
-              <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                <div className="text-[8px] font-black uppercase tracking-[0.1em] text-slate-700">
+              <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
+                <div className="text-[7px] font-black uppercase tracking-[0.1em] text-slate-700 bg-white/95 px-2 py-0.5 rounded shadow-sm border border-slate-100">
                   For {listing.type}
                 </div>
                 {listing.isPremium && (
-                  <div className="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-[8px] font-black uppercase tracking-[0.1em] shadow-lg flex items-center gap-1 border border-amber-100">
-                    <Icon name="award" size={12} className="text-amber-600" />
+                  <div className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-[7px] font-black uppercase tracking-[0.1em] shadow-sm flex items-center gap-1 border border-amber-100">
+                    <Icon name="award" size={10} className="text-amber-600" />
                     Premium
                   </div>
                 )}
                 {listing.isVerified && (
-                  <div className="px-3 py-1 bg-white/90 backdrop-blur-md text-slate-900 rounded-full text-[8px] font-black uppercase tracking-[0.1em] shadow-lg flex items-center gap-1 border border-white/10">
-                    <Icon name="shieldCheck" size={12} className="text-brand-600" />
+                  <div className="px-2 py-0.5 bg-white/90 backdrop-blur-md text-slate-900 rounded text-[7px] font-black uppercase tracking-[0.1em] shadow-sm flex items-center gap-1 border border-white/10">
+                    <Icon name="shieldCheck" size={10} className="text-brand-600" />
                     Verified
                   </div>
                 )}
               </div>
 
               {/* Navigation Controls */}
-              <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
+              <div className="absolute inset-x-2.5 bottom-2.5 flex items-center justify-between">
                 <div className="flex gap-1">
                   <button 
                     onClick={() => setActiveImage((prev) => (prev - 1 + images.length) % images.length)}
-                    className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/10"
+                    className="w-7 h-7 rounded bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/10"
                   >
-                    <Icon name="chevronRight" size={16} className="rotate-180" />
+                    <Icon name="chevronRight" size={14} className="rotate-180" />
                   </button>
                   <button 
                     onClick={() => setActiveImage((prev) => (prev + 1) % images.length)}
-                    className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/10"
+                    className="w-7 h-7 rounded bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/10"
                   >
-                    <Icon name="chevronRight" size={16} />
+                    <Icon name="chevronRight" size={14} />
                   </button>
                 </div>
-                <div className="px-3 py-1.5 bg-black/30 backdrop-blur-xl rounded-lg text-white text-[8px] font-black tracking-widest border border-white/10">
+                <div className="px-2.5 py-1 bg-black/30 backdrop-blur-xl rounded text-white text-[7px] font-black tracking-widest border border-white/10 font-mono">
                   {activeImage + 1} / {images.length}
                 </div>
               </div>
             </div>
 
             {/* Column 2 Row 2 - Additional Images and videos */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Gallery</h3>
+                <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Gallery</h3>
                 {listing.virtualTourUrl && (
                   <a 
                     href={listing.virtualTourUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[9px] font-bold text-brand-600 flex items-center gap-1 hover:underline"
+                    className="text-[8px] font-bold text-brand-600 flex items-center gap-1 hover:underline"
                   >
-                    <Icon name="eye" size={10} />
+                    <Icon name="eye" size={9} />
                     Virtual Tour
                   </a>
                 )}
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-6 gap-1.5">
                 {images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border transition-all duration-300 ${
+                    className={`relative aspect-square rounded overflow-hidden border transition-all duration-300 ${
                       activeImage === idx 
-                      ? 'border-brand-500 scale-105 shadow-lg' 
+                      ? 'border-brand-500 scale-102 shadow-xs' 
                       : 'border-transparent opacity-60 hover:opacity-100'
                     }`}
                   >
                     <img 
-                      src={getOptimizedImageUrl(img, { width: 200, height: 200, crop: 'fill' })} 
+                      src={getOptimizedImageUrl(img, { width: 120, height: 120, crop: 'fill' })} 
                       loading="lazy"
                       alt="" 
                       className="w-full h-full object-cover" 
@@ -665,8 +665,8 @@ const ListingDetails: React.FC = () => {
                   </button>
                 ))}
                 {listing.videos?.map((video, idx) => (
-                  <div key={`video-${idx}`} className="relative aspect-square rounded-lg overflow-hidden bg-slate-900 flex items-center justify-center cursor-pointer group hover:scale-105 transition-all">
-                    <Icon name="play" size={20} className="text-white group-hover:scale-110 transition-transform z-10" />
+                  <div key={`video-${idx}`} className="relative aspect-square rounded overflow-hidden bg-slate-900 flex items-center justify-center cursor-pointer group hover:scale-102 transition-all">
+                    <Icon name="play" size={16} className="text-white group-hover:scale-110 transition-transform z-10" />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all"></div>
                   </div>
                 ))}
@@ -677,25 +677,25 @@ const ListingDetails: React.FC = () => {
       </div>
 
       {/* Similar Properties Section */}
-      <section className="mt-12 pt-8 border-t border-slate-100 relative z-10 bg-white">
-        <div className="flex items-center justify-between mb-8">
+      <section className="mt-8 pt-6 border-t border-slate-100 relative z-10 bg-white">
+        <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Similar Properties</h2>
-              <p className="text-slate-500 font-medium mt-1">Handpicked properties you might like in {listing.location}</p>
+              <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">Similar Properties</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Handpicked properties you might like in {listing.location}</p>
             </div>
-            <Link to="/search" className="px-6 py-3 bg-slate-50 text-brand-600 font-bold rounded-xl hover:bg-brand-50 transition-all flex items-center gap-2">
-              View All
-              <Icon name="chevronRight" size={18} />
+            <Link to="/search" className="px-3 py-1.5 bg-slate-50 text-brand-600 text-xs font-bold rounded-lg hover:bg-brand-50 transition-all flex items-center gap-1.5">
+              <span>View All</span>
+              <Icon name="chevronRight" size={14} />
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {similarListings.map(item => (
               <ListingCard key={item.id} listing={item} />
             ))}
             {similarListings.length === 0 && (
-              <div className="col-span-full py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <p className="text-slate-400 font-medium">No similar properties found nearby.</p>
+              <div className="col-span-full py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <p className="text-slate-405 text-xs font-medium">No similar properties found nearby.</p>
               </div>
             )}
           </div>

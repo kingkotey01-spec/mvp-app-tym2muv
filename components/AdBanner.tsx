@@ -1,7 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const AdBanner: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handlePostClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated || !user || user.role === 'Tenant' || user.role === 'Customer') {
+      await logout();
+      navigate('/signup', { state: { role: 'Tenant' } });
+    } else {
+      navigate('/post');
+    }
+  };
+
   return (
     <section className="py-4 sm:py-8">
       <div className="container mx-auto px-4">
@@ -19,9 +33,12 @@ const AdBanner: React.FC = () => {
                   Reach thousands of potential customers daily. Boost your visibility with our premium placement options.
                 </p>
              </div>
-             <Link to="/post" className="bg-white/90 backdrop-blur text-brand-700 px-5 py-2.5 rounded-xl font-bold hover:bg-white transition-colors shadow-lg whitespace-nowrap transform hover:-translate-y-0.5 text-sm md:text-base">
+             <button 
+               onClick={handlePostClick} 
+               className="bg-white/90 backdrop-blur text-brand-700 px-5 py-2.5 rounded-xl font-bold hover:bg-white transition-colors shadow-lg whitespace-nowrap transform hover:-translate-y-0.5 text-sm md:text-base cursor-pointer"
+             >
                 Start Now
-             </Link>
+             </button>
            </div>
         </div>
       </div>

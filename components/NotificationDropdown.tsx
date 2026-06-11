@@ -114,25 +114,25 @@ const NotificationDropdown = () => {
             transition={{ duration: 0.15 }}
             className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-[200]"
           >
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-bold text-slate-900">Notifications</h3>
-              <div className="flex gap-2">
+            <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="font-extrabold text-xs text-slate-900">Notifications</h3>
+              <div className="flex gap-1.5">
                 <button 
                   onClick={handleMarkAllAsRead}
-                  className="text-[10px] font-semibold text-brand-600 bg-brand-50 px-2 py-1 rounded-full hover:bg-brand-100 transition-colors cursor-pointer"
+                  className="text-[9px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full hover:bg-brand-100 transition-colors cursor-pointer"
                 >
                   Mark read
                 </button>
                 <button 
                   onClick={handleClearAll}
-                  className="text-[10px] font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
+                  className="text-[9px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
                 >
                   Clear all
                 </button>
               </div>
             </div>
             
-            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+            <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
               {notifications.length > 0 ? (
                 <div className="flex flex-col">
                   {notifications.map((notif: any) => (
@@ -145,22 +145,22 @@ const NotificationDropdown = () => {
                         }
                         handleNotificationClick(notif);
                       }}
-                      className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-brand-50/30 font-medium' : ''}`}
+                      className={`p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-brand-50/30 font-medium' : ''}`}
                     >
-                      <div className="flex gap-3">
-                        <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!notif.read ? 'bg-brand-500' : 'bg-transparent'}`} />
+                      <div className="flex gap-2">
+                        <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${!notif.read ? 'bg-brand-500' : 'bg-transparent'}`} />
                         <div className="flex-1">
-                          <h4 className={`text-sm font-semibold ${!notif.read ? 'text-slate-900' : 'text-slate-700'}`}>{notif.title}</h4>
-                          <p className="text-xs text-slate-500 mt-0.5 leading-snug">{notif.text}</p>
-                          <span className="text-[10px] font-medium text-slate-400 mt-2 block">{notif.time}</span>
+                          <h4 className={`text-xs font-bold leading-tight ${!notif.read ? 'text-slate-900' : 'text-slate-600'}`}>{notif.title}</h4>
+                          <p className="text-[11px] text-slate-550 mt-0.5 leading-snug">{notif.text}</p>
+                          <span className="text-[9px] font-semibold text-slate-400 mt-1 block">{notif.time}</span>
                         </div>
                       </div>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <div className="p-8 text-center text-slate-500 text-sm">
-                  No new notifications
+                <div className="p-6 text-center text-slate-400 text-xs font-medium">
+                  No notifications yet
                 </div>
               )}
             </div>
