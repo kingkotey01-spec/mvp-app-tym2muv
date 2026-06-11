@@ -131,7 +131,7 @@ const mapProfileToUser = (profileData: any): User => {
     reviewCount: reviewCount,
     location: profileData.location || 'Unknown',
     memberSince: profileData.created_at || new Date().toISOString(),
-    bio: profileData.bio || '',
+    bio: profileData.bio || profileData.socials?.bio || '',
     verified: profileData.verified || false,
     role: mappedRole,
     savedListings: profileData.savedListings || [],
@@ -257,26 +257,54 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
   if ((updates as any).agencyName !== undefined) dbUpdates.agency_name = (updates as any).agencyName;
   
   if (Object.keys(dbUpdates).length > 0) {
-    const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
-    
-    if (error) {
-      const isMissingColumnError = error.code === '42703' || 
-                                   error.message?.includes('agency_name') || 
-                                   error.message?.includes('column') || 
-                                   error.message?.includes('schema cache');
+    try {
+      const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
+      if (error) throw error;
+    } catch (err: any) {
+      const isMissingColumnError = err.code === '42703' || 
+                                   String(err.message || '').includes('agency_name') || 
+                                   String(err.message || '').includes('bio') || 
+                                   String(err.message || '').includes('column') || 
+                                   String(err.message || '').includes('schema cache');
                                    
-      if (isMissingColumnError && dbUpdates.agency_name !== undefined) {
-        console.warn("Retrying profile update without direct agency_name column, falling back to 'socials' JSON attribute.");
-        const originalAgencyName = dbUpdates.agency_name;
-        delete dbUpdates.agency_name;
-        dbUpdates.socials = {
-          ...(dbUpdates.socials || {}),
-          agencyName: originalAgencyName
-        };
+      if (isMissingColumnError) {
+        console.warn("Retrying profile update by falling back missing columns ('agency_name' or 'bio') to 'socials' JSON attribute due to error:", err.message);
+        
+        // Backup and shift agency_name if it was queried
+        if (dbUpdates.agency_name !== undefined) {
+          const originalAgencyName = dbUpdates.agency_name;
+          delete dbUpdates.agency_name;
+          dbUpdates.socials = {
+            ...(dbUpdates.socials || {}),
+            agencyName: originalAgencyName
+          };
+        }
+        
+        // Backup and shift bio if it was queried
+        if (dbUpdates.bio !== undefined) {
+          const originalBio = dbUpdates.bio;
+          delete dbUpdates.bio;
+          dbUpdates.socials = {
+            ...(dbUpdates.socials || {}),
+            bio: originalBio
+          };
+        }
+        
+        // Try the updated query
         const { error: retryError } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
-        if (retryError) throw retryError;
+        if (retryError) {
+          console.warn("Second update attempt failed. Trying minimal safe profile update.");
+          const minimalUpdates: any = {};
+          if (dbUpdates.full_name !== undefined) minimalUpdates.full_name = dbUpdates.full_name;
+          if (dbUpdates.avatar_url !== undefined) minimalUpdates.avatar_url = dbUpdates.avatar_url;
+          if (dbUpdates.location !== undefined) minimalUpdates.location = dbUpdates.location;
+          if (dbUpdates.socials !== undefined) minimalUpdates.socials = dbUpdates.socials;
+          
+          const { error: ultraRetryError } = await supabase.from('profiles').update(minimalUpdates).eq('id', userId);
+          if (ultraRetryError) throw ultraRetryError;
+        }
       } else {
-        throw error;
+        throw err;
       }
     }
     
