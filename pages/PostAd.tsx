@@ -25,7 +25,7 @@ const PostAd: React.FC = () => {
 
   const [step, setStep] = useState(1);
   
-  // Redirect buyers to create a vendor account — only after auth is fully resolved
+  // Redirect buyers to create-vendor onboarding — only after auth is fully resolved
   useEffect(() => {
     if (!isAuthReady) return; // wait for auth to finish loading
     if (user && user.role !== 'Agent' && user.role !== 'Admin') {
@@ -262,7 +262,11 @@ const PostAd: React.FC = () => {
         await createListing(listingData as any);
       }
       
-      navigate('/profile');
+      if (user) {
+        navigate(`/profile/${user.id}`);
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error("Error publishing ad:", error);
       toast("Failed to publish listing. Please try again.", "error");

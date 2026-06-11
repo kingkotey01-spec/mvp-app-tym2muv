@@ -106,7 +106,7 @@ const ListingDetails: React.FC = () => {
           const { listings: similar } = await getListings({
             categoryId: data.categoryId,
             limit: 4,
-            countryCode: (data.location || 'Accra, GH').split(',').pop()?.trim() || 'GH'
+            countryCode: data.country || 'GH'
           });
           setSimilarListings(similar.filter(l => l.id !== id));
         } else {

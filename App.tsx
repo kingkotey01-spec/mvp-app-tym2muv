@@ -156,7 +156,7 @@ const OAuthRedirectHandler: React.FC = () => {
         localStorage.removeItem('oauth_pending_vendor');
         
         if (oauthPendingVendor === 'true' || oauthRedirect === '/post') {
-          navigate('/create-vendor', { replace: true });
+          navigate('/signup', { replace: true });
         } else if (oauthRedirect && oauthRedirect !== '/signin' && oauthRedirect !== '/signup') {
           navigate(oauthRedirect, { replace: true });
         }

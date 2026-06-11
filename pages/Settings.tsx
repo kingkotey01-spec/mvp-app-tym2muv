@@ -15,7 +15,11 @@ const Settings: React.FC = () => {
     bio: '',
     phone: '',
     location: '',
-    avatar: ''
+    avatar: '',
+    agencyName: '',
+    businessEmail: '',
+    businessWebsite: '',
+    businessWhatsApp: ''
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,7 +30,11 @@ const Settings: React.FC = () => {
         bio: user.bio || '',
         phone: user.socials?.phone || '',
         location: user.location || '',
-        avatar: user.avatar || ''
+        avatar: user.avatar || '',
+        agencyName: user.agencyName || '',
+        businessEmail: user.socials?.email || '',
+        businessWebsite: user.socials?.website || '',
+        businessWhatsApp: user.socials?.whatsapp || ''
       });
     }
   }, [user]);
@@ -64,9 +72,13 @@ const Settings: React.FC = () => {
         bio: formData.bio,
         location: formData.location,
         avatar: formData.avatar,
+        agencyName: formData.agencyName,
         socials: {
           ...(user.socials || {}),
-          phone: formData.phone
+          phone: formData.phone,
+          email: formData.businessEmail,
+          website: formData.businessWebsite,
+          whatsapp: formData.businessWhatsApp
         }
       });
       await refreshUser();
@@ -169,6 +181,64 @@ const Settings: React.FC = () => {
                 placeholder="Tell us about yourself..."
               ></textarea>
             </div>
+
+            {/* Vendor Business details (only shown for vendor accounts) */}
+            {(user.role === 'Agent' || user.role === 'Admin') && (
+              <div className="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-150 space-y-2.5 animate-slide-up">
+                <div className="flex items-center gap-1 border-b border-slate-200 pb-1">
+                  <Icon name="building" size={12} className="text-brand-600" />
+                  <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Business Details (Vendor Only)</span>
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Business Name / Agency Name</label>
+                  <input 
+                    type="text" 
+                    name="agencyName"
+                    value={formData.agencyName}
+                    onChange={handleChange}
+                    className="w-full border border-slate-200 rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    placeholder="e.g. Acme Properties Ltd"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Business Email</label>
+                  <input 
+                    type="email" 
+                    name="businessEmail"
+                    value={formData.businessEmail}
+                    onChange={handleChange}
+                    className="w-full border border-slate-200 rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    placeholder="e.g. contact@yourbusiness.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Business Website URL</label>
+                  <input 
+                    type="url" 
+                    name="businessWebsite"
+                    value={formData.businessWebsite}
+                    onChange={handleChange}
+                    className="w-full border border-slate-200 rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    placeholder="e.g. www.yourbusiness.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Business WhatsApp Number</label>
+                  <input 
+                    type="tel" 
+                    name="businessWhatsApp"
+                    value={formData.businessWhatsApp}
+                    onChange={handleChange}
+                    className="w-full border border-slate-200 rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    placeholder="e.g. +233241234567"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-2">

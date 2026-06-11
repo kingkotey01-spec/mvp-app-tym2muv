@@ -84,7 +84,7 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
       
       const getPostAuthPath = (resultUser: any) => {
         if (pendingVendor || from === '/post') {
-          return '/create-vendor';
+          return '/signup';
         }
         
         const searchParams = new URLSearchParams(location.search);

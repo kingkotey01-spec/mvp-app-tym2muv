@@ -218,21 +218,121 @@ const Profile: React.FC = () => {
 
                 {/* User Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
+                    <div className="flex items-center gap-2 mb-0.5 animate-fade-in">
                         <h1 className="text-xl md:text-3xl font-bold text-slate-900 tracking-tight font-display">{user.name}</h1>
                         <button onClick={handleShare} className="p-1 text-slate-400 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 rounded-full transition-colors" title="Share Profile">
                            <Icon name="send" size={14} />
                         </button>
                     </div>
+
+                    {/* Account Type & Role Indicator Badges */}
+                    <div className="flex flex-wrap gap-1.5 mb-2.5">
+                        {(user.role === 'Agent' || user.role === 'Admin') ? (
+                          <>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-500/15">
+                              <Icon name="building" size={11} />
+                              Vendor / Seller Profile
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm">
+                              <Icon name="check" size={11} className="text-emerald-500" />
+                              Buyer & Renter Dashboard Active
+                            </span>
+                            {isMe && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <Icon name="zap" size={10} className="text-amber-500 animate-pulse" />
+                                Logged in as Vendor
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100 shadow-sm">
+                              <Icon name="user" size={11} className="text-blue-500" />
+                              Buyer & Tenant Profile
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-150">
+                              <Icon name="activity" size={11} className="text-slate-400" />
+                              Renter Access Active
+                            </span>
+                            {isMe && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                                <Icon name="check" size={10} className="text-blue-600" />
+                                Logged in as Buyer
+                              </span>
+                            )}
+                          </>
+                        )}
+                    </div>
                     
                     {user.role === 'Agent' && user.agencyName && (
-                        <div className="flex items-center gap-1.5 text-brand-600 text-xs font-bold mb-1.5">
-                            <Icon name="building" size={14} />
+                        <div className="flex items-center gap-1.5 text-indigo-700 text-xs font-black mb-1.5 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-block">
+                            <Icon name="building" size={13} className="text-indigo-600" />
                             <span>{user.agencyName}</span>
                         </div>
                     )}
                     
                     <p className="text-slate-600 text-xs md:text-sm mb-3 max-w-2xl leading-relaxed">{user.bio}</p>
+
+                    {/* Vendor Business Details Block */}
+                    {(user.role === 'Agent' || user.role === 'Admin') && (
+                      <div className="mt-3.5 mb-2.5 p-3.5 rounded-2xl bg-slate-50/75 border border-slate-100 shadow-sm w-full animate-fade-in">
+                        <div className="flex items-center gap-1.5 mb-2 border-b border-slate-100 pb-1.5">
+                          <Icon name="building" size={13} className="text-brand-600" />
+                          <h3 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                            Business Details & Contact Information
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          {/* Business Display Name */}
+                          <div className="flex items-start gap-2">
+                            <span className="p-1 rounded-lg bg-indigo-50 text-indigo-600 mt-0.5 flex items-center justify-center"><Icon name="building" size={13} /></span>
+                            <div>
+                              <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">Business Display Name</p>
+                              <p className="font-extrabold text-slate-800 text-xs md:text-sm">{user.agencyName || user.name || 'Independent Vendor'}</p>
+                            </div>
+                          </div>
+
+                          {/* Email */}
+                          <div className="flex items-start gap-2">
+                            <span className="p-1 rounded-lg bg-teal-50 text-teal-600 mt-0.5 flex items-center justify-center"><Icon name="mail" size={13} /></span>
+                            <div>
+                              <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">Business Email</p>
+                              {user.socials?.email || user.email ? (
+                                <a href={`mailto:${user.socials?.email || user.email}`} className="font-bold text-brand-600 hover:underline">{user.socials?.email || user.email}</a>
+                              ) : (
+                                <p className="text-slate-400 text-[11px] italic font-medium">No business email listed</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Website */}
+                          <div className="flex items-start gap-2">
+                            <span className="p-1 rounded-lg bg-purple-50 text-purple-600 mt-0.5 flex items-center justify-center"><Icon name="globe" size={13} /></span>
+                            <div>
+                              <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">Business Website</p>
+                              {user.socials?.website ? (
+                                <a href={user.socials.website.startsWith('http') ? user.socials.website : `https://${user.socials.website}`} target="_blank" rel="noopener noreferrer" className="font-bold text-brand-600 hover:underline truncate block max-w-[200px]">{user.socials.website}</a>
+                              ) : (
+                                <p className="text-slate-400 text-[11px] italic font-medium">No website listed</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Phone */}
+                          <div className="flex items-start gap-2">
+                            <span className="p-1 rounded-lg bg-blue-50 text-blue-600 mt-0.5 flex items-center justify-center"><Icon name="phone" size={13} /></span>
+                            <div>
+                              <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">Business Phone</p>
+                              {user.socials?.phone || user.socials?.whatsapp ? (
+                                <a href={`tel:${user.socials?.phone || user.socials?.whatsapp}`} className="font-extrabold text-slate-800 hover:underline">{user.socials?.phone || user.socials?.whatsapp}</a>
+                              ) : (
+                                <p className="text-slate-400 text-[11px] italic font-medium">No contact phone listed</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="flex flex-wrap gap-2 md:gap-4 text-[11px] md:text-xs text-slate-500">
                         <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">

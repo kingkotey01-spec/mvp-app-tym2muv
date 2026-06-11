@@ -12,7 +12,6 @@ import { AFRICAN_COUNTRIES } from '../services/location';
 import { motion } from 'framer-motion';
 import AdBanner from './AdBanner';
 import AdvertisementPopup from './AdvertisementPopup';
-import InteractiveAdBanner from './InteractiveAdBanner';
 
 import CountrySelector from './CountrySelector';
 
@@ -211,11 +210,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                     {/* Post Button */}
                     <button 
-                      onClick={async (e) => {
+                      onClick={(e) => {
                         e.preventDefault();
-                        if (!isAuthenticated || !user || user.role === 'Tenant' || user.role === 'Customer') {
-                          await logout();
-                          navigate('/signup', { state: { role: 'Tenant' } });
+                        if (!isAuthenticated || !user) {
+                          navigate('/signin', { 
+                            state: { from: { pathname: '/create-vendor' } } 
+                          });
                         } else if (user.role === 'Agent' || user.role === 'Admin') {
                           navigate('/post');
                         } else {
@@ -276,7 +276,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <main className="flex-grow relative z-0">
-        <InteractiveAdBanner />
         {children}
       </main>
       

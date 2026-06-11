@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.paystack.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' *.supabase.co *.upstash.io *.datadoghq.com api.paystack.co wss://*.supabase.co; font-src 'self' https://fonts.gstatic.com; report-uri /api/csp-report"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.paystack.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; connect-src 'self' *.supabase.co *.upstash.io *.datadoghq.com api.paystack.co wss://*.supabase.co generativelanguage.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; report-uri /api/csp-report"
         },
         {
           "key": "X-Frame-Options",

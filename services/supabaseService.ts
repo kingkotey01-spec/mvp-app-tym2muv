@@ -77,6 +77,26 @@ export const loginWithLinkedIn = async () => {
 };
 
 // --- USER SERVICES ---
+const getLocalReviewsForVendor = (vendorId: string): Review[] => {
+  try {
+    const raw = localStorage.getItem(`local_reviews_${vendorId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch (err) {
+    console.error("Failed to parse local reviews:", err);
+    return [];
+  }
+};
+
+const saveLocalReviewForVendor = (vendorId: string, review: Review) => {
+  try {
+    const current = getLocalReviewsForVendor(vendorId);
+    const updated = [review, ...current.filter(r => r.id !== review.id)];
+    localStorage.setItem(`local_reviews_${vendorId}`, JSON.stringify(updated));
+  } catch (err) {
+    console.error("Failed to save local review:", err);
+  }
+};
+
 const mapProfileToUser = (profileData: any): User => {
   let mappedRole: UserRole = 'Customer';
   if (profileData.role) {
@@ -87,12 +107,28 @@ const mapProfileToUser = (profileData: any): User => {
     else if (r === 'customer') mappedRole = 'Customer';
     else mappedRole = profileData.role;
   }
+
+  // Calculate dynamic average rating and review count from both DB and local-submissions
+  let rating = profileData.rating || 0;
+  let reviewCount = profileData.review_count || 0;
+
+  try {
+    const local = getLocalReviewsForVendor(profileData.id);
+    if (local.length > 0) {
+      reviewCount = Math.max(reviewCount, local.length);
+      const total = local.reduce((sum, r) => sum + Number(r.rating), 0);
+      rating = Number((total / local.length).toFixed(1));
+    }
+  } catch (e) {
+    console.error("Error aggregating dynamic local reviews for user profile:", e);
+  }
+
   return {
     id: profileData.id,
     name: profileData.full_name || 'Unknown',
     avatar: profileData.avatar_url || 'https://ui-avatars.com/api/?name=Unknown&background=random',
-    rating: profileData.rating || 0,
-    reviewCount: profileData.review_count || 0,
+    rating: rating,
+    reviewCount: reviewCount,
     location: profileData.location || 'Unknown',
     memberSince: profileData.created_at || new Date().toISOString(),
     bio: profileData.bio || '',
@@ -798,10 +834,12 @@ export const createViewRequest = async (request: Omit<ViewRequest, 'id' | 'creat
 
 // --- REVIEW SERVICES ---
 export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> => {
+  const localReviews = getLocalReviewsForVendor(vendorId);
   try {
     const { data, error } = await supabase.from('reviews').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []).map((r: any) => ({
+    
+    const dbReviews: Review[] = (data || []).map((r: any) => ({
       id: r.id,
       vendorId: r.vendor_id,
       customerId: r.customer_id,
@@ -809,21 +847,62 @@ export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> =
       comment: r.comment,
       createdAt: r.created_at
     }));
+
+    // Merge them: prioritize DB reviews, but if local reviews are not in local storage yet, add them
+    const combined = [...dbReviews];
+    for (const local of localReviews) {
+      if (!combined.some(db => db.id === local.id)) {
+        combined.push(local);
+      }
+    }
+    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return combined;
+
   } catch (err) {
-    console.error("Supabase getReviewsForVendor failed, returning empty list fallback:", err);
-    return [];
+    console.warn("Supabase getReviewsForVendor failed, returning local storage fallback:", err);
+    return localReviews;
   }
 };
 
 export const createReview = async (review: any): Promise<string> => {
-  const { data, error } = await supabase.from('reviews').insert({
-    vendor_id: review.vendorId,
-    customer_id: review.customerId,
-    rating: review.rating,
-    comment: review.comment
-  }).select('id').single();
-  if (error) throw error;
-  return data.id;
+  const localId = 'review-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
+  const newLocalReview: Review = {
+    id: localId,
+    vendorId: review.vendorId,
+    customerId: review.customerId,
+    rating: Number(review.rating),
+    comment: review.comment || '',
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    const supabasePromise = (async () => {
+      const { data, error } = await supabase.from('reviews').insert({
+        vendor_id: review.vendorId,
+        customer_id: review.customerId,
+        rating: Number(review.rating),
+        comment: review.comment
+      }).select('id').single();
+      if (error) throw error;
+      if (!data) throw new Error('No data returned');
+      return data;
+    })();
+
+    const timeoutPromise = new Promise<any>((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase request timed out')), 2000)
+    );
+
+    const data = await Promise.race([supabasePromise, timeoutPromise]);
+    
+    const finalReview = { ...newLocalReview, id: data.id };
+    saveLocalReviewForVendor(review.vendorId, finalReview);
+    return data.id;
+
+  } catch (err) {
+    console.warn("Supabase createReview failed, using offline fallback:", err);
+    saveLocalReviewForVendor(review.vendorId, newLocalReview);
+    return localId;
+  }
 };
 
 // --- CMS / STATIC PAGES & BLOG POST SERVICES ---
