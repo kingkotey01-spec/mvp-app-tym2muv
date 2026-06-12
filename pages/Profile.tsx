@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getUserProfile, getListings, getReviewsForVendor, createReview } from '../services/supabaseService';
+import { getUserProfile, getListings, getReviewsForVendor, createReview, checkUserAgentInteraction } from '../services/supabaseService';
 import { User, Listing, Review } from '../types';
 import ListingCard from '../components/ListingCard';
 import AdCard from '../components/AdCard';
@@ -28,6 +28,51 @@ const Profile: React.FC = () => {
   const [reviewComment, setReviewComment] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
   const isMe = currentUser?.id === user?.id;
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [interactedProperties, setInteractedProperties] = useState<string[]>([]);
+  const [checkingInteraction, setCheckingInteraction] = useState(true);
+
+  // Sorting and Filtering State
+  const [sortBy, setSortBy] = useState<'recent' | 'highest' | 'lowest'>('recent');
+  const [ratingFilter, setRatingFilter] = useState<number | 'all'>('all');
+  const [verifiedFilter, setVerifiedFilter] = useState<boolean>(false);
+
+  // Dynamic Rating Distribution Calculation
+  const ratingDistribution = useMemo(() => {
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(review => {
+      const r = Math.round(review.rating);
+      if (r >= 1 && r <= 5) {
+        counts[r as 5|4|3|2|1] += 1;
+      }
+    });
+    return counts;
+  }, [reviews]);
+
+  const totalReviewsCount = reviews.length;
+
+  // Filtered and Sorted Reviews List
+  const filteredAndSortedReviews = useMemo(() => {
+    let result = [...reviews];
+
+    if (ratingFilter !== 'all') {
+      result = result.filter(r => Math.round(r.rating) === ratingFilter);
+    }
+
+    if (verifiedFilter) {
+      result = result.filter(r => r.isVerified);
+    }
+
+    if (sortBy === 'recent') {
+      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortBy === 'highest') {
+      result.sort((a, b) => b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortBy === 'lowest') {
+      result.sort((a, b) => a.rating - b.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    return result;
+  }, [reviews, sortBy, ratingFilter, verifiedFilter]);
 
   // Define some ads to intersperse
   const ads = [
@@ -98,6 +143,24 @@ const Profile: React.FC = () => {
 
           setListings(listingsRes.listings);
           setReviews(reviewsRes);
+
+          // Check if current user has interacted with this agent/vendor
+          if (currentUser && currentUser.id !== u.id) {
+            setCheckingInteraction(true);
+            try {
+              const interaction = await checkUserAgentInteraction(currentUser.id, u.id);
+              if (active) {
+                setHasInteracted(interaction.interacted);
+                setInteractedProperties(interaction.properties);
+              }
+            } catch (err) {
+              console.warn("Failed to check interaction:", err);
+            } finally {
+              if (active) setCheckingInteraction(false);
+            }
+          } else {
+            if (active) setCheckingInteraction(false);
+          }
           
           // If viewing own tenant profile, fetch saved listings
           if (targetId === currentUser?.id && u.role === 'Tenant' && u.savedListings?.length) {
@@ -145,7 +208,9 @@ const Profile: React.FC = () => {
         vendorId: user.id,
         customerId: currentUser.id,
         rating: reviewRating,
-        comment: reviewComment
+        comment: reviewComment,
+        customerName: currentUser.name,
+        customerAvatar: currentUser.avatar
       });
       
       // Refresh reviews and user profile
@@ -490,58 +555,205 @@ const Profile: React.FC = () => {
             ) : activeTab === 'inbox' ? (
                 <SimulatedInbox />
             ) : (
-                <div className="space-y-8">
+                 <div className="space-y-8 animate-fade-in">
+                    {/* Rating Overview & Trust Analytics Dashboard */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+                        {/* Summary Score Card */}
+                        <div className="md:col-span-3 bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-100 p-5 rounded-3xl flex flex-col justify-center items-center text-center shadow-xs">
+                            <span className="text-[10px] font-black uppercase text-slate-450 tracking-widest mb-1">Feedback Score</span>
+                            <span className="text-4xl font-black text-slate-800 tracking-tight">{(user.rating || 0).toFixed(1)}</span>
+                            <div className="flex items-center gap-0.5 text-yellow-500 my-2">
+                                {[...Array(5)].map((_, i) => (
+                                    <Icon 
+                                        key={i} 
+                                        name="star" 
+                                        size={14} 
+                                        className={i < Math.round(user.rating || 0) ? 'fill-current' : 'text-slate-200'} 
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-500">Based on {reviews.length} system reviews</span>
+                        </div>
+
+                        {/* Rating Distribution Column */}
+                        <div className="md:col-span-5 bg-white border border-slate-100 p-5 rounded-3xl flex flex-col justify-between shadow-xs">
+                            <div className="space-y-2.5">
+                                <span className="text-[10px] font-black uppercase text-slate-450 tracking-widest block">Rating Distribution</span>
+                                <div className="space-y-1.5">
+                                    {[5, 4, 3, 2, 1].map((stars) => {
+                                        const count = ratingDistribution[stars as 5|4|3|2|1] || 0;
+                                        const pct = totalReviewsCount > 0 ? (count / totalReviewsCount) * 100 : 0;
+                                        return (
+                                            <div key={stars} className="flex items-center gap-2.5 text-xs font-semibold">
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        // Interactive filter trigger
+                                                        setRatingFilter(ratingFilter === stars ? 'all' : stars);
+                                                    }}
+                                                    className={`hover:bg-slate-50 px-1.5 py-0.5 rounded transition flex items-center gap-1 cursor-pointer shrink-0 ${
+                                                        ratingFilter === stars 
+                                                            ? 'bg-amber-100 text-amber-850 hover:bg-amber-200 font-extrabold shadow-2xs border border-amber-200/50' 
+                                                            : 'text-slate-500 hover:text-slate-800'
+                                                    }`}
+                                                >
+                                                    <span>{stars}</span>
+                                                    <Icon name="star" size={10} className={`${ratingFilter === stars || count > 0 ? 'text-yellow-400 fill-current' : 'text-slate-300'}`} />
+                                                </button>
+                                                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden relative">
+                                                    <div 
+                                                        className={`h-full rounded-full transition-all duration-500 ${
+                                                            stars === 5 ? 'bg-emerald-500' :
+                                                            stars === 4 ? 'bg-teal-500' :
+                                                            stars === 3 ? 'bg-amber-400' :
+                                                            stars === 2 ? 'bg-orange-400' : 'bg-rose-500'
+                                                        }`}
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
+                                                <span className="w-10 text-right text-[11px] font-bold text-slate-450">
+                                                    {count}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-bold mt-1.5 flex items-center gap-1">
+                                <Icon name="info" size={12} className="text-slate-400 shrink-0" />
+                                <span>Tip: Click on any star Row count to filter the reviews!</span>
+                            </div>
+                        </div>
+
+                        {/* Property Interaction Trust Box */}
+                        <div className="col-span-1 md:col-span-4 bg-gradient-to-br from-brand-50 to-indigo-50 border border-brand-100/40 p-5 rounded-3xl flex flex-col justify-between shadow-xs">
+                            <div>
+                                <h4 className="text-xs font-black uppercase text-brand-700 tracking-widest mb-1.5 flex items-center gap-1.5">
+                                    <Icon name="shieldCheck" size={14} className="text-brand-650 animate-pulse" />
+                                    Property Inquiry Integrity System
+                                </h4>
+                                <p className="text-slate-600 text-[11px] leading-relaxed font-semibold">
+                                  Tym2Muv actively tracks listing inquiries, tour arrangements, and direct messaging history. Verified customers receive a <span className="text-brand-600 font-extrabold">Verified Listing Tenant Badge</span> on submitted vendor feedback.
+                                </p>
+                            </div>
+
+                            {/* Visitor Interaction Badge */}
+                            {!isMe && currentUser && (
+                              <div className="mt-3 pt-3 border-t border-brand-100/50 flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  {checkingInteraction ? (
+                                    <div className="flex items-center gap-1 text-slate-450">
+                                      <Icon name="loader" size={12} className="animate-spin" />
+                                      <span className="font-bold">Scanning listing inquiry logs...</span>
+                                    </div>
+                                  ) : hasInteracted ? (
+                                    <div className="flex items-center gap-1.5 text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100 shadow-sm font-bold text-[11px]">
+                                      <Icon name="checkCircle" size={12} className="text-emerald-600" />
+                                      <span>Verified Listing Interaction Logged</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5 text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl font-bold text-[11px]">
+                                      <Icon name="alertCircle" size={12} className="text-slate-450" />
+                                      <span>No historical property inquiry found</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {hasInteracted && interactedProperties.length > 0 && (
+                                  <span className="text-[10px] text-brand-600 font-black uppercase bg-brand-100/50 px-2.5 py-0.5 rounded-lg border border-brand-100/60 max-w-xs truncate" title={interactedProperties.join(', ')}>
+                                    Inquired on: {interactedProperties[0]}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Submit Review Card */}
                     {!isMe && currentUser && (
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                             {!showReviewForm ? (
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between flex-wrap gap-4">
                                     <div>
-                                        <h3 className="font-bold text-slate-800">Leave a Review</h3>
-                                        <p className="text-sm text-slate-500">Share your experience with {user.name}</p>
+                                        <h3 className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                            <span>Submit Agent Review & Stars</span>
+                                            {hasInteracted && (
+                                              <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-150 px-2 py-0.5 rounded-full">
+                                                <Icon name="shieldCheck" size={10} className="text-emerald-500" /> Interaction Verified
+                                              </span>
+                                            )}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-1 font-semibold">
+                                          {hasInteracted 
+                                            ? "Your listing inquiry history qualifies this submission to be highlighted as Verified!" 
+                                            : "Request viewings or send listing chats first to receive a verified indicator on reviews."}
+                                        </p>
                                     </div>
                                     <button 
+                                        type="button"
                                         onClick={() => setShowReviewForm(true)}
-                                        className="px-4 py-2 bg-brand-50 text-brand-600 font-medium rounded-xl hover:bg-brand-100 transition-colors"
+                                        className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-black text-xs rounded-xl shadow-xs transition hover:shadow-sm"
                                     >
-                                        Write Review
+                                        Write Feedback Review
                                     </button>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmitReview} className="space-y-4 animate-fade-in">
                                     <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-bold text-slate-800">Write a Review</h3>
+                                        <div>
+                                            <h3 className="font-extrabold text-slate-800 text-sm">Write Review & Feedback</h3>
+                                            <p className="text-slate-500 text-xs">Share your experience engaging with properties through this agent.</p>
+                                        </div>
                                         <button 
                                             type="button" 
                                             onClick={() => setShowReviewForm(false)}
-                                            className="text-slate-400 hover:text-slate-600"
+                                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-50 transition"
                                         >
-                                            <Icon name="x" size={20} />
+                                            <Icon name="x" size={16} />
                                         </button>
                                     </div>
+
+                                    {/* Verification Status Banner */}
+                                    {!hasInteracted && (
+                                      <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 text-amber-800 text-xs leading-relaxed font-semibold flex items-start gap-2 animate-fade-in">
+                                        <Icon name="info" size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                                        <span>
+                                          Your review will be tracked as a standard user submission. Contacting the agent or requesting a property viewing first instantly awards you a <strong>Verified Listing Tenant Badge</strong>.
+                                        </span>
+                                      </div>
+                                    )}
                                     
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Rating</label>
-                                        <div className="flex gap-2">
+                                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Rating</label>
+                                        <div className="flex gap-1.5">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <button
                                                     key={star}
                                                     type="button"
                                                     onClick={() => setReviewRating(star)}
-                                                    className={`p-1 transition-colors ${reviewRating >= star ? 'text-yellow-400' : 'text-slate-200 hover:text-yellow-200'}`}
+                                                    className="p-1 transition-transform active:scale-95 cursor-pointer"
                                                 >
-                                                    <Icon name="star" size={32} className={reviewRating >= star ? 'fill-current' : ''} />
+                                                    <Icon 
+                                                        name="star" 
+                                                        size={32} 
+                                                        className={`transition-colors ${
+                                                          reviewRating >= star 
+                                                            ? 'text-yellow-400 fill-current' 
+                                                            : 'text-slate-200 hover:text-yellow-200'
+                                                        }`} 
+                                                    />
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Comment (Optional)</label>
+                                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Review Comment</label>
                                         <textarea
                                             value={reviewComment}
                                             onChange={(e) => setReviewComment(e.target.value)}
-                                            placeholder="Tell others about your experience..."
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition-all resize-none h-24"
+                                            placeholder="Write honest feedback about responsiveness, viewing arrangements, listing accuracy..."
+                                            className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition-all resize-none h-24 text-xs font-semibold"
                                             maxLength={1000}
                                         />
                                     </div>
@@ -550,19 +762,22 @@ const Profile: React.FC = () => {
                                         <button 
                                             type="button"
                                             onClick={() => setShowReviewForm(false)}
-                                            className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-50 rounded-xl transition-colors"
+                                            className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-50 text-xs rounded-xl transition"
                                         >
                                             Cancel
                                         </button>
                                         <button 
                                             type="submit"
                                             disabled={isSubmittingReview}
-                                            className="px-5 py-2.5 bg-brand-600 text-white font-medium rounded-xl hover:bg-brand-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                            className="px-5 py-2.5 bg-brand-600 text-white font-extrabold text-xs rounded-xl hover:bg-brand-700 transition disabled:opacity-50 flex items-center gap-1.5"
                                         >
                                             {isSubmittingReview ? (
-                                                <><Icon name="loader" size={16} className="animate-spin" /> Submitting...</>
+                                                <><Icon name="loader" size={14} className="animate-spin" /> Submitting...</>
                                             ) : (
-                                                'Submit Review'
+                                                <>
+                                                  <Icon name="check" size={14} />
+                                                  Submit Review
+                                                </>
                                             )}
                                         </button>
                                     </div>
@@ -571,39 +786,187 @@ const Profile: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Reviews List Toolbar & Content */}
                     {reviews.length > 0 ? (
-                        <div className="space-y-4">
-                            {reviews.map((review) => (
-                                <div key={review.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-1 text-yellow-500">
-                                            {[...Array(5)].map((_, i) => (
+                        <div className="space-y-6">
+                            {/* Filtering and Sorting Controls Toolbar */}
+                            <div className="bg-slate-50/60 border border-slate-200 p-4 rounded-3xl flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-2xs">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider mr-1">Filter Rating:</span>
+                                    {(['all', 5, 4, 3, 2, 1] as const).map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setRatingFilter(star)}
+                                            className={`px-3 py-1.5 rounded-xl border text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer hover:scale-98 ${
+                                                ratingFilter === star
+                                                    ? 'bg-brand-650 border-brand-700 text-white shadow-xs'
+                                                    : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-600'
+                                            }`}
+                                        >
+                                            <span>{star === 'all' ? 'All' : star}</span>
+                                            {star !== 'all' && (
                                                 <Icon 
-                                                    key={i} 
                                                     name="star" 
-                                                    size={16} 
-                                                    className={i < review.rating ? 'fill-current' : 'text-slate-200'} 
+                                                    size={11} 
+                                                    className={ratingFilter === star ? 'fill-current text-white' : 'fill-current text-yellow-400'} 
                                                 />
-                                            ))}
+                                            )}
+                                        </button>
+                                    ))}
+                                    
+                                    <button
+                                        type="button"
+                                        onClick={() => setVerifiedFilter(!verifiedFilter)}
+                                        className={`px-3 py-1.5 rounded-xl border text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer hover:scale-98 md:ml-2 ${
+                                            verifiedFilter
+                                                ? 'bg-emerald-600 border-emerald-750 text-white shadow-xs'
+                                                : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-600'
+                                        }`}
+                                    >
+                                        <Icon name="shieldCheck" size={12} className={verifiedFilter ? 'text-white' : 'text-emerald-500'} />
+                                        <span>Verified Only</span>
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-250/30">
+                                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider shrink-0">Sort By:</span>
+                                    <div className="relative flex-1 md:flex-initial">
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e: any) => setSortBy(e.target.value)}
+                                            className="w-full md:w-44 px-3.5 py-1.5 bg-white border border-slate-200 text-xs font-bold rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-500 transition-all cursor-pointer appearance-none pr-8"
+                                        >
+                                            <option value="recent">Most Recent</option>
+                                            <option value="highest">Highest Rating</option>
+                                            <option value="lowest">Lowest Rating</option>
+                                        </select>
+                                        <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">
+                                            <Icon name="sliders" size={12} />
                                         </div>
-                                        <span className="text-xs text-slate-400">
-                                            {new Date(review.createdAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Applied Filters Summary Banner */}
+                            {(ratingFilter !== 'all' || verifiedFilter) && (
+                                <div className="flex items-center justify-between px-4 py-2 bg-brand-50/50 rounded-2xl border border-brand-100 text-xs font-medium text-brand-800 animate-fade-in">
+                                    <div className="flex items-center gap-1.5">
+                                        <Icon name="filter" size={12} className="text-brand-600" />
+                                        <span>
+                                            Showing {filteredAndSortedReviews.length} of {reviews.length} reviews for 
+                                            {ratingFilter !== 'all' && <span className="font-bold"> {ratingFilter} Stars</span>}
+                                            {ratingFilter !== 'all' && verifiedFilter && ' and'}
+                                            {verifiedFilter && <span className="font-bold"> Verified Tenant Inquiries</span>}
                                         </span>
                                     </div>
-                                    {review.comment && (
-                                        <p className="text-slate-600 leading-relaxed">{review.comment}</p>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setRatingFilter('all');
+                                            setVerifiedFilter(false);
+                                        }}
+                                        className="text-[11px] font-black uppercase tracking-wider text-brand-700 hover:text-brand-900 underline cursor-pointer"
+                                    >
+                                        Reset Filters
+                                    </button>
                                 </div>
-                            ))}
+                            )}
+
+                            {/* Reviews Feed list */}
+                            {filteredAndSortedReviews.length > 0 ? (
+                                <div className="space-y-4">
+                                    {filteredAndSortedReviews.map((review) => (
+                                        <div key={review.id} className="bg-white p-5 rounded-3xl border border-slate-150/80 shadow-sm flex flex-col sm:flex-row gap-4 items-start animate-fade-in">
+                                            {/* Left Side: Reviewer Profile */}
+                                            <div className="flex items-center sm:items-start gap-3 w-full sm:w-44 shrink-0">
+                                              <img 
+                                                src={review.customerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.customerName || 'User')}&background=random`} 
+                                                className="w-9 h-9 rounded-full object-cover border border-slate-100 shadow-xs bg-slate-50" 
+                                                alt="" 
+                                                referrerPolicy="no-referrer" 
+                                              />
+                                              <div className="min-w-0">
+                                                <p className="font-extrabold text-slate-800 text-xs truncate max-w-[120px]">{review.customerName || 'Anonymous'}</p>
+                                                <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
+                                                  {new Date(review.createdAt).toLocaleDateString(undefined, {
+                                                    month: 'short', day: 'numeric', year: 'numeric'
+                                                  })}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            {/* Right Side: Rating & Comment Card */}
+                                            <div className="flex-1 space-y-2 w-full">
+                                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex items-center gap-0.5 text-yellow-400">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Icon 
+                                                            key={i} 
+                                                            name="star" 
+                                                            size={13} 
+                                                            className={i < review.rating ? 'fill-current' : 'text-slate-200'} 
+                                                        />
+                                                    ))}
+                                                    <span className="text-xs font-black text-slate-700 ml-1.5">{review.rating.toFixed(1)}</span>
+                                                </div>
+
+                                                {review.isVerified ? (
+                                                  <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-full shadow-xs">
+                                                    <Icon name="shieldCheck" size={11} className="text-emerald-500" />
+                                                    <span>Verified Listing Tenant</span>
+                                                  </span>
+                                                ) : (
+                                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-slate-50 text-slate-400 border border-slate-100 px-2 py-0.5 rounded-full">
+                                                    <Icon name="user" size={10} className="text-slate-400" />
+                                                    <span>User Review</span>
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {review.comment ? (
+                                                  <p className="text-slate-600 text-xs md:text-sm leading-relaxed font-semibold whitespace-pre-wrap bg-slate-50/50 p-3 rounded-2xl border border-slate-100/50 mt-1">
+                                                    {review.comment}
+                                                  </p>
+                                              ) : (
+                                                  <p className="text-slate-400 italic text-xs">Rated this agent without comments.</p>
+                                              )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                /* No matching results for currently applied filters */
+                                <div className="py-12 bg-white rounded-3xl border border-dashed border-slate-200 text-center shadow-xs">
+                                    <div className="inline-block p-4 bg-slate-50 rounded-full mb-3 text-slate-400">
+                                        <Icon name="filter" size={24} />
+                                    </div>
+                                    <h4 className="text-sm font-extrabold text-slate-700">No matching reviews</h4>
+                                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto font-semibold leading-relaxed">
+                                        There are no reviews matching your currently applied filter selection. Try adjusting or clearing your filters.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setRatingFilter('all');
+                                            setVerifiedFilter(false);
+                                        }}
+                                        className="mt-4 px-4.5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs inline-flex items-center gap-1.5 rounded-xl shadow-xs transition"
+                                    >
+                                        <Icon name="x" size={12} />
+                                        <span>Reset Filters</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ) : (
+                        /* Absolutely zero reviews signed/submitted ever */
                         <div className="py-16 text-center text-slate-500 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
                             <div className="inline-block p-4 bg-white rounded-full mb-4 shadow-sm">
-                                <Icon name="star" size={32} className="text-slate-300" />
+                                <Icon name="star" size={32} className="text-yellow-400 fill-current animate-pulse" />
                             </div>
                             <h3 className="text-lg font-bold text-slate-700">No reviews yet</h3>
                             <p className="text-slate-500 mt-1">
-                                {isMe ? "You don't have any reviews yet." : "Be the first to review this user!"}
+                                {isMe ? "You don't have any reviews yet." : "Be the first to rate your property interactions with this agent!"}
                             </p>
                         </div>
                     )}

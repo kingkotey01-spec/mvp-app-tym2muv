@@ -102,6 +102,8 @@ export interface User {
   role: UserRole;
   savedListings?: string[]; // Array of saved listing IDs
   agencyName?: string;
+  licenseNumber?: string;
+  specialization?: string[];
   socials: {
     whatsapp?: string;
     facebook?: string;
@@ -149,6 +151,7 @@ export interface Chat {
   lastMessageTime: string;
   unreadCount: number;
   lastSenderId?: string;
+  leadSource?: string;
 }
 
 export interface ViewRequest {
@@ -187,6 +190,9 @@ export interface Review {
   rating: number;
   comment?: string;
   createdAt: string;
+  customerName?: string;
+  customerAvatar?: string;
+  isVerified?: boolean;
 }
 
 export interface StaticPage {

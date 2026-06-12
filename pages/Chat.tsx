@@ -11,6 +11,19 @@ import ErrorBanner from '../components/ErrorBanner';
 import SkeletonCard from '../components/SkeletonCard';
 import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
 
+interface ResponseTemplate {
+  id: string;
+  title: string;
+  content: string;
+}
+
+const DEFAULT_TEMPLATES: ResponseTemplate[] = [
+  { id: '1', title: 'Available for viewing', content: 'Hello! Yes, the property is available for viewing. When would you be free to schedule a walkthrough?' },
+  { id: '2', title: 'Property details sent', content: 'Great! I have sent over the comprehensive property details, brochure, and pricing outline. Let me know if you have any questions!' },
+  { id: '3', title: 'Follow-up inquiry', content: 'Hi there! Just following up on your inquiry about this property. Are you still interested or looking for something else?' },
+  { id: '4', title: 'Offer received', content: 'Thank you for reaching out. An offer has already been drafted for this unit, but I can keep you updated if there are any changes.' }
+];
+
 const Chat: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { user: currentUser } = useAuth();
@@ -24,6 +37,57 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Response Templates States
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [newTemplateTitle, setNewTemplateTitle] = useState('');
+  const [newTemplateContent, setNewTemplateContent] = useState('');
+  const [templates, setTemplates] = useState<ResponseTemplate[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`chat_response_templates_${currentUser?.id || 'guest'}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (_) {
+          return DEFAULT_TEMPLATES;
+        }
+      }
+    }
+    return DEFAULT_TEMPLATES;
+  });
+
+  const handleAddTemplate = (title: string, content: string) => {
+    const newTpl = {
+      id: 'tpl_' + Date.now(),
+      title,
+      content
+    };
+    const updated = [...templates, newTpl];
+    setTemplates(updated);
+    localStorage.setItem(`chat_response_templates_${currentUser?.id || 'guest'}`, JSON.stringify(updated));
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    const updated = templates.filter(t => t.id !== id);
+    setTemplates(updated);
+    localStorage.setItem(`chat_response_templates_${currentUser?.id || 'guest'}`, JSON.stringify(updated));
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`chat_response_templates_${currentUser?.id || 'guest'}`);
+      if (saved) {
+        try {
+          setTemplates(JSON.parse(saved));
+        } catch (_) {
+          setTemplates(DEFAULT_TEMPLATES);
+        }
+      } else {
+        setTemplates(DEFAULT_TEMPLATES);
+      }
+    }
+  }, [currentUser]);
   
   // Resolve other participant details
   const [participants, setParticipants] = useState<Record<string, User>>({});
@@ -65,7 +129,11 @@ const Chat: React.FC = () => {
     if (!currentUser) return;
 
     const urlChatId = searchParams.get('chatId');
+    const sourceParam = searchParams.get('source');
     if (urlChatId) {
+      if (sourceParam) {
+        localStorage.setItem(`chat_lead_source_${urlChatId}`, sourceParam);
+      }
       setActiveChatId(urlChatId);
       return;
     }
@@ -78,6 +146,9 @@ const Chat: React.FC = () => {
       const startNewChat = async () => {
         try {
           const chatId = await createChat(currentUser.id, startWithUserId, listingId);
+          if (sourceParam) {
+            localStorage.setItem(`chat_lead_source_${chatId}`, sourceParam);
+          }
           setActiveChatId(chatId);
         } catch (error) {
           console.error("Error creating chat:", error);
@@ -265,9 +336,22 @@ const Chat: React.FC = () => {
                                                 <h3 className="font-bold text-xs text-slate-900 truncate">{otherUser?.name || 'User'}</h3>
                                                 <span className="text-[10px] text-slate-400">{chat.lastMessageTime}</span>
                                             </div>
-                                            <p className={`text-xs truncate ${isUnread ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
-                                                {chat.lastMessage}
-                                            </p>
+                                            <div className="flex items-center justify-between gap-1 mt-0.5">
+                                                <p className={`text-xs truncate flex-1 ${isUnread ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
+                                                    {chat.lastMessage || 'No messages yet.'}
+                                                </p>
+                                                {chat.leadSource && (
+                                                    <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm border shrink-0 ${
+                                                        chat.leadSource === 'Search' 
+                                                            ? 'bg-blue-50 text-blue-600 border-blue-200/60' 
+                                                            : chat.leadSource === 'Profile Page' 
+                                                            ? 'bg-purple-50 text-purple-600 border-purple-200/60' 
+                                                            : 'bg-indigo-50 text-indigo-600 border-indigo-200/60'
+                                                    }`} title={`Source: ${chat.leadSource}`}>
+                                                        {chat.leadSource}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -301,9 +385,24 @@ const Chat: React.FC = () => {
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-slate-900">{otherUser.name}</h3>
-                                            <p className="text-xs text-brand-600 flex items-center gap-1">
-                                                {activeChat?.listingId && <><Icon name="home" size={10} /> Property Inquiry</>}
-                                            </p>
+                                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                {activeChat?.listingId && (
+                                                    <span className="text-[10px] text-brand-600 flex items-center gap-1 font-bold">
+                                                        <Icon name="home" size={10} /> Property Inquiry
+                                                    </span>
+                                                )}
+                                                {activeChat?.leadSource && (
+                                                    <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm border shrink-0 ${
+                                                        activeChat.leadSource === 'Search' 
+                                                            ? 'bg-blue-50 text-blue-600 border-blue-200/60' 
+                                                            : activeChat.leadSource === 'Profile Page' 
+                                                            ? 'bg-purple-50 text-purple-600 border-purple-200/60' 
+                                                            : 'bg-indigo-50 text-indigo-600 border-indigo-200/60'
+                                                    }`} title={`Source: ${activeChat.leadSource}`}>
+                                                        Source: {activeChat.leadSource}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : null;
@@ -342,9 +441,125 @@ const Chat: React.FC = () => {
 
                     {/* Input Area */}
                     <div className="p-2.5 bg-white/60 backdrop-blur-sm border-t border-slate-200">
+                        {showTemplates && (
+                            <div className="mb-2 p-3 bg-slate-50 border border-slate-100 rounded-xl animate-fade-in space-y-3 shadow-xs">
+                                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                                        <Icon name="fileText" size={12} className="text-brand-600" />
+                                        <span>Response Templates</span>
+                                    </span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowCustomForm(!showCustomForm)}
+                                        className="text-[10px] font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <Icon name="plus" size={10} /> {showCustomForm ? 'View Templates' : 'Add Custom'}
+                                    </button>
+                                </div>
+
+                                {showCustomForm ? (
+                                    <div className="space-y-2 bg-white p-2.5 rounded-lg border border-slate-100">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <input 
+                                                type="text" 
+                                                placeholder="Template Title (e.g., Available viewing)" 
+                                                value={newTemplateTitle} 
+                                                onChange={(e) => setNewTemplateTitle(e.target.value)}
+                                                className="col-span-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-brand-500"
+                                            />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Response Text content..." 
+                                                value={newTemplateContent} 
+                                                onChange={(e) => setNewTemplateContent(e.target.value)}
+                                                className="col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-brand-500"
+                                            />
+                                        </div>
+                                        <div className="flex justify-end gap-2 text-xs pt-1">
+                                            <button 
+                                                type="button" 
+                                                onClick={() => {
+                                                    setShowCustomForm(false);
+                                                    setNewTemplateTitle('');
+                                                    setNewTemplateContent('');
+                                                }}
+                                                className="px-2.5 py-1 text-slate-500 hover:text-slate-800 font-semibold"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => {
+                                                    if (!newTemplateTitle.trim() || !newTemplateContent.trim()) return;
+                                                    handleAddTemplate(newTemplateTitle, newTemplateContent);
+                                                    setNewTemplateTitle('');
+                                                    setNewTemplateContent('');
+                                                    setShowCustomForm(false);
+                                                    toast('Response Template saved!', 'success');
+                                                }}
+                                                disabled={!newTemplateTitle.trim() || !newTemplateContent.trim()}
+                                                className="px-3 py-1 bg-brand-600 text-white rounded-lg font-bold disabled:opacity-50"
+                                            >
+                                                Save Template
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                                        {templates.map((tpl) => (
+                                            <div 
+                                                key={tpl.id}
+                                                className="group flex items-center bg-white border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 hover:border-brand-300 transition-all text-[11px] font-semibold text-slate-700 shadow-3xs gap-1.5"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setMessageInput(tpl.content);
+                                                        setShowTemplates(false);
+                                                    }}
+                                                    className="hover:text-brand-600 text-left cursor-pointer"
+                                                    title={`Use template: "${tpl.content}"`}
+                                                >
+                                                    {tpl.title}
+                                                </button>
+                                                
+                                                {/* Deletion of custom templates */}
+                                                {tpl.id.startsWith('tpl_') && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteTemplate(tpl.id)}
+                                                        className="p-0.5 text-slate-330 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                        title="Delete custom template"
+                                                    >
+                                                        <Icon name="x" size={10} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {templates.length === 0 && (
+                                            <span className="text-[10px] italic text-slate-400">No response templates. Click 'Add Custom' to create one!</span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                             <button type="button" className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">
                                 <Icon name="plus" size={18} />
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => setShowTemplates(!showTemplates)}
+                                className={`p-1.5 rounded-full transition-colors relative ${showTemplates ? 'text-brand-600 bg-brand-50' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-100'}`}
+                                title="Response Templates"
+                            >
+                                <Icon name="fileText" size={18} />
+                                {templates.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-brand-500 text-white font-extrabold text-[7px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white">
+                                        {templates.length}
+                                    </span>
+                                )}
                             </button>
                             <input 
                                 type="text" 

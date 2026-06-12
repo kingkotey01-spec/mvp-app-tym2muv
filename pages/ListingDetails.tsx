@@ -176,7 +176,7 @@ const ListingDetails: React.FC = () => {
 
   const handleChat = () => {
     if (seller) {
-      navigate(`/chat?to=${seller.id}`);
+      navigate(`/chat?to=${seller.id}&listingId=${listing.id}&source=Search`);
     } else {
       navigate('/signin');
     }

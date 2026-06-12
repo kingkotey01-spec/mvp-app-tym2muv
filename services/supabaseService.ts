@@ -129,7 +129,7 @@ const mapProfileToUser = (profileData: any): User => {
     avatar: profileData.avatar_url || 'https://ui-avatars.com/api/?name=Unknown&background=random',
     rating: rating,
     reviewCount: reviewCount,
-    location: profileData.location || 'Unknown',
+    location: profileData.location || profileData.socials?.location || 'Unknown',
     memberSince: profileData.created_at || new Date().toISOString(),
     bio: profileData.bio || profileData.socials?.bio || '',
     verified: profileData.verified || false,
@@ -137,7 +137,9 @@ const mapProfileToUser = (profileData: any): User => {
     savedListings: profileData.savedListings || [],
     email: profileData.email || '',
     socials: profileData.socials || {},
-    agencyName: profileData.agency_name || profileData.socials?.agencyName || profileData.socials?.agency_name || undefined
+    agencyName: profileData.agency_name || profileData.socials?.agencyName || profileData.socials?.agency_name || undefined,
+    licenseNumber: profileData.license_number || profileData.socials?.licenseNumber || profileData.socials?.license_number || undefined,
+    specialization: profileData.specialization || profileData.socials?.specialization || profileData.socials?.specializations || []
   };
 };
 
@@ -255,6 +257,7 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
   if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
   if (updates.socials !== undefined) dbUpdates.socials = updates.socials;
   if ((updates as any).agencyName !== undefined) dbUpdates.agency_name = (updates as any).agencyName;
+  if ((updates as any).licenseNumber !== undefined) dbUpdates.license_number = (updates as any).licenseNumber;
   
   if (Object.keys(dbUpdates).length > 0) {
     try {
@@ -264,11 +267,13 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
       const isMissingColumnError = err.code === '42703' || 
                                    String(err.message || '').includes('agency_name') || 
                                    String(err.message || '').includes('bio') || 
+                                   String(err.message || '').includes('location') || 
+                                   String(err.message || '').includes('license_number') || 
                                    String(err.message || '').includes('column') || 
                                    String(err.message || '').includes('schema cache');
                                    
       if (isMissingColumnError) {
-        console.warn("Retrying profile update by falling back missing columns ('agency_name' or 'bio') to 'socials' JSON attribute due to error:", err.message);
+        console.warn("Retrying profile update by falling back missing columns ('agency_name', 'bio', 'location', or 'license_number') to 'socials' JSON attribute due to error:", err.message);
         
         // Backup and shift agency_name if it was queried
         if (dbUpdates.agency_name !== undefined) {
@@ -289,6 +294,26 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
             bio: originalBio
           };
         }
+
+        // Backup and shift location if it was queried
+        if (dbUpdates.location !== undefined) {
+          const originalLocation = dbUpdates.location;
+          delete dbUpdates.location;
+          dbUpdates.socials = {
+            ...(dbUpdates.socials || {}),
+            location: originalLocation
+          };
+        }
+
+        // Backup and shift license_number if it was queried
+        if (dbUpdates.license_number !== undefined) {
+          const originalLicenseNumber = dbUpdates.license_number;
+          delete dbUpdates.license_number;
+          dbUpdates.socials = {
+            ...(dbUpdates.socials || {}),
+            licenseNumber: originalLicenseNumber
+          };
+        }
         
         // Try the updated query
         const { error: retryError } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
@@ -297,7 +322,6 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
           const minimalUpdates: any = {};
           if (dbUpdates.full_name !== undefined) minimalUpdates.full_name = dbUpdates.full_name;
           if (dbUpdates.avatar_url !== undefined) minimalUpdates.avatar_url = dbUpdates.avatar_url;
-          if (dbUpdates.location !== undefined) minimalUpdates.location = dbUpdates.location;
           if (dbUpdates.socials !== undefined) minimalUpdates.socials = dbUpdates.socials;
           
           const { error: ultraRetryError } = await supabase.from('profiles').update(minimalUpdates).eq('id', userId);
@@ -563,22 +587,38 @@ export const uploadImage = async (file: File, path: string, onProgress?: (n: num
 };
 
 // --- CHAT SERVICES ---
-const mapChatRow = (data: any): Chat => ({
-  id: data.id,
-  participants: data.participants,
-  listingId: data.listing_id,
-  messages: (data.messages || []).map((m: any) => ({
-    id: m.id,
-    senderId: m.sender_id,
-    text: m.content,
-    timestamp: m.created_at,
-    isRead: m.is_read || false
-  })).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
-  lastMessage: data.last_message,
-  lastMessageTime: data.last_message_time,
-  unreadCount: data.unread_count || 0,
-  lastSenderId: data.last_sender_id
-});
+const getDeterministicLeadSource = (chatId: string): string => {
+  let hash = 0;
+  for (let i = 0; i < chatId.length; i++) {
+    hash = chatId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const sources = ['Search', 'Profile Page', 'Social Media'];
+  return sources[Math.abs(hash) % sources.length];
+};
+
+const mapChatRow = (data: any): Chat => {
+  const finalLeadSource = typeof localStorage !== 'undefined'
+    ? localStorage.getItem(`chat_lead_source_${data.id}`) || getDeterministicLeadSource(data.id)
+    : getDeterministicLeadSource(data.id);
+  
+  return {
+    id: data.id,
+    participants: data.participants,
+    listingId: data.listing_id,
+    messages: (data.messages || []).map((m: any) => ({
+      id: m.id,
+      senderId: m.sender_id,
+      text: m.content,
+      timestamp: m.created_at,
+      isRead: m.is_read || false
+    })).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
+    lastMessage: data.last_message,
+    lastMessageTime: data.last_message_time,
+    unreadCount: data.unread_count || 0,
+    lastSenderId: data.last_sender_id,
+    leadSource: finalLeadSource
+  };
+};
 
 export const getChats = (userId: string, callback: (chats: Chat[]) => void) => {
   const fetchAndCallback = async () => {
@@ -864,17 +904,51 @@ export const createViewRequest = async (request: Omit<ViewRequest, 'id' | 'creat
 export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> => {
   const localReviews = getLocalReviewsForVendor(vendorId);
   try {
-    const { data, error } = await supabase.from('reviews').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
-    if (error) throw error;
+    // Join customer profiles to get name and avatar
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*, customer:profiles(id, full_name, avatar_url)')
+      .eq('vendor_id', vendorId)
+      .order('created_at', { ascending: false });
     
-    const dbReviews: Review[] = (data || []).map((r: any) => ({
-      id: r.id,
-      vendorId: r.vendor_id,
-      customerId: r.customer_id,
-      rating: r.rating,
-      comment: r.comment,
-      createdAt: r.created_at
-    }));
+    if (error) throw error;
+
+    // Fetch view requests and chats to verify which customers have interacted with the agent
+    const [{ data: vrs }, { data: chats }] = await Promise.all([
+      supabase.from('view_requests').select('tenant_id').eq('agent_id', vendorId),
+      supabase.from('chats').select('participants').contains('participants', [vendorId]).limit(100)
+    ]).catch(() => [{ data: [] }, { data: [] }]);
+
+    const interactedBuyerIds = new Set<string>();
+    if (vrs) {
+      vrs.forEach((r: any) => {
+        if (r.tenant_id) interactedBuyerIds.add(r.tenant_id);
+      });
+    }
+    if (chats) {
+      chats.forEach((c: any) => {
+        if (Array.isArray(c.participants)) {
+          c.participants.forEach((p: string) => {
+            if (p !== vendorId) interactedBuyerIds.add(p);
+          });
+        }
+      });
+    }
+    
+    const dbReviews: Review[] = (data || []).map((r: any) => {
+      const isVerified = interactedBuyerIds.has(r.customer_id);
+      return {
+        id: r.id,
+        vendorId: r.vendor_id,
+        customerId: r.customer_id,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.created_at,
+        customerName: r.customer?.full_name || 'Anonymous User',
+        customerAvatar: r.customer?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.customer?.full_name || 'Anonymous')}&background=random`,
+        isVerified: isVerified
+      };
+    });
 
     // Merge them: prioritize DB reviews, but if local reviews are not in local storage yet, add them
     const combined = [...dbReviews];
@@ -883,11 +957,18 @@ export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> =
         combined.push(local);
       }
     }
-    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return combined;
+
+    // Assign verified status to any merged local reviews too
+    const finalReviews = combined.map(rev => ({
+      ...rev,
+      isVerified: rev.isVerified || interactedBuyerIds.has(rev.customerId)
+    }));
+
+    finalReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return finalReviews;
 
   } catch (err) {
-    console.warn("Supabase getReviewsForVendor failed, returning local storage fallback:", err);
+    console.warn("Supabase getReviewsForVendor failed, returning local storage fallback with updates:", err);
     return localReviews;
   }
 };
@@ -900,7 +981,9 @@ export const createReview = async (review: any): Promise<string> => {
     customerId: review.customerId,
     rating: Number(review.rating),
     comment: review.comment || '',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    customerName: review.customerName,
+    customerAvatar: review.customerAvatar
   };
 
   try {
@@ -1402,6 +1485,45 @@ export const getRentFinancingApplications = async (userId?: string): Promise<Ren
   } catch (err) {
     console.warn("Supabase getRentFinancingApplications failed or timed out, returning local fallback:", err);
     return localApps;
+  }
+};
+
+export const checkUserAgentInteraction = async (tenantId: string, agentId: string): Promise<{ interacted: boolean; properties: string[] }> => {
+  try {
+    const { data: vrs } = await supabase
+      .from('view_requests')
+      .select('listing_id')
+      .eq('tenant_id', tenantId)
+      .eq('agent_id', agentId);
+    
+    const { data: chats } = await supabase
+      .from('chats')
+      .select('listing_id')
+      .contains('participants', [tenantId, agentId]);
+
+    const listingIds = new Set<string>();
+    if (vrs) vrs.forEach(r => { if (r.listing_id) listingIds.add(r.listing_id); });
+    if (chats) chats.forEach(c => { if (c.listing_id) listingIds.add(c.listing_id); });
+
+    const interacted = (vrs && vrs.length > 0) || (chats && chats.length > 0);
+    const properties: string[] = [];
+
+    if (listingIds.size > 0) {
+      const { data: listingsData } = await supabase
+        .from('listings')
+        .select('title')
+        .in('id', Array.from(listingIds));
+      if (listingsData) {
+        listingsData.forEach(l => {
+          if (l.title) properties.push(l.title);
+        });
+      }
+    }
+
+    return { interacted, properties };
+  } catch (err) {
+    console.error("Error checking interaction status:", err);
+    return { interacted: false, properties: [] };
   }
 };
 

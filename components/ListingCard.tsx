@@ -137,7 +137,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading })
   const handleChat = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/chat?to=${listing.sellerId}`);
+    navigate(`/chat?to=${listing.sellerId}&source=Search&listingId=${listing.id}`);
   };
 
   const handleCompareToggle = (e: React.MouseEvent) => {
