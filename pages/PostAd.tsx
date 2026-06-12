@@ -25,11 +25,14 @@ const PostAd: React.FC = () => {
 
   const [step, setStep] = useState(1);
   
-  // Redirect buyers to create-vendor onboarding — only after auth is fully resolved
+  // Redirect buyers or incomplete vendors to create-vendor onboarding — only after auth is fully resolved
   useEffect(() => {
     if (!isAuthReady) return; // wait for auth to finish loading
-    if (user && user.role !== 'Agent' && user.role !== 'Admin') {
-      navigate('/create-vendor', { replace: true });
+    if (user) {
+      const hasCompletedVendorProfile = user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
+      if (user.role !== 'Admin' && (user.role !== 'Agent' || !hasCompletedVendorProfile)) {
+        navigate('/create-vendor', { replace: true });
+      }
     }
   }, [user, isAuthReady, navigate]);
 
@@ -103,12 +106,16 @@ const PostAd: React.FC = () => {
 
   // Auto-generate title when relevant fields change
   useEffect(() => {
-    const newTitle = generateListingTitle({
-      bedrooms: formData.bedrooms,
-      propertyType: formData.propertyType
+    const autoTitle = generateListingTitle({ bedrooms: formData.bedrooms, propertyType: formData.propertyType });
+    // Only override if the user hasn't manually typed something different from a prior auto-title
+    setFormData(prev => {
+      const previousAuto = generateListingTitle({ bedrooms: prev.bedrooms, propertyType: prev.propertyType });
+      if (prev.title === '' || prev.title === previousAuto) {
+        return { ...prev, title: autoTitle };
+      }
+      return prev;
     });
-    setFormData(prev => ({ ...prev, title: newTitle }));
-  }, [formData.bedrooms, formData.propertyType, formData.location]);
+  }, [formData.bedrooms, formData.propertyType]);
 
   const handleCategorySelect = (id: string, name: string) => {
     let defaultPropType = 'Apartment';
@@ -137,6 +144,22 @@ const PostAd: React.FC = () => {
 
   const handleLocationChange = (value: string) => {
     setFormData(prev => ({ ...prev, location: sanitizeString(value) }));
+  };
+
+  const handleStep2Next = () => {
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      toast('Please enter a valid price.', 'error');
+      return;
+    }
+    if (!formData.location) {
+      toast('Please select a location.', 'error');
+      return;
+    }
+    if (!formData.description || formData.description.trim().length < 10) {
+      toast('Please add a description (min. 10 characters).', 'error');
+      return;
+    }
+    setStep(3);
   };
 
   const handleGenerateDescription = async () => {
@@ -251,7 +274,7 @@ const PostAd: React.FC = () => {
         sellerId: user.id,
         sellerName: user.name,
         sellerAvatar: user.avatar,
-        status: 'Active',
+        status: 'pending',
         postedAt: new Date().toISOString().split('T')[0],
         views: 0
       };
@@ -279,6 +302,12 @@ const PostAd: React.FC = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files) as File[];
+      
+      const MAX_TOTAL_IMAGES = 12;
+      if (images.length + files.length > MAX_TOTAL_IMAGES) {
+        toast(`Maximum ${MAX_TOTAL_IMAGES} photos allowed per listing.`, 'warning');
+        return;
+      }
       
       const MAX_SIZE_MB = 5;
       const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -443,14 +472,14 @@ const PostAd: React.FC = () => {
                </div>
 
                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Property Title (Auto-generated)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Property Title</label>
                   <input 
                     type="text" 
                     name="title"
                     value={formData.title}
-                    readOnly
-                    className="w-full border border-slate-200 rounded-xl p-2 md:p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-slate-50 text-slate-500 cursor-not-allowed" 
-                    placeholder="Title will be generated automatically" 
+                    onChange={handleChange}
+                    className="w-full border border-slate-200 rounded-xl p-2 md:p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all shadow-sm bg-white text-slate-800"
+                    placeholder="e.g. Spacious 3-Bed in East Legon" 
                   />
                </div>
                
@@ -624,7 +653,7 @@ const PostAd: React.FC = () => {
 
                <div className="flex justify-between pt-6 border-t border-slate-100">
                   <button onClick={() => setStep(1)} className="text-slate-500 hover:text-slate-900 font-medium px-4 py-1.5 text-xs">Back</button>
-                  <button onClick={() => setStep(3)} className="bg-brand-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all">Next: Photos</button>
+                  <button onClick={handleStep2Next} className="bg-brand-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all">Next: Photos</button>
                </div>
             </div>
           )}

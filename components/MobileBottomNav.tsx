@@ -15,9 +15,12 @@ const MobileBottomNav = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: 'home' },
     { name: 'Search', path: '/search', icon: 'search' },
-    { name: 'Saved', path: '/saved', icon: 'heart' },
-    { name: 'Chat', path: '/chat', icon: 'messageCircle' },
-    { name: 'Profile', path: profilePath, icon: 'user' },
+    { name: 'Saved', path: isAuthenticated ? '/saved' : '/signin', icon: 'heart',
+      state: !isAuthenticated ? { from: { pathname: '/saved' } } : undefined },
+    { name: 'Chat', path: isAuthenticated ? '/chat' : '/signin', icon: 'messageCircle',
+      state: !isAuthenticated ? { from: { pathname: '/chat' } } : undefined },
+    { name: 'Profile', path: profilePath, icon: 'user',
+      state: !isAuthenticated ? { from: { pathname: `/profile` } } : undefined },
   ];
 
   return (
@@ -30,6 +33,7 @@ const MobileBottomNav = () => {
             <Link 
               key={item.name} 
               to={item.path}
+              state={item.state}
               className={`flex flex-col items-center justify-center p-3 flex-1 ${isActive ? 'text-brand-600' : 'text-slate-400'}`}
             >
               <div className={`transition-transform ${isActive ? 'scale-110 mb-1' : 'mb-1'}`}>

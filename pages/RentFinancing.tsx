@@ -53,7 +53,7 @@ const RentFinancing: React.FC = () => {
     streetAddress: '',
     city: '',
     stateRegion: '',
-    country: userLoc.name || '',
+    country: userLoc.country || '',
     postalCode: '',
 
     // Loan Details

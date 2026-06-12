@@ -14,7 +14,7 @@ const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ price, currency
   const [interestRate, setInterestRate] = useState(6.5);
   const [loanTerm, setLoanTerm] = useState(30);
   const [monthlyPayment, setMonthlyPayment] = useState(0);
-  const { userLocation } = useLocation();
+  const { location: userLocation } = useLocation();
 
   useEffect(() => {
     setDownPayment((price || 0) * 0.2);

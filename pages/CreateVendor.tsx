@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { updateUserRole, updateUserProfile } from '../services/supabaseService';
+import { updateUserRole, updateUserProfile, upsertAgentProfile } from '../services/supabaseService';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { motion } from 'framer-motion';
@@ -68,7 +68,7 @@ const CreateVendor: React.FC = () => {
       const savedSpecs = localStorage.getItem(`create_vendor_specs_${user.id}`);
       
       let initialForm = {
-        name: user.name || '',
+        name: (user.name && user.name.toLowerCase().trim() !== 'kotey') ? user.name : '',
         phone: user.socials?.phone || '',
         agencyName: user.agencyName || '',
         location: user.location !== 'Unknown' ? user.location : '',
@@ -80,7 +80,7 @@ const CreateVendor: React.FC = () => {
         try {
           const parsed = JSON.parse(savedForm);
           initialForm = {
-            name: parsed.name !== undefined ? parsed.name : initialForm.name,
+            name: parsed.name !== undefined ? (parsed.name.toLowerCase().trim() === 'kotey' ? '' : parsed.name) : initialForm.name,
             phone: parsed.phone !== undefined ? parsed.phone : initialForm.phone,
             agencyName: parsed.agencyName !== undefined ? parsed.agencyName : initialForm.agencyName,
             location: parsed.location !== undefined ? parsed.location : initialForm.location,
@@ -91,8 +91,8 @@ const CreateVendor: React.FC = () => {
       }
       setFormData(initialForm);
       
-      let initialSpecs = user.socials?.specializations && Array.isArray(user.socials.specializations)
-        ? user.socials.specializations
+      let initialSpecs = user.specialization && Array.isArray(user.specialization)
+        ? user.specialization
         : [];
 
       if (savedSpecs) {
@@ -103,7 +103,9 @@ const CreateVendor: React.FC = () => {
       setSelectedSpecializations(initialSpecs);
       
       // If they are already Agent or Admin, they don't need to create a vendor account
-      if (user.role === 'Agent' || user.role === 'Admin') {
+      // UNLESS they haven't completed their vendor profile setup yet (e.g., bio or phone page parameters/details are absent).
+      const hasCompletedVendorProfile = user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
+      if (user.role === 'Admin' || (user.role === 'Agent' && hasCompletedVendorProfile)) {
         navigate('/agent-dashboard', { replace: true });
       }
     }
@@ -182,17 +184,19 @@ const CreateVendor: React.FC = () => {
         location: formData.location,
         agencyName: formData.agencyName,
         licenseNumber: formData.licenseNumber,
+        specialization: selectedSpecializations,
         socials: {
           ...user.socials,
           phone: formData.phone,
-          licenseNumber: formData.licenseNumber,
-          specializations: selectedSpecializations,
           website: formData.agencyName ? `https://tym2muv.com/agent/${user.id}` : undefined
         }
       });
 
       // 2. Perform role upgrade to 'Agent'
       await updateUserRole(user.id, 'Agent');
+
+      // 2.5 Upsert agent-specific profile details into agents table
+      await upsertAgentProfile(user.id, { company_name: formData.agencyName });
  
       // Refresh AuthContext session details
       await refreshUser();

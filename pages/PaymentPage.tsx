@@ -35,6 +35,27 @@ const PaymentPage: React.FC = () => {
   const [showBankDetails, setShowBankDetails] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
   const [isLoadingListing, setIsLoadingListing] = useState(true);
+  const [paymentIntent, setPaymentIntent] = useState<'promotion' | 'deposit' | null>(null);
+
+  const getPriceToPay = () => {
+    if (!listing) return 0;
+    if (paymentIntent === 'promotion') {
+      return listing.currency === 'GHS' ? 250 : 25;
+    }
+    return listing.price;
+  };
+
+  const priceToPay = getPriceToPay();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const intentParam = params.get('intent');
+    if (intentParam === 'promote' || intentParam === 'promotion') {
+      setPaymentIntent('promotion');
+    } else if (intentParam === 'deposit' || intentParam === 'rent_deposit') {
+      setPaymentIntent('deposit');
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -47,9 +68,6 @@ const PaymentPage: React.FC = () => {
         try {
           const data = await getListingById(id);
           setListing(data);
-          if (data && user) {
-            setIdempotencyKey(await generateIdempotencyKey(user.id, data.id, data.price));
-          }
         } catch (err) {
           console.error("Error setting up payment details:", err);
         }
@@ -58,6 +76,20 @@ const PaymentPage: React.FC = () => {
     };
     fetchListing();
   }, [id, user, navigate]);
+
+  useEffect(() => {
+    const updateIdempotency = async () => {
+      if (listing && user) {
+        try {
+          const key = await generateIdempotencyKey(user.id, listing.id, priceToPay);
+          setIdempotencyKey(key);
+        } catch (err) {
+          console.error("Error generating idempotency key:", err);
+        }
+      }
+    };
+    updateIdempotency();
+  }, [listing, user, paymentIntent, priceToPay]);
 
   // Trigger script load early
   useEffect(() => {
@@ -112,7 +144,7 @@ const PaymentPage: React.FC = () => {
     const handler = (window as any).PaystackPop.setup({
       key: PAYSTACK_KEY,
       email: user.email || user.socials?.email || 'customer@example.com',
-      amount: listing.price * 100, // Amount in kobo/pesewas
+      amount: priceToPay * 100, // Amount in kobo/pesewas
       currency: listing.currency || 'GHS',
       ref: `TYM_${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`,
       callback: async (response: any) => {
@@ -210,59 +242,119 @@ const PaymentPage: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200">
-            <span className="text-slate-500 font-medium text-sm">Total to Pay</span>
+            <span className="text-slate-500 font-medium text-sm">
+              Total to Pay
+              {paymentIntent && (
+                <span className="block text-[10px] text-brand-600 font-bold uppercase tracking-wider mt-0.5">
+                  {paymentIntent === 'promotion' ? '⚡ Premium Boost' : '🏠 Rent Deposit / Hold'}
+                </span>
+              )}
+            </span>
             <span className="text-2xl font-black text-slate-900 tracking-tight font-display">
-              {getSymbolFromCode(listing.currency || 'USD')}{listing.price.toLocaleString()}
+              {getSymbolFromCode(listing.currency || 'USD')}{priceToPay.toLocaleString()}
             </span>
           </div>
         </div>
 
-        <div className="space-y-4 relative z-10">
-          <button 
-            onClick={handlePaystackPayment}
-            disabled={isProcessing}
-            className="w-full py-4 mt-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-md flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-wait text-sm"
-          >
-            {isProcessing ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Processing...
-              </>
-            ) : (
-              <>
-                <Icon name="shieldCheck" size={18} />
-                Pay with Paystack
-              </>
-            )}
-          </button>
+        {!paymentIntent ? (
+          <div className="space-y-4 relative z-10">
+            <p className="text-sm font-semibold text-slate-700">What would you like to pay for?</p>
+            
+            <button 
+              onClick={() => setPaymentIntent('promotion')}
+              className="w-full text-left p-4 border-2 border-brand-100 hover:border-brand-500 rounded-2xl bg-brand-50/30 hover:bg-brand-50 dynamic-transition flex items-start gap-3 group"
+            >
+              <div className="p-2 bg-brand-100 text-brand-600 rounded-xl group-hover:bg-brand-200 transition-colors">
+                <Icon name="trendingUp" size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline mb-0.5">
+                  <h4 className="font-bold text-slate-800 text-sm">Promote Listing (Boost)</h4>
+                  <span className="font-extrabold text-brand-600 text-sm">
+                    {getSymbolFromCode(listing.currency || 'USD')}{listing.currency === 'GHS' ? '250' : '25'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Featured placement at the top of search terms, premium badge, and priority real-time WhatsApp and chat leads.
+                </p>
+              </div>
+            </button>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-white text-slate-400 font-medium uppercase tracking-widest">Or</span>
-            </div>
+            <button 
+              onClick={() => setPaymentIntent('deposit')}
+              className="w-full text-left p-4 border-2 border-slate-100 hover:border-emerald-500 rounded-2xl bg-slate-50/50 hover:bg-emerald-55/10 dynamic-transition flex items-start gap-3 group"
+            >
+              <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl group-hover:bg-emerald-200 transition-colors">
+                <Icon name="creditCard" size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline mb-0.5">
+                  <h4 className="font-bold text-slate-800 text-sm">Rent Deposit / Holding Fee</h4>
+                  <span className="font-extrabold text-slate-900 text-sm">
+                    {getSymbolFromCode(listing.currency || 'USD')}{listing.price.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Submit first month's secure deposit or booking reservation fee to hold the unit immediately.
+                </p>
+              </div>
+            </button>
           </div>
-          
-          <button 
-            onClick={() => setShowBankDetails(!showBankDetails)}
-            className="w-full py-4 bg-slate-50 text-slate-700 rounded-xl font-bold border border-slate-200 hover:bg-slate-100 transition-all flex items-center justify-center gap-2 text-sm"
-          >
-            <Icon name="creditCard" size={18} />
-            Manual Bank Transfer
-          </button>
-          
-          {showBankDetails && (
-            <div className="mt-4 p-4 rounded-xl border border-blue-100 bg-blue-50 text-sm text-blue-900">
-              <p className="font-bold mb-2">Manual Transfer Details:</p>
-              <p className="mb-1"><strong>Bank:</strong> Guaranty Trust Bank</p>
-              <p className="mb-1"><strong>Account Name:</strong> Tym2Muv LLC</p>
-              <p className="mb-1"><strong>Account No:</strong> 0123456789</p>
-              <p className="mt-3 text-xs text-blue-700">Please include reference: <strong>TYM-{listing.id.substring(0, 5).toUpperCase()}</strong></p>
+        ) : (
+          <div className="space-y-4 relative z-10">
+            <button 
+              onClick={handlePaystackPayment}
+              disabled={isProcessing}
+              className="w-full py-4 mt-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-md flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-wait text-sm"
+            >
+              {isProcessing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Processing Secure Checkout...
+                </>
+              ) : (
+                <>
+                  <Icon name="shieldCheck" size={18} />
+                  Pay with Paystack ({getSymbolFromCode(listing.currency || 'USD')}{priceToPay.toLocaleString()})
+                </>
+              )}
+            </button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-2 bg-white text-slate-400 font-medium uppercase tracking-widest">Or</span>
+              </div>
             </div>
-          )}
-        </div>
+            
+            <button 
+              onClick={() => setShowBankDetails(!showBankDetails)}
+              className="w-full py-4 bg-slate-50 text-slate-700 rounded-xl font-bold border border-slate-200 hover:bg-slate-100 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <Icon name="creditCard" size={18} />
+              Manual Bank Transfer
+            </button>
+            
+            {showBankDetails && (
+              <div className="mt-4 p-4 rounded-xl border border-blue-100 bg-blue-50 text-sm text-blue-900">
+                <p className="font-bold mb-2">Manual Transfer Details:</p>
+                <p className="mb-1"><strong>Bank:</strong> Guaranty Trust Bank</p>
+                <p className="mb-1"><strong>Account Name:</strong> Tym2Muv LLC</p>
+                <p className="mb-1"><strong>Account No:</strong> 0123456789</p>
+                <p className="mt-3 text-xs text-blue-700">Please include reference: <strong>TYM-{listing.id.substring(0, 5).toUpperCase()}</strong></p>
+              </div>
+            )}
+
+            <button 
+              onClick={() => setPaymentIntent(null)}
+              className="w-full text-center text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors pt-2 block"
+            >
+              ← Choose another checkout plan
+            </button>
+          </div>
+        )}
         
         <div className="mt-6 pt-4 border-t border-slate-100 text-center relative z-10">
            <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5 font-medium">

@@ -25,7 +25,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
           .select('role')
           .eq('id', user.id)
           .single();
-        setIsAdmin(!error && data?.role === 'Admin');
+        setIsAdmin(!error && (data?.role === 'admin' || data?.role === 'super_admin'));
       } catch (err) {
         console.error('Error checking admin session', err);
         setIsAdmin(false);

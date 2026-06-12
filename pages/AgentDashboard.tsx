@@ -7,8 +7,9 @@ import ListingCard from '../components/ListingCard';
 import Icon from '../components/Icon';
 import { Link, Navigate } from 'react-router-dom';
 import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { useToast } from '../components/Toast';
 
 const generate30DaysAnalytics = (realRequests: any[]) => {
   const data = [];
@@ -55,6 +56,7 @@ const generate30DaysAnalytics = (realRequests: any[]) => {
 
 const AgentDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [rentalRequestsCount, setRentalRequestsCount] = useState(0);
@@ -184,33 +186,45 @@ const AgentDashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     const fetchDashboard = async () => {
+      setLoading(true);
       try {
-        const result = await getListings({ sellerId: user.id });
-        setListings(result.listings);
-        
-        // Fetch rental requests matching the current agent's owned listings
-        const { count, data: requests } = await supabase
-          .from('rental_requests')
-          .select('id, created_at', { count: 'exact' })
-          .eq('agent_id', user.id);
-          
-        setRentalRequestsCount(count || 0);
+        // 1. Fetch agent listings
+        try {
+          const result = await getListings({ sellerId: user.id });
+          setListings(result.listings);
+        } catch (err) {
+          console.error('Error fetching dashboard listings:', err);
+          toast('Could not load your listings. Please refresh to try again.', 'error');
+        }
 
-        // Calculate leads this week (last 7 days window)
-        if (requests && Array.isArray(requests)) {
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          const recentLeads = requests.filter(r => new Date(r.created_at) >= sevenDaysAgo);
-          setNewLeadsCount(recentLeads.length);
-          
-          setAnalyticsData(generate30DaysAnalytics(requests));
-        } else {
+        // 2. Fetch rental requests matching the current agent's owned listings
+        try {
+          const { count, data: requests } = await supabase
+            .from('rental_requests')
+            .select('id, created_at', { count: 'exact' })
+            .eq('agent_id', user.id);
+            
+          setRentalRequestsCount(count || 0);
+
+          // Calculate leads this week (last 7 days window)
+          if (requests && Array.isArray(requests)) {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentLeads = requests.filter(r => new Date(r.created_at) >= sevenDaysAgo);
+            setNewLeadsCount(recentLeads.length);
+            
+            setAnalyticsData(generate30DaysAnalytics(requests));
+          } else {
+            setAnalyticsData(generate30DaysAnalytics([]));
+          }
+        } catch (err) {
+          console.error('Rental requests unavailable:', err);
+          toast('Could not load viewing requests. This feature is being set up.', 'warning');
           setAnalyticsData(generate30DaysAnalytics([]));
         }
 
       } catch (err) {
-        console.error('Error fetching dashboard listings', err);
-        setAnalyticsData(generate30DaysAnalytics([]));
+        console.error('General error fetching dashboard metrics:', err);
       } finally {
         setLoading(false);
       }
@@ -268,6 +282,11 @@ const AgentDashboard: React.FC = () => {
 
   if (!user || user.role !== 'Agent') {
       return <Navigate to="/" replace />;
+  }
+
+  const hasCompletedVendorProfile = user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
+  if (!hasCompletedVendorProfile) {
+      return <Navigate to="/create-vendor" replace />;
   }
 
   if (loading) {

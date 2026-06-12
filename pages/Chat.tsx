@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { getChats, fetchMessages, sendMessage, createChat, getUserProfile, mapMessage } from '../services/supabaseService';
 import { Chat as ChatType, User, ChatMessage } from '../types';
 import { supabase } from '../supabaseClient';
@@ -287,307 +287,322 @@ const Chat: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 pt-6 pb-4 h-[calc(100vh-5rem)]"> {/* Standardized padding with gap */}
-       <div className="glass-card rounded-3xl shadow-lg border border-slate-200 h-full overflow-hidden flex">
+        <div className="glass-card rounded-3xl shadow-lg border border-slate-200 h-full overflow-hidden flex">
           
-          {/* Sidebar / Inbox List */}
-          <div className={`${activeChatId ? 'hidden md:flex' : 'flex'} w-full md:w-72 lg:w-80 flex-col border-r border-slate-200 bg-white/50`}>
-             <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="text-sm font-extrabold text-slate-800">Messages</h2>
-                {chats.length > 0 && (
-                  <button 
-                    onClick={handleClearAllConversations}
-                    className="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50/55 hover:bg-red-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1 border border-red-100"
-                    title="Clear entire messages inbox"
-                  >
-                    <Icon name="trash" size={11} /> Clear All
-                  </button>
-                )}
-             </div>
-             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {isLoadingChats ? (
-                        <div className="p-4 space-y-4">
-                            <SkeletonCard />
-                            <SkeletonCard />
-                        </div>
-                    ) : chats.length === 0 ? (
-                        <div className="p-8 text-center text-slate-500">
-                            <Icon name="messageCircle" size={32} className="mx-auto mb-2 text-slate-300" />
-                            <p>No messages yet.</p>
-                        </div>
-                    ) : (
-                        chats.map(chat => {
-                            const otherUser = getOtherParticipant(chat);
-                            const isUnread = chat.unreadCount > 0 && chat.lastSenderId !== currentUser?.id;
-                            return (
-                                <div 
-                                    key={chat.id}
-                                    onClick={() => setActiveChatId(chat.id)}
-                                    className={`p-3 border-b border-slate-55 cursor-pointer hover:bg-slate-50 transition-colors ${activeChatId === chat.id ? 'bg-brand-50/50 border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}
-                                >
-                                    <div className="flex gap-2.5">
-                                        <img 
-                                          src={otherUser?.avatar || 'https://via.placeholder.com/50'} 
-                                          alt={otherUser?.name} 
-                                          referrerPolicy="no-referrer"
-                                          className="w-10 h-10 rounded-full object-cover bg-slate-200"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-baseline mb-0.5">
-                                                <h3 className="font-bold text-xs text-slate-900 truncate">{otherUser?.name || 'User'}</h3>
-                                                <span className="text-[10px] text-slate-400">{chat.lastMessageTime}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-1 mt-0.5">
-                                                <p className={`text-xs truncate flex-1 ${isUnread ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
-                                                    {chat.lastMessage || 'No messages yet.'}
-                                                </p>
-                                                {chat.leadSource && (
-                                                    <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm border shrink-0 ${
-                                                        chat.leadSource === 'Search' 
-                                                            ? 'bg-blue-50 text-blue-600 border-blue-200/60' 
-                                                            : chat.leadSource === 'Profile Page' 
-                                                            ? 'bg-purple-50 text-purple-600 border-purple-200/60' 
-                                                            : 'bg-indigo-50 text-indigo-600 border-indigo-200/60'
-                                                    }`} title={`Source: ${chat.leadSource}`}>
-                                                        {chat.leadSource}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-             </div>
-          </div>
-
-          {/* Chat Window */}
-          <div className={`${!activeChatId ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-slate-50/30`}>
-              {activeChatId ? (
-                  <>
-                    {/* Header */}
-                    <div className="p-3 bg-white/60 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => setActiveChatId(null)} className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-                                <Icon name="chevronRight" size={20} className="rotate-180" />
-                            </button>
-                            {(() => {
-                                const otherUser = activeChat && getOtherParticipant(activeChat);
-                                return otherUser ? (
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative">
-                                            <img src={otherUser.avatar} alt={otherUser.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover" />
-                                            {otherUser.verified && (
-                                                <div className="absolute -bottom-1 -right-1 bg-brand-500 text-white p-0.5 rounded-full border border-white">
-                                                    <Icon name="check" size={8} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-900">{otherUser.name}</h3>
-                                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                                {activeChat?.listingId && (
-                                                    <span className="text-[10px] text-brand-600 flex items-center gap-1 font-bold">
-                                                        <Icon name="home" size={10} /> Property Inquiry
-                                                    </span>
-                                                )}
-                                                {activeChat?.leadSource && (
-                                                    <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm border shrink-0 ${
-                                                        activeChat.leadSource === 'Search' 
-                                                            ? 'bg-blue-50 text-blue-600 border-blue-200/60' 
-                                                            : activeChat.leadSource === 'Profile Page' 
-                                                            ? 'bg-purple-50 text-purple-600 border-purple-200/60' 
-                                                            : 'bg-indigo-50 text-indigo-600 border-indigo-200/60'
-                                                    }`} title={`Source: ${activeChat.leadSource}`}>
-                                                        Source: {activeChat.leadSource}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : null;
-                            })()}
-                        </div>
-                        {activeChatId && (
-                          <button
-                            onClick={() => handleDeleteConversation(activeChatId)}
-                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                            title="Delete this conversation"
-                          >
-                            <Icon name="trash" size={20} />
-                          </button>
-                        )}
-                    </div>
-
-                    {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
-                        {messages.map((msg) => {
-                            const isMe = msg.senderId === currentUser?.id;
-                            return (
-                                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[75%] px-3.5 py-2 rounded-2xl ${
-                                        isMe 
-                                        ? 'bg-brand-600 text-white rounded-tr-sm' 
-                                        : 'bg-white text-slate-800 shadow-sm border border-slate-100 rounded-tl-sm'
-                                    }`}>
-                                        <p className="text-xs md:text-sm leading-normal">{msg.text}</p>
-                                        <p className={`text-[10px] mt-0.5 text-right ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>{msg.timestamp}</p>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        <div ref={messagesEndRef} />
-                    </div>
-
-                    {/* Input Area */}
-                    <div className="p-2.5 bg-white/60 backdrop-blur-sm border-t border-slate-200">
-                        {showTemplates && (
-                            <div className="mb-2 p-3 bg-slate-50 border border-slate-100 rounded-xl animate-fade-in space-y-3 shadow-xs">
-                                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-                                        <Icon name="fileText" size={12} className="text-brand-600" />
-                                        <span>Response Templates</span>
-                                    </span>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setShowCustomForm(!showCustomForm)}
-                                        className="text-[10px] font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <Icon name="plus" size={10} /> {showCustomForm ? 'View Templates' : 'Add Custom'}
-                                    </button>
-                                </div>
-
-                                {showCustomForm ? (
-                                    <div className="space-y-2 bg-white p-2.5 rounded-lg border border-slate-100">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                            <input 
-                                                type="text" 
-                                                placeholder="Template Title (e.g., Available viewing)" 
-                                                value={newTemplateTitle} 
-                                                onChange={(e) => setNewTemplateTitle(e.target.value)}
-                                                className="col-span-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-brand-500"
-                                            />
-                                            <input 
-                                                type="text" 
-                                                placeholder="Response Text content..." 
-                                                value={newTemplateContent} 
-                                                onChange={(e) => setNewTemplateContent(e.target.value)}
-                                                className="col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-brand-500"
-                                            />
-                                        </div>
-                                        <div className="flex justify-end gap-2 text-xs pt-1">
-                                            <button 
-                                                type="button" 
-                                                onClick={() => {
-                                                    setShowCustomForm(false);
-                                                    setNewTemplateTitle('');
-                                                    setNewTemplateContent('');
-                                                }}
-                                                className="px-2.5 py-1 text-slate-500 hover:text-slate-800 font-semibold"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button 
-                                                type="button" 
-                                                onClick={() => {
-                                                    if (!newTemplateTitle.trim() || !newTemplateContent.trim()) return;
-                                                    handleAddTemplate(newTemplateTitle, newTemplateContent);
-                                                    setNewTemplateTitle('');
-                                                    setNewTemplateContent('');
-                                                    setShowCustomForm(false);
-                                                    toast('Response Template saved!', 'success');
-                                                }}
-                                                disabled={!newTemplateTitle.trim() || !newTemplateContent.trim()}
-                                                className="px-3 py-1 bg-brand-600 text-white rounded-lg font-bold disabled:opacity-50"
-                                            >
-                                                Save Template
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar">
-                                        {templates.map((tpl) => (
-                                            <div 
-                                                key={tpl.id}
-                                                className="group flex items-center bg-white border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 hover:border-brand-300 transition-all text-[11px] font-semibold text-slate-700 shadow-3xs gap-1.5"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setMessageInput(tpl.content);
-                                                        setShowTemplates(false);
-                                                    }}
-                                                    className="hover:text-brand-600 text-left cursor-pointer"
-                                                    title={`Use template: "${tpl.content}"`}
-                                                >
-                                                    {tpl.title}
-                                                </button>
-                                                
-                                                {/* Deletion of custom templates */}
-                                                {tpl.id.startsWith('tpl_') && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteTemplate(tpl.id)}
-                                                        className="p-0.5 text-slate-330 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                        title="Delete custom template"
-                                                    >
-                                                        <Icon name="x" size={10} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {templates.length === 0 && (
-                                            <span className="text-[10px] italic text-slate-400">No response templates. Click 'Add Custom' to create one!</span>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                            <button type="button" className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">
-                                <Icon name="plus" size={18} />
-                            </button>
-                            <button 
-                                type="button" 
-                                onClick={() => setShowTemplates(!showTemplates)}
-                                className={`p-1.5 rounded-full transition-colors relative ${showTemplates ? 'text-brand-600 bg-brand-50' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-100'}`}
-                                title="Response Templates"
-                            >
-                                <Icon name="fileText" size={18} />
-                                {templates.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-brand-500 text-white font-extrabold text-[7px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white">
-                                        {templates.length}
-                                    </span>
-                                )}
-                            </button>
-                            <input 
-                                type="text" 
-                                value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
-                                placeholder="Type a message..." 
-                                className="flex-1 bg-slate-100 border-none rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-500 outline-none"
-                            />
-                            <button 
-                                type="submit" 
-                                disabled={!messageInput.trim()}
-                                className="p-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-brand-500/20"
-                            >
-                                <Icon name="send" size={16} />
-                            </button>
-                        </form>
-                    </div>
-                  </>
-              ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                      <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                          <Icon name="messageCircle" size={48} className="text-slate-300" />
-                      </div>
-                      <p className="text-lg">Select a conversation to start chatting</p>
+          {isLoadingChats ? (
+              <div className="w-full md:w-72 lg:w-80 flex flex-col border-r border-slate-200 bg-white/50 h-full">
+                 <div className="p-3 border-b border-slate-100">
+                    <h2 className="text-sm font-extrabold text-slate-800">Messages</h2>
+                 </div>
+                 <div className="p-4 space-y-4">
+                     <SkeletonCard />
+                     <SkeletonCard />
+                 </div>
+              </div>
+          ) : chats.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center h-full py-20 text-center px-4 bg-white">
+                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-4 shadow-3xs">
+                      <Icon name="messageCircle" size={28} className="text-slate-400" />
                   </div>
-              )}
-          </div>
-       </div>
+                  <h3 className="text-lg font-black text-slate-800 mb-2">No conversations yet</h3>
+                  <p className="text-slate-500 text-sm mb-6 max-w-xs leading-relaxed">
+                      Browse premium properties and tap "Contact Agent" to start a fast conversation.
+                  </p>
+                  <Link to="/search" className="bg-brand-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-brand-700 shadow-lg shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all">
+                      Browse Properties
+                  </Link>
+              </div>
+          ) : (
+              <>
+                {/* Sidebar / Inbox List */}
+                <div className={`${activeChatId ? 'hidden md:flex' : 'flex'} w-full md:w-72 lg:w-80 flex-col border-r border-slate-200 bg-white/50`}>
+                   <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+                      <h2 className="text-sm font-extrabold text-slate-800">Messages</h2>
+                      {chats.length > 0 && (
+                        <button 
+                          onClick={handleClearAllConversations}
+                          className="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50/55 hover:bg-red-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1 border border-red-100"
+                          title="Clear entire messages inbox"
+                        >
+                          <Icon name="trash" size={11} /> Clear All
+                        </button>
+                      )}
+                   </div>
+                   <div className="flex-1 overflow-y-auto custom-scrollbar">
+                         {chats.map(chat => {
+                             const otherUser = getOtherParticipant(chat);
+                             const isUnread = chat.unreadCount > 0 && chat.lastSenderId !== currentUser?.id;
+                             return (
+                                 <div 
+                                     key={chat.id}
+                                     onClick={() => setActiveChatId(chat.id)}
+                                     className={`p-3 border-b border-slate-55 cursor-pointer hover:bg-slate-50 transition-colors ${activeChatId === chat.id ? 'bg-brand-50/50 border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}
+                                 >
+                                     <div className="flex gap-2.5">
+                                         <img 
+                                           src={otherUser?.avatar || 'https://via.placeholder.com/50'} 
+                                           alt={otherUser?.name} 
+                                           referrerPolicy="no-referrer"
+                                           className="w-10 h-10 rounded-full object-cover bg-slate-200"
+                                         />
+                                         <div className="flex-1 min-w-0">
+                                             <div className="flex justify-between items-baseline mb-0.5">
+                                                 <h3 className="font-bold text-xs text-slate-900 truncate">{otherUser?.name || 'User'}</h3>
+                                                 <span className="text-[10px] text-slate-400">{chat.lastMessageTime}</span>
+                                             </div>
+                                             <div className="flex items-center justify-between gap-1 mt-0.5">
+                                                 <p className={`text-xs truncate flex-1 ${isUnread ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
+                                                     {chat.lastMessage || 'No messages yet.'}
+                                                 </p>
+                                                 {chat.leadSource && (
+                                                     <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm border shrink-0 ${
+                                                         chat.leadSource === 'Search' 
+                                                             ? 'bg-blue-50 text-blue-600 border-blue-200/60' 
+                                                             : chat.leadSource === 'Profile Page' 
+                                                             ? 'bg-purple-50 text-purple-600 border-purple-200/60' 
+                                                             : 'bg-indigo-50 text-indigo-600 border-indigo-200/60'
+                                                     }`} title={`Source: ${chat.leadSource}`}>
+                                                         {chat.leadSource}
+                                                     </span>
+                                                 )}
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                             );
+                         })}
+                   </div>
+                </div>
+
+                {/* Chat Window */}
+                <div className={`${!activeChatId ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-slate-50/30`}>
+                    {activeChatId ? (
+                        <>
+                          {/* Header */}
+                          <div className="p-3 bg-white/60 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between shadow-sm">
+                              <div className="flex items-center gap-3">
+                                  <button onClick={() => setActiveChatId(null)} className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                                      <Icon name="chevronRight" size={20} className="rotate-180" />
+                                  </button>
+                                  {(() => {
+                                      const otherUser = activeChat && getOtherParticipant(activeChat);
+                                      return otherUser ? (
+                                          <div className="flex items-center gap-3">
+                                              <div className="relative">
+                                                  <img src={otherUser.avatar} alt={otherUser.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover" />
+                                                  {otherUser.verified && (
+                                                      <div className="absolute -bottom-1 -right-1 bg-brand-500 text-white p-0.5 rounded-full border border-white">
+                                                          <Icon name="check" size={8} />
+                                                      </div>
+                                                  )}
+                                              </div>
+                                              <div>
+                                                  <h3 className="font-bold text-slate-900">{otherUser.name}</h3>
+                                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                      {activeChat?.listingId && (
+                                                          <span className="text-[10px] text-brand-600 flex items-center gap-1 font-bold">
+                                                              <Icon name="home" size={10} /> Property Inquiry
+                                                          </span>
+                                                      )}
+                                                      {activeChat?.leadSource && (
+                                                          <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm border shrink-0 ${
+                                                              activeChat.leadSource === 'Search' 
+                                                                  ? 'bg-blue-50 text-blue-600 border-blue-200/60' 
+                                                                  : activeChat.leadSource === 'Profile Page' 
+                                                                  ? 'bg-purple-50 text-purple-600 border-purple-200/60' 
+                                                                  : 'bg-indigo-50 text-indigo-600 border-indigo-200/60'
+                                                          }`} title={`Source: ${activeChat.leadSource}`}>
+                                                              Source: {activeChat.leadSource}
+                                                          </span>
+                                                      )}
+                                                  </div>
+                                              </div>
+                                          </div>
+                                      ) : null;
+                                  })()}
+                              </div>
+                              {activeChatId && (
+                                <button
+                                  onClick={() => handleDeleteConversation(activeChatId)}
+                                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                  title="Delete this conversation"
+                                >
+                                  <Icon name="trash" size={20} />
+                                </button>
+                              )}
+                          </div>
+
+                          {/* Messages Area */}
+                          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+                              {messages.map((msg) => {
+                                  const isMe = msg.senderId === currentUser?.id;
+                                  return (
+                                      <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                          <div className={`max-w-[75%] px-3.5 py-2 rounded-2xl ${
+                                              isMe 
+                                              ? 'bg-brand-600 text-white rounded-tr-sm' 
+                                              : 'bg-white text-slate-800 shadow-sm border border-slate-100 rounded-tl-sm'
+                                          }`}>
+                                              <p className="text-xs md:text-sm leading-normal">{msg.text}</p>
+                                              <p className={`text-[10px] mt-0.5 text-right ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>{msg.timestamp}</p>
+                                          </div>
+                                      </div>
+                                  );
+                              })}
+                              <div ref={messagesEndRef} />
+                          </div>
+
+                          {/* Input Area */}
+                          <div className="p-2.5 bg-white/60 backdrop-blur-sm border-t border-slate-200">
+                              {showTemplates && (
+                                  <div className="mb-2 p-3 bg-slate-50 border border-slate-100 rounded-xl animate-fade-in space-y-3 shadow-xs">
+                                      <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                                          <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                                              <Icon name="fileText" size={12} className="text-brand-600" />
+                                              <span>Response Templates</span>
+                                          </span>
+                                          <button 
+                                              type="button" 
+                                              onClick={() => setShowCustomForm(!showCustomForm)}
+                                              className="text-[10px] font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 cursor-pointer"
+                                          >
+                                              <Icon name="plus" size={10} /> {showCustomForm ? 'View Templates' : 'Add Custom'}
+                                          </button>
+                                      </div>
+
+                                      {showCustomForm ? (
+                                          <div className="space-y-2 bg-white p-2.5 rounded-lg border border-slate-100">
+                                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                  <input 
+                                                      type="text" 
+                                                      placeholder="Template Title (e.g., Available viewing)" 
+                                                      value={newTemplateTitle} 
+                                                      onChange={(e) => setNewTemplateTitle(e.target.value)}
+                                                      className="col-span-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-brand-500"
+                                                  />
+                                                  <input 
+                                                      type="text" 
+                                                      placeholder="Response Text content..." 
+                                                      value={newTemplateContent} 
+                                                      onChange={(e) => setNewTemplateContent(e.target.value)}
+                                                      className="col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-brand-500"
+                                                  />
+                                              </div>
+                                              <div className="flex justify-end gap-2 text-xs pt-1">
+                                                  <button 
+                                                      type="button" 
+                                                      onClick={() => {
+                                                          setShowCustomForm(false);
+                                                          setNewTemplateTitle('');
+                                                          setNewTemplateContent('');
+                                                      }}
+                                                      className="px-2.5 py-1 text-slate-500 hover:text-slate-800 font-semibold"
+                                                  >
+                                                      Cancel
+                                                  </button>
+                                                  <button 
+                                                      type="button" 
+                                                      onClick={() => {
+                                                          if (!newTemplateTitle.trim() || !newTemplateContent.trim()) return;
+                                                          handleAddTemplate(newTemplateTitle, newTemplateContent);
+                                                          setNewTemplateTitle('');
+                                                          setNewTemplateContent('');
+                                                          setShowCustomForm(false);
+                                                          toast('Response Template saved!', 'success');
+                                                      }}
+                                                      disabled={!newTemplateTitle.trim() || !newTemplateContent.trim()}
+                                                      className="px-3 py-1 bg-brand-600 text-white rounded-lg font-bold disabled:opacity-50"
+                                                  >
+                                                      Save Template
+                                                  </button>
+                                              </div>
+                                          </div>
+                                      ) : (
+                                          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                                              {templates.map((tpl) => (
+                                                  <div 
+                                                      key={tpl.id}
+                                                      className="group flex items-center bg-white border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 hover:border-brand-300 transition-all text-[11px] font-semibold text-slate-700 shadow-3xs gap-1.5"
+                                                  >
+                                                      <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                              setMessageInput(tpl.content);
+                                                              setShowTemplates(false);
+                                                          }}
+                                                          className="hover:text-brand-600 text-left cursor-pointer"
+                                                          title={`Use template: "${tpl.content}"`}
+                                                      >
+                                                          {tpl.title}
+                                                      </button>
+                                                      
+                                                      {/* Deletion of custom templates */}
+                                                      {tpl.id.startsWith('tpl_') && (
+                                                          <button
+                                                              type="button"
+                                                              onClick={() => handleDeleteTemplate(tpl.id)}
+                                                              className="p-0.5 text-slate-330 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                              title="Delete custom template"
+                                                          >
+                                                              <Icon name="x" size={10} />
+                                                          </button>
+                                                      )}
+                                                  </div>
+                                              ))}
+                                              {templates.length === 0 && (
+                                                  <span className="text-[10px] italic text-slate-400">No response templates. Click 'Add Custom' to create one!</span>
+                                              )}
+                                          </div>
+                                      )}
+                                  </div>
+                              )}
+
+                              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                                  <button type="button" className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">
+                                      <Icon name="plus" size={18} />
+                                  </button>
+                                  <button 
+                                      type="button" 
+                                      onClick={() => setShowTemplates(!showTemplates)}
+                                      className={`p-1.5 rounded-full transition-colors relative ${showTemplates ? 'text-brand-600 bg-brand-50' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-100'}`}
+                                      title="Response Templates"
+                                  >
+                                      <Icon name="fileText" size={18} />
+                                      {templates.length > 0 && (
+                                          <span className="absolute -top-1 -right-1 bg-brand-500 text-white font-extrabold text-[7px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white">
+                                              {templates.length}
+                                          </span>
+                                      )}
+                                  </button>
+                                  <input 
+                                      type="text" 
+                                      value={messageInput}
+                                      onChange={(e) => setMessageInput(e.target.value)}
+                                      placeholder="Type a message..." 
+                                      className="flex-1 bg-slate-100 border-none rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-500 outline-none"
+                                  />
+                                  <button 
+                                      type="submit" 
+                                      disabled={!messageInput.trim()}
+                                      className="p-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-brand-500/20"
+                                  >
+                                      <Icon name="send" size={16} />
+                                  </button>
+                              </form>
+                          </div>
+                        </>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                <Icon name="messageCircle" size={48} className="text-slate-300" />
+                            </div>
+                            <p className="text-lg">Select a conversation to start chatting</p>
+                        </div>
+                    )}
+                </div>
+              </>
+          )}
+        </div>
     </div>
   );
 };

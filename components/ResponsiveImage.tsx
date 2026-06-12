@@ -14,11 +14,13 @@ const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   src,
   fallbackSrc,
   generateSrcSet = true,
-  className,
+  className = '',
   ...props
 }) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     if (!imgRef.current) return;
@@ -31,7 +33,7 @@ const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
           }
         });
       },
-      { rootMargin: '100px' }
+      { rootMargin: '200px' }
     );
     observer.observe(imgRef.current);
     return () => observer.disconnect();
@@ -39,13 +41,20 @@ const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 
   const targetSrc = src || fallbackSrc || FALLBACK_URI;
 
+  // Tiny low-resolution URL for dynamic blur-up
+  const lowResPlaceholder = src && src.includes('unsplash.com') 
+    ? src.replace(/w=\d+/, 'w=40').replace(/q=\d+/, 'q=20') 
+    : src && src.includes('supabase.co/storage') 
+      ? getOptimizedImageUrl(src, { width: 40 }) 
+      : FALLBACK_URI;
+
   // Show placeholder while not in view
   if (!isVisible) {
     return (
       <img
         ref={imgRef}
         src={FALLBACK_URI}
-        className={`${className ?? ''} bg-slate-200 animate-pulse`}
+        className={`${className} bg-slate-200 animate-pulse`}
         loading="lazy"
         {...props}
         alt={props.alt ?? ''}
@@ -66,20 +75,38 @@ const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       : undefined;
 
   return (
-    <img
-      ref={imgRef}
-      src={optimizedSrc}
-      srcSet={srcSet}
-      className={className}
-      onError={(e) => {
-        if (fallbackSrc) {
-          (e.target as HTMLImageElement).src = fallbackSrc;
-        }
-      }}
-      loading="lazy"
-      {...props}
-    />
+    <div className={`relative overflow-hidden ${className}`}>
+      {/* Blurred Low-Res Placeholder background */}
+      {!isLoaded && !hasError && (
+        <img
+          src={lowResPlaceholder}
+          className="absolute inset-0 w-full h-full object-cover blur-md scale-105 select-none pointer-events-none transition-all duration-300"
+          alt=""
+          referrerPolicy="no-referrer"
+        />
+      )}
+
+      {/* Main High-Res Image with seamless CSS transition */}
+      <img
+        ref={imgRef}
+        src={hasError ? fallbackSrc || FALLBACK_URI : optimizedSrc}
+        srcSet={hasError ? undefined : srcSet}
+        onLoad={() => setIsLoaded(true)}
+        onError={(e) => {
+          setHasError(true);
+          if (fallbackSrc) {
+            (e.target as HTMLImageElement).src = fallbackSrc;
+          }
+        }}
+        loading="lazy"
+        className={`w-full h-full object-cover transition-all duration-500 ease-out ${
+          isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.01]'
+        }`}
+        {...props}
+      />
+    </div>
   );
 };
 
 export default ResponsiveImage;
+

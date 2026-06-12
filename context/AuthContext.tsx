@@ -3,6 +3,7 @@ import { User } from '../types';
 import { getUserProfile, logout as backendLogout } from '../services/supabaseService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
+import Icon from '../components/Icon';
 
 interface AuthContextType {
   user: User | null;
@@ -168,9 +169,116 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAuthenticated = !!supabaseUser;
 
+  const [showWarning, setShowWarning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(300);
+
+  useEffect(() => {
+    if (!supabaseUser) {
+      setShowWarning(false);
+      return;
+    }
+
+    const checkExpiration = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.expires_at) {
+          const expiresAt = session.expires_at;
+          const timeLeftSeconds = expiresAt - Math.floor(Date.now() / 1000);
+          
+          if (timeLeftSeconds > 0 && timeLeftSeconds <= 300) {
+            setTimeRemaining(timeLeftSeconds);
+            setShowWarning(true);
+          } else {
+            setShowWarning(false);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking token expiration:', err);
+      }
+    };
+
+    checkExpiration();
+    const interval = setInterval(checkExpiration, 10000);
+    return () => clearInterval(interval);
+  }, [supabaseUser]);
+
+  const handleKeepSessionAlive = async () => {
+    try {
+      const { error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('Failed to manually refresh session:', error);
+      } else {
+        setShowWarning(false);
+      }
+    } catch (err) {
+      console.error('Failed to keep session alive:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!showWarning) return;
+
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowWarning(false);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        await handleKeepSessionAlive();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showWarning]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <AuthContext.Provider value={{ user, supabaseUser, loading, isAuthReady, isAuthenticated, logout, refreshUser }}>
       {children}
+      {showWarning && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white max-w-sm w-full rounded-2xl p-6 text-center shadow-2xl border border-slate-100 relative animate-fade-in animate-duration-300">
+            <button 
+              onClick={() => setShowWarning(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              title="Close"
+            >
+              <Icon name="x" size={18} />
+            </button>
+            <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Icon name="clock" size={32} />
+            </div>
+            <h2 className="text-lg font-black text-slate-900 mb-1 leading-tight font-display">
+              Session Securing
+            </h2>
+            <p className="text-[9px] text-amber-600 font-extrabold uppercase tracking-widest font-mono mb-4">
+              Security Notice
+            </p>
+            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              For your safety, your active session will expire in <span className="font-bold text-slate-800 font-mono text-sm">{formatTime(timeRemaining)}</span>. Would you like to keep your session alive?
+            </p>
+            <div className="flex gap-2.5">
+              <button 
+                onClick={logout}
+                className="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors border border-slate-200 cursor-pointer"
+              >
+                Log Out
+              </button>
+              <button 
+                onClick={handleKeepSessionAlive}
+                className="flex-1 py-2.5 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition-colors shadow-md shadow-brand-600/15 cursor-pointer"
+              >
+                Keep Alive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };

@@ -1,6 +1,7 @@
 
 import React, { Component, ReactNode, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import ScrollToTop from './components/ScrollToTop';
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -49,8 +50,8 @@ interface ErrorBoundaryState {
   error: any;
 }
 
-class ErrorBoundary extends (Component as any) {
-  constructor(props: any) {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -156,7 +157,7 @@ const OAuthRedirectHandler: React.FC = () => {
         localStorage.removeItem('oauth_pending_vendor');
         
         if (oauthPendingVendor === 'true' || oauthRedirect === '/post') {
-          navigate('/signup', { replace: true });
+          navigate('/create-vendor', { replace: true });
         } else if (oauthRedirect && oauthRedirect !== '/signin' && oauthRedirect !== '/signup') {
           navigate(oauthRedirect, { replace: true });
         }
@@ -175,13 +176,14 @@ const App: React.FC = () => {
           <ToastProvider>
             <LocationProvider>
               <ComparisonProvider>
-                <Router>
-                  <ScrollToTop />
-                  <OAuthRedirectHandler />
-                <Layout>
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
-                  <Route path="/" element={<Home />} />
+                <HelmetProvider>
+                  <Router>
+                    <ScrollToTop />
+                    <OAuthRedirectHandler />
+                  <Layout>
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
+                    <Route path="/" element={<Home />} />
                   <Route path="/signin" element={<SignIn defaultTab="signin" />} />
                   <Route path="/signup" element={<SignIn defaultTab="signup" />} />
                   <Route path="/admin-login" element={<AdminLogin />} />
@@ -247,6 +249,7 @@ const App: React.FC = () => {
               </Suspense>
             </Layout>
           </Router>
+          </HelmetProvider>
           </ComparisonProvider>
         </LocationProvider>
         </ToastProvider>

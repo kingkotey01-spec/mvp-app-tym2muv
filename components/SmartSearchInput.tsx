@@ -55,6 +55,17 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
     }
   }, [debouncedQuery]);
 
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowSort(false);
+        setShowFilters(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscKey);
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, []);
+
   const handleFilterChange = (field: keyof SearchFilters, value: string) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };

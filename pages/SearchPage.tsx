@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import ListingCard from '../components/ListingCard';
 import AdCard from '../components/AdCard';
-import { getListings, getMonetizationAds } from '../services/supabaseService';
+import { getListings, getMonetizationAds, getRecentViewRequestCounts } from '../services/supabaseService';
 import Icon from '../components/Icon';
 import { useLocation as useAppLocation } from '../context/LocationContext';
 import { useMixedContent } from '../hooks/useMixedContent';
@@ -27,6 +28,19 @@ const SearchPage: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [page, setPage] = useState(1);
   const [dbAds, setDbAds] = useState<any[]>([]);
+  const [recentViewRequests, setRecentViewRequests] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const fetchRecentCounts = async () => {
+      try {
+        const counts = await getRecentViewRequestCounts();
+        setRecentViewRequests(counts);
+      } catch (err) {
+        console.error('Failed to load recent view request counts:', err);
+      }
+    };
+    fetchRecentCounts();
+  }, []);
 
   useEffect(() => {
     const fetchDbAds = async () => {
@@ -237,8 +251,25 @@ const SearchPage: React.FC = () => {
 
   const displayListings = listings; 
 
+  const pageTitle = query 
+    ? `Properties for "${query}" | Tym2muv Property Finder` 
+    : "Discover Properties | Tym2muv Real Estate Portal";
+  const pageDescription = query
+    ? `Explore our premium listings matching "${query}". Verified apartments, houses, office spaces, and lands ready for purchase or rental.`
+    : "Browse verified, high-quality residential, commercial, and land properties for sale or rent across Ghana on Tym2muv.";
+
   return (
     <div className="bg-brand-50 min-h-screen pb-8 pt-4">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+      </Helmet>
       
       <div className="container mx-auto px-4">
            
@@ -261,7 +292,7 @@ const SearchPage: React.FC = () => {
           <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
              {mixedContent.map((item, idx) => (
                 item.type === 'listing' ? (
-                  <ListingCard key={item.data.id} listing={item.data} />
+                  <ListingCard key={item.data.id} listing={item.data} isHot={(recentViewRequests[item.data.id] || 0) > 5 || item.data.isFeatured || (item.data.isPremium && idx % 3 === 0)} />
                 ) : (
                   <AdCard 
                     key={`ad-${idx}`} 

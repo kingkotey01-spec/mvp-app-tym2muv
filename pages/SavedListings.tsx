@@ -1,14 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getListings, getSavedListingIds } from '../services/supabaseService';
+import { getListings, getSavedListingIds, toggleSavedListing } from '../services/supabaseService';
 import { Listing } from '../types';
 import ListingCard from '../components/ListingCard';
 import Icon from '../components/Icon';
+import { useToast } from '../components/Toast';
 
 const SavedListings: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleUnsave = async (listingId: string) => {
+    if (!user) return;
+    try {
+      await toggleSavedListing(user.id, listingId);
+      setListings(prev => prev.filter(l => l.id !== listingId));
+      toast('Removed from saved properties.', 'info');
+    } catch (err) {
+      console.error('Failed to unsave listing:', err);
+      toast('Failed to remove. Please try again.', 'error');
+    }
+  };
 
   useEffect(() => {
     if (!user) { 
@@ -46,7 +60,22 @@ const SavedListings: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {listings.map(l => <ListingCard key={l.id} listing={l} />)}
+          {listings.map(l => (
+            <div key={l.id} className="relative group h-full">
+              <ListingCard listing={l} />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleUnsave(l.id);
+                }}
+                className="absolute top-3 right-3 z-30 bg-white/95 backdrop-blur rounded-full p-1.5 shadow-md border border-slate-100 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-50 text-slate-500 hover:text-red-500 cursor-pointer"
+                title="Remove from saved"
+              >
+                <Icon name="x" size={14} />
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>

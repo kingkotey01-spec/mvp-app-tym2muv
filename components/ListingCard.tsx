@@ -15,9 +15,10 @@ interface ListingCardProps {
   listing?: Listing;
   seller?: User;
   isLoading?: boolean;
+  isHot?: boolean;
 }
 
-const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading }) => {
+const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading, isHot }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addToCompare, removeFromCompare, isCompared } = useComparison();
@@ -182,7 +183,13 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading })
                <Icon name="award" size={10} />
              </div>
            )}
-           <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest">
+           {isHot && (
+             <div className="bg-red-600 text-white px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-[0.05em] shadow-sm flex items-center gap-0.5" title="High Demand">
+               <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping shrink-0" />
+               High Demand
+             </div>
+           )}
+           <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest bg-white/90 backdrop-blur-md px-1 py-0.5 rounded shadow-sm">
              {listing.type}
            </span>
         </div>
@@ -273,7 +280,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading })
              
              {isOwner ? (
                <Link 
-                 to={`/post-ad?edit=${listing.id}`}
+                 to={`/post?edit=${listing.id}`}
                  className="p-1.5 bg-brand-50 text-brand-600 rounded-lg hover:bg-brand-100 transition-colors z-30"
                  onClick={(e) => e.stopPropagation()}
                >

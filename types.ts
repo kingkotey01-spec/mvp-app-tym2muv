@@ -59,6 +59,7 @@ export interface Listing {
   yearBuilt?: number;
   isVerified?: boolean;
   virtualTourUrl?: string;
+  floorPlanUrl?: string;
 }
 
 export interface SearchFilters {

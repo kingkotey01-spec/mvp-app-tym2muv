@@ -9,8 +9,20 @@ export const loginWithEmail = async (email: string, password: string, selectedRo
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   
-  // For now, attach role
-  return Object.assign(data.user || {}, { isNewAccount: false, role: selectedRole, id: data.user?.id, uid: data.user?.id });
+  // Fetch the actual DB role — don't trust the UI selection for sign-in
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user!.id)
+    .maybeSingle();
+
+  const actualRole = profile?.role || selectedRole.toLowerCase();
+  return Object.assign(data.user || {}, { 
+    isNewAccount: false, 
+    role: actualRole.charAt(0).toUpperCase() + actualRole.slice(1), 
+    id: data.user?.id, 
+    uid: data.user?.id 
+  });
 };
 
 export const signupWithEmail = async (email: string, password: string, name: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {
@@ -51,9 +63,10 @@ export const sendPasswordResetEmail = async (email: string) => {
   if (error) throw error;
 };
 
-export const verifyPasswordResetCode = async (code: string) => {
-  // Supabase handles this automatically via link, but we mock for compat
-  return 'user@example.com';
+export const verifyPasswordResetCode = async (_code: string): Promise<string> => {
+  // Supabase handles reset via session tokens, not oobCode.
+  // This path should not be reached in normal flow.
+  throw new Error('Please use the reset link from your email to access this page.');
 };
 
 export const confirmPasswordReset = async (code: string, newPassword: string) => {
@@ -237,8 +250,8 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         
       if (!data) return null;
       
-      const savedQuery = await supabase.from('saved_listings').select('listing_id').eq('user_id', userId);
-      data.savedListings = (savedQuery.data || []).map(r => r.listing_id);
+      const savedQuery = await supabase.from('saved_properties').select('property_id').eq('tenant_id', userId);
+      data.savedListings = (savedQuery.data || []).map(r => r.property_id);
 
       return mapProfileToUser(data);
     }, CACHE_TTL.PROFILES);
@@ -338,26 +351,31 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>) 
 
 export const toggleSavedListing = async (userId: string, listingId: string): Promise<void> => {
   const { data: existing } = await supabase
-    .from('saved_listings')
+    .from('saved_properties')
     .select('id')
-    .eq('user_id', userId)
-    .eq('listing_id', listingId)
+    .eq('tenant_id', userId)
+    .eq('property_id', listingId)
     .maybeSingle();
 
   if (existing) {
-    const { error } = await supabase.from('saved_listings').delete().eq('id', existing.id);
+    const { error } = await supabase.from('saved_properties').delete().eq('id', existing.id);
     if (error) throw error;
   } else {
-    const { error } = await supabase.from('saved_listings').insert({ user_id: userId, listing_id: listingId });
+    const { error } = await supabase
+      .from('saved_properties')
+      .insert({ tenant_id: userId, property_id: listingId });
     if (error) throw error;
   }
   await delCache(cacheKey('profile', userId)); // invalidate profile cache since savedListings changed
 };
 
 export const getSavedListingIds = async (userId: string): Promise<string[]> => {
-  const { data, error } = await supabase.from('saved_listings').select('listing_id').eq('user_id', userId);
+  const { data, error } = await supabase
+    .from('saved_properties')
+    .select('property_id')
+    .eq('tenant_id', userId);
   if (error) throw error;
-  return (data || []).map(r => r.listing_id);
+  return (data || []).map(r => r.property_id);
 };
 
 export const getAllUsers = async (): Promise<User[]> => {
@@ -370,6 +388,17 @@ export const updateUserRole = async (userId: string, role: string) => {
   const { error } = await supabase.from('profiles').update({ role: role.toLowerCase() }).eq('id', userId);
   if (error) throw error;
   await delCache(cacheKey('profile', userId));
+};
+
+export const upsertAgentProfile = async (userId: string, agencyData: { company_name?: string }) => {
+  const { error } = await supabase
+    .from('agents')
+    .upsert({
+      id: userId,
+      company_name: agencyData.company_name || '',
+      verification_status: 'pending'
+    }, { onConflict: 'id' });
+  if (error) throw error;
 };
 
 // --- LISTING SERVICES ---
@@ -405,6 +434,7 @@ const mapPropertyToListing = (p: any): Listing => ({
   yearBuilt: p.year_built,
   isVerified: p.is_verified,
   virtualTourUrl: p.virtual_tour_url,
+  floorPlanUrl: p.floor_plan_url || p.floorPlanUrl,
 });
 
 /* DB_INDEXES_REQUIRED: see supabase_production_schema.sql 
@@ -514,6 +544,10 @@ export const getListingById = async (id: string): Promise<Listing | null> => {
 };
 
 export const createListing = async (listing: Omit<Listing, 'id'>): Promise<string> => {
+  const now = new Date();
+  const expiryDays = listing.isPremium ? 91 : 30;
+  const expiryDate = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000).toISOString();
+
   const { data, error } = await supabase.from('properties').insert({
     title: listing.title,
     price: listing.price,
@@ -539,6 +573,8 @@ export const createListing = async (listing: Omit<Listing, 'id'>): Promise<strin
     pets_allowed: listing.petsAllowed,
     year_built: listing.yearBuilt,
     virtual_tour_url: listing.virtualTourUrl,
+    expiry_date: expiryDate,
+    is_premium: listing.isPremium || false,
   }).select('id').single();
   
   if (error) throw error;
@@ -898,6 +934,34 @@ export const createViewRequest = async (request: Omit<ViewRequest, 'id' | 'creat
   }).select('id').single();
   if (error) throw error;
   return data.id;
+};
+
+export const getRecentViewRequestCounts = async (): Promise<Record<string, number>> => {
+  try {
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from('view_requests')
+      .select('listing_id')
+      .gte('created_at', fortyEightHoursAgo);
+      
+    if (error) {
+      console.error("Error fetching view requests count:", error);
+      return {};
+    }
+    
+    const counts: Record<string, number> = {};
+    if (data) {
+      data.forEach((row: any) => {
+        if (row.listing_id) {
+          counts[row.listing_id] = (counts[row.listing_id] || 0) + 1;
+        }
+      });
+    }
+    return counts;
+  } catch (err) {
+    console.error("Failed to get recent view request counts:", err);
+    return {};
+  }
 };
 
 // --- REVIEW SERVICES ---

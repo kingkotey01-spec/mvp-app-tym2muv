@@ -32,6 +32,28 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
   const [showForgotPassword, setShowForgotPassword] = React.useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = React.useState('');
 
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: '', color: 'bg-slate-200', text: 'text-slate-400' };
+    let score = 0;
+    if (pass.length >= 6) score += 1;
+    if (pass.length >= 8) score += 1;
+    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score += 1;
+    if (/\d/.test(pass) || /[^A-Za-z0-9]/.test(pass)) score += 1;
+
+    switch (score) {
+      case 1:
+        return { score: 1, label: 'Weak', color: 'bg-red-500', text: 'text-red-500' };
+      case 2:
+        return { score: 2, label: 'Medium', color: 'bg-orange-450', text: 'text-orange-500' };
+      case 3:
+        return { score: 3, label: 'Strong', color: 'bg-yellow-500', text: 'text-yellow-600' };
+      case 4:
+        return { score: 4, label: 'Excellent', color: 'bg-green-500', text: 'text-green-600' };
+      default:
+        return { score: 0, label: 'Too short', color: 'bg-red-350', text: 'text-red-400' };
+    }
+  };
+
   React.useEffect(() => {
     setIsSignUp(defaultTab === 'signup' || location.pathname === '/signup');
     setShowForgotPassword(false);
@@ -83,6 +105,9 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
       setIsLoading(true);
       
       const getPostAuthPath = (resultUser: any) => {
+        if (isSignUp && selectedRole === 'Agent') {
+          return '/create-vendor';
+        }
         if (pendingVendor || from === '/post') {
           return '/signup';
         }
@@ -396,6 +421,23 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       className="w-full pl-8 pr-2.5 py-1.5 bg-white/70 hover:bg-white border border-slate-200 focus:border-purple-500 rounded-lg text-[11px] focus:ring-2 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-800 shadow-sm"
                     />
                   </div>
+                  {isSignUp && password && (
+                    <div className="mt-1.5 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-bold text-slate-400">Password Strength:</span>
+                        <span className={`text-[9.5px] font-black uppercase tracking-wider ${getPasswordStrength(password).text}`}>
+                          {getPasswordStrength(password).label}
+                        </span>
+                      </div>
+                      <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden flex gap-0.5">
+                        <div className={`h-full flex-1 rounded-full ${getPasswordStrength(password).score >= 1 ? getPasswordStrength(password).color : 'bg-slate-200/50'}`} />
+                        <div className={`h-full flex-1 rounded-full ${getPasswordStrength(password).score >= 2 ? getPasswordStrength(password).color : 'bg-slate-200/50'}`} />
+                        <div className={`h-full flex-1 rounded-full ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-slate-200/50'}`} />
+                        <div className={`h-full flex-1 rounded-full ${getPasswordStrength(password).score >= 4 ? getPasswordStrength(password).color : 'bg-slate-200/50'}`} />
+                      </div>
+                      <p className="text-[8px] text-slate-400 font-medium">Use 8+ characters with uppercase, lowercase, numbers & symbols.</p>
+                    </div>
+                  )}
                 </div>
 
                 {isSignUp && (

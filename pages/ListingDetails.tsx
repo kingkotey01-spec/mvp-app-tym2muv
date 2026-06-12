@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getListingById, getUserProfile, getListings, toggleSavedListing, createViewRequest } from '../services/supabaseService';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +24,26 @@ const ListingDetails: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [listing, setListing] = useState<Listing | null>(null);
+  const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false);
+  const [currencyMode, setCurrencyMode] = useState<'GHS' | 'USD'>('GHS');
+
+  useEffect(() => {
+    if (listing?.currency === 'USD' || listing?.currency === 'GHS') {
+      setCurrencyMode(listing.currency as 'GHS' | 'USD');
+    }
+  }, [listing]);
+
+  const EXCHANGE_RATE = 14.5;
+  const displayCurrency = currencyMode;
+  const displayPrice = listing 
+    ? (listing.currency === 'GHS' && currencyMode === 'USD'
+      ? listing.price / EXCHANGE_RATE
+      : (listing.currency === 'USD' && currencyMode === 'GHS'
+        ? listing.price * EXCHANGE_RATE
+        : listing.price))
+    : 0;
+
+  const floorPlanImgUrl = listing?.floorPlanUrl || (listing?.isPremium ? 'https://images.unsplash.com/photo-1545464693-f1798a373343?auto=format&fit=crop&w=1200&q=80' : undefined);
   const [seller, setSeller] = useState<User | null>(null);
   const [similarListings, setSimilarListings] = useState<Listing[]>([]);
   const [activeImage, setActiveImage] = useState(0);
@@ -38,6 +59,7 @@ const ListingDetails: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [requestedTime, setRequestedTime] = useState('10:00');
 
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
@@ -55,6 +77,18 @@ const ListingDetails: React.FC = () => {
     setReportReason('');
     setReportDetails('');
   };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFloorPlanOpen(false);
+        setIsSafetyOpen(false);
+        setIsReportOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     if (user && id && user.savedListings) {
@@ -231,13 +265,22 @@ const ListingDetails: React.FC = () => {
     setIsDeliveryRequested(true); // Can rename this state later, reusing for loading indicator for now
     
     try {
+      let formattedTime = '10:00 AM';
+      if (requestedTime) {
+        const [hourStr, minStr] = requestedTime.split(':');
+        const hour = parseInt(hourStr, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+        formattedTime = `${formattedHour}:${minStr} ${ampm}`;
+      }
+
       await createViewRequest({
         listingId: listing.id,
         tenantId: user.id,
         agentId: listing.sellerId,
         status: 'pending',
         requestedDate: new Date().toISOString(),
-        requestedTime: '10:00 AM', // Default, should be added to UI
+        requestedTime: formattedTime,
         message: 'I would like to view this property.'
       });
       
@@ -295,8 +338,30 @@ const ListingDetails: React.FC = () => {
     }
   };
 
+  const pageTitle = listing 
+    ? `${listing.title || generateListingTitle({ bedrooms: listing.bedrooms, propertyType: listing.propertyType })} | Tym2muv Premium Real Estate` 
+    : "Property details | Tym2muv";
+  const pageDescription = listing 
+    ? `${listing.bedrooms || 0} Bed, ${listing.bathrooms || 0} Bath property located in ${listing.location || 'Ghana'}. Price: ${getSymbolFromCode(displayCurrency)}${displayPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}. ${listing.description?.substring(0, 150) || 'View verified property details, high-resolution location galleries, and virtual tours.'}`
+    : "View premium real estate listings on Tym2muv Ghana.";
+  const pageImage = listing && listing.images && listing.images.length > 0 
+    ? listing.images[0] 
+    : "https://images.unsplash.com/photo-1545464693-f1798a373343?auto=format&fit=crop&w=1200&q=80";
+
   return (
     <div className="min-h-screen bg-white font-sans pb-24">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={pageImage} />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={pageImage} />
+      </Helmet>
       {/* Header / Navigation */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -360,16 +425,26 @@ const ListingDetails: React.FC = () => {
             </div>
 
             {/* Column 1 Row 2 - Price */}
-            <div className="py-1 border-b border-slate-100">
-              <div className="text-base lg:text-lg font-black text-brand-600 flex items-baseline gap-1">
-                <span className="text-2xs font-bold">{getSymbolFromCode(listing.currency || 'USD')}</span>
-                {listing.price.toLocaleString()}
-                {listing.type === 'Rent' && <span className="text-[10px] font-medium text-slate-400">/mo</span>}
+            <div className="py-1 border-b border-slate-100 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="text-base lg:text-lg font-black text-brand-600 flex items-baseline gap-1">
+                  <span className="text-2xs font-bold">{getSymbolFromCode(displayCurrency)}</span>
+                  {displayPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  {listing.type === 'Rent' && <span className="text-[10px] font-medium text-slate-400">/mo</span>}
+                </div>
+                <p className="text-[8px] text-slate-450 mt-0.5 flex items-center gap-1.5">
+                  <Icon name="clock" size={8} />
+                  Posted {listing.datePosted}
+                </p>
               </div>
-              <p className="text-[8px] text-slate-400 mt-0.5 flex items-center gap-1.5">
-                <Icon name="clock" size={8} />
-                Posted {listing.datePosted}
-              </p>
+              <button
+                onClick={() => setCurrencyMode(prev => prev === 'GHS' ? 'USD' : 'GHS')}
+                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-brand-600 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 flex items-center gap-1 shadow-2xs"
+                title="Toggle Currency (GHS / USD)"
+              >
+                <Icon name="refreshCw" size={8} />
+                <span>Format in {currencyMode === 'GHS' ? 'USD' : 'GHS'}</span>
+              </button>
             </div>
 
             {/* Column 1 Row 2.5 - Quick Action Buttons */}
@@ -518,43 +593,54 @@ const ListingDetails: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-2 grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
-                <button 
-                  onClick={handleChat}
-                  className="px-2 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Icon name="messageCircle" size={14} />
-                  Message
-                </button>
-                <div className="flex gap-1.5">
+              <div className="pt-2 space-y-2.5 border-t border-slate-100/50" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-slate-500 block">Preferred Viewing Time</label>
+                  <input
+                    type="time"
+                    value={requestedTime}
+                    onChange={e => setRequestedTime(e.target.value)}
+                    className="border border-slate-200 rounded-lg px-2.5 py-1 text-xs w-full bg-white outline-none focus:ring-1 focus:ring-brand-500 font-medium text-slate-800"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   <button 
-                    onClick={() => triggerSafetyCheck(() => handleRequestView())}
-                    disabled={isDeliveryRequested}
-                    className="flex-1 px-2 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
+                    onClick={handleChat}
+                    className="px-2 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
                   >
-                    {isDeliveryRequested ? (
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Icon name="calendar" size={14} />
-                        Book View
-                      </>
-                    )}
+                    <Icon name="messageCircle" size={14} />
+                    Message
                   </button>
-                  {seller?.socials?.phone && (
+                  <div className="flex gap-1.5">
                     <button 
-                      onClick={() => triggerSafetyCheck(() => window.location.href = `tel:${seller.socials.phone}`)}
-                      className="flex-none w-10 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-all flex items-center justify-center"
+                      onClick={() => triggerSafetyCheck(() => handleRequestView())}
+                      disabled={isDeliveryRequested}
+                      className="flex-1 px-2 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
                     >
-                      <Icon name="phone" size={14} />
+                      {isDeliveryRequested ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Icon name="calendar" size={14} />
+                          Book View
+                        </>
+                      )}
                     </button>
-                  )}
+                    {seller?.socials?.phone && (
+                      <button 
+                        onClick={() => triggerSafetyCheck(() => window.location.href = `tel:${seller.socials.phone}`)}
+                        className="flex-none w-10 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-all flex items-center justify-center"
+                      >
+                        <Icon name="phone" size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="mt-6">
-              <MortgageCalculator price={listing.price} currency={listing.currency} />
+              <MortgageCalculator price={displayPrice} currency={displayCurrency} />
             </div>
           </div>
 
@@ -628,17 +714,28 @@ const ListingDetails: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Gallery</h3>
-                {listing.virtualTourUrl && (
-                  <a 
-                    href={listing.virtualTourUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[8px] font-bold text-brand-600 flex items-center gap-1 hover:underline"
-                  >
-                    <Icon name="eye" size={9} />
-                    Virtual Tour
-                  </a>
-                )}
+                <div className="flex items-center gap-3">
+                  {listing.virtualTourUrl && (
+                    <a 
+                      href={listing.virtualTourUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[8px] font-bold text-brand-600 flex items-center gap-1 hover:underline font-mono"
+                    >
+                      <Icon name="eye" size={9} />
+                      Virtual Tour
+                    </a>
+                  )}
+                  {floorPlanImgUrl && (
+                    <button 
+                      onClick={() => setIsFloorPlanOpen(true)}
+                      className="text-[8px] font-bold text-brand-600 flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-0 p-0 font-mono"
+                    >
+                      <Icon name="map" size={9} />
+                      View Floor Plan
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-6 gap-1.5">
                 {images.map((img, idx) => (
@@ -727,13 +824,24 @@ const ListingDetails: React.FC = () => {
               
               <div className="space-y-3 mb-6 text-left">
                  {['Spam', 'Scam', 'Inappropriate content', 'Property unavailable'].map((reason) => (
-                    <label key={reason} className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50">
+                    <label 
+                      key={reason} 
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setReportReason(reason);
+                        }
+                      }}
+                      className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none"
+                    >
                        <input 
                          type="radio" 
                          name="reportReason" 
                          value={reason}
                          checked={reportReason === reason}
                          onChange={(e) => setReportReason(e.target.value)}
+                         tabIndex={-1}
                          className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300"
                        />
                        <span className="text-sm font-medium text-slate-700">{reason}</span>
@@ -762,6 +870,70 @@ const ListingDetails: React.FC = () => {
                 >
                   Submit Report
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Floor Plan Modal */}
+      <AnimatePresence>
+        {isFloorPlanOpen && floorPlanImgUrl && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsFloorPlanOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            
+            <motion.div 
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="bg-white rounded-2xl p-5 max-w-2xl w-full relative z-10 shadow-2xl border border-slate-100 flex flex-col items-center"
+            >
+              <button 
+                onClick={() => setIsFloorPlanOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border border-slate-200 shadow-2xs"
+              >
+                <Icon name="x" size={16} />
+              </button>
+              
+              <div className="w-full text-center space-y-1 mb-4">
+                <div className="w-12 h-12 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Icon name="map" size={24} />
+                </div>
+                <h3 className="text-md lg:text-lg font-black text-slate-900 leading-tight font-display">
+                  Property Floor Plan
+                </h3>
+                <p className="text-2xs text-slate-400 uppercase tracking-widest font-mono">
+                  {generateListingTitle({ 
+                    bedrooms: listing?.bedrooms, 
+                    propertyType: listing?.propertyType
+                  })}
+                </p>
+              </div>
+
+              <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-50 border border-slate-200 flex items-center justify-center min-h-[300px]">
+                <img 
+                  src={floorPlanImgUrl} 
+                  alt="Floor Plan" 
+                  className="max-h-full max-w-full object-contain mix-blend-multiply"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.unsplash.com/photo-1545464693-f1798a373343?auto=format&fit=crop&w=1200&q=80';
+                  }}
+                />
+              </div>
+
+              <div className="mt-4 w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
+                <p className="text-[10px] font-medium text-slate-500 leading-relaxed max-w-md mx-auto">
+                  Disclaimer: Diagrams & layout configurations are conceptual models provided for indicative reference only. Exact measurements may vary depending on active construction options.
+                </p>
               </div>
             </motion.div>
           </div>

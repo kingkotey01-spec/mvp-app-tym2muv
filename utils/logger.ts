@@ -1,9 +1,11 @@
 import { datadogLogs } from '@datadog/browser-logs';
+import * as Sentry from '@sentry/react';
 
 const isProd = import.meta.env.PROD;
 const DATADOG_CLIENT_TOKEN = import.meta.env.VITE_DATADOG_CLIENT_TOKEN;
 const DATADOG_SITE = import.meta.env.VITE_DATADOG_SITE || 'datadoghq.com';
 const ENV = import.meta.env.VITE_ENV || 'development';
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 
 if (DATADOG_CLIENT_TOKEN) {
   datadogLogs.init({
@@ -13,6 +15,14 @@ if (DATADOG_CLIENT_TOKEN) {
     sessionSampleRate: 100,
     service: 'tym2muv-web',
     env: ENV,
+  });
+}
+
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: ENV,
+    tracesSampleRate: 0.1,
   });
 }
 
@@ -38,6 +48,8 @@ export const logger = {
     if (DATADOG_CLIENT_TOKEN) {
        datadogLogs.logger.error(errorMsg, { error, ...context });
     }
+    // Also report to Sentry
+    Sentry.captureException(error, { extra: context });
   },
   warn: (message: string, context?: Record<string, any>) => {
     if (!isProd) console.warn('[WARN]', message, context);
