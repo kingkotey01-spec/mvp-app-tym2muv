@@ -12,6 +12,7 @@ import ErrorBanner from '../components/ErrorBanner';
 import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
 import useDebounce from '../hooks/useDebounce';
+import { getCountryByCode } from '../services/location';
 
 const ITEMS_PER_BATCH = 24; 
 
@@ -56,13 +57,58 @@ const SearchPage: React.FC = () => {
   }, [userLocation.countryCode]);
 
   const [localFilters, setLocalFilters] = useState({
-    priceRange: searchParams.get('minPrice') ? (searchParams.get('maxPrice') ? `$${searchParams.get('minPrice')} - $${searchParams.get('maxPrice')}` : '$10,000+') : 'Price Range',
+    priceRange: searchParams.get('minPrice') ? (searchParams.get('maxPrice') ? `${userLocation.symbol || '$'}${searchParams.get('minPrice')} - ${userLocation.symbol || '$'}${searchParams.get('maxPrice')}` : `${userLocation.symbol || '$'}10,000+`) : 'Price Range',
     bedrooms: searchParams.get('bedrooms') ? `${searchParams.get('bedrooms')}+ Beds` : 'Beds',
     bathrooms: searchParams.get('bathrooms') ? `${searchParams.get('bathrooms')}+ Baths` : 'Baths',
     propertyType: searchParams.get('propertyType') || 'Property Type'
   });
 
   const debouncedFilters = useDebounce(localFilters, 500);
+
+  const activeFilters = useMemo(() => {
+    const list: { key: string; label: string; value: string }[] = [];
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const bedrooms = searchParams.get('bedrooms');
+    const bathrooms = searchParams.get('bathrooms');
+    const propertyType = searchParams.get('propertyType');
+    const locationVal = searchParams.get('location');
+    const categoryId = searchParams.get('categoryId');
+
+    const symbol = userLocation.symbol || '$';
+
+    if (minPrice || maxPrice) {
+      if (minPrice && maxPrice) {
+        list.push({ key: 'price', label: 'Price', value: `${symbol}${parseInt(minPrice).toLocaleString()} - ${symbol}${parseInt(maxPrice).toLocaleString()}` });
+      } else if (minPrice) {
+        list.push({ key: 'price', label: 'Price', value: `${symbol}${parseInt(minPrice).toLocaleString()}+` });
+      } else if (maxPrice) {
+        list.push({ key: 'price', label: 'Price', value: `Up to ${symbol}${parseInt(maxPrice).toLocaleString()}` });
+      }
+    }
+    if (bedrooms) {
+      list.push({ key: 'bedrooms', label: 'Bedrooms', value: `${bedrooms}+ Beds` });
+    }
+    if (bathrooms) {
+      list.push({ key: 'bathrooms', label: 'Bathrooms', value: `${bathrooms}+ Baths` });
+    }
+    if (propertyType) {
+      list.push({ key: 'propertyType', label: 'Property Type', value: propertyType });
+    }
+    if (locationVal) {
+      list.push({ key: 'location', label: 'Location', value: locationVal });
+    }
+    if (categoryId) {
+      const catObj = {
+        'houses': 'Houses & Apartments',
+        'land': 'Lands & Plots',
+        'offices': 'Offices & Shops',
+        'warehouses': 'Warehouses & Storage'
+      }[categoryId] || categoryId;
+      list.push({ key: 'categoryId', label: 'Category', value: catObj });
+    }
+    return list;
+  }, [searchParams, userLocation]);
 
   useEffect(() => {
     // Sync debounced filters to URL
@@ -97,14 +143,16 @@ const SearchPage: React.FC = () => {
 
     // Price Range
     if (debouncedFilters.priceRange && debouncedFilters.priceRange !== 'Price Range') {
-      if (debouncedFilters.priceRange === '$10,000+') {
+      const sym = userLocation.symbol || '$';
+      if (debouncedFilters.priceRange === `${sym}10,000+` || debouncedFilters.priceRange === '$10,000+') {
          if (params.get('minPrice') !== '10000' || params.has('maxPrice')) {
            params.set('minPrice', '10000');
            params.delete('maxPrice');
            changed = true;
          }
       } else {
-         const parts = debouncedFilters.priceRange.replace(/\$/g, '').replace(/,/g, '').split(' - ');
+         const cleanString = debouncedFilters.priceRange.replace(/[^0-9\s-]/g, '');
+         const parts = cleanString.trim().split(/\s*-\s*/);
          if (parts.length === 2 && (params.get('minPrice') !== parts[0] || params.get('maxPrice') !== parts[1])) {
             params.set('minPrice', parts[0]);
             params.set('maxPrice', parts[1]);
@@ -127,7 +175,7 @@ const SearchPage: React.FC = () => {
     if (changed) {
       navigate(`/search?${params.toString()}`, { replace: true });
     }
-  }, [debouncedFilters, navigate, location.search, query]);
+  }, [debouncedFilters, navigate, location.search, query, userLocation]);
 
   const handleFilterChange = (field: keyof typeof localFilters, value: string) => {
     setLocalFilters(prev => ({ ...prev, [field]: value }));
@@ -205,6 +253,7 @@ const SearchPage: React.FC = () => {
         if (searchParams.has('minPrice')) initialFilters.minPrice = searchParams.get('minPrice');
         if (searchParams.has('maxPrice')) initialFilters.maxPrice = searchParams.get('maxPrice');
         if (searchParams.has('bedrooms')) initialFilters.bedrooms = searchParams.get('bedrooms');
+        if (searchParams.has('bathrooms')) initialFilters.bathrooms = searchParams.get('bathrooms');
 
         const { listings: fetchedListings, total } = await getListings(initialFilters);
         setListings(fetchedListings);
@@ -238,6 +287,7 @@ const SearchPage: React.FC = () => {
       if (searchParams.has('minPrice')) nextFilters.minPrice = searchParams.get('minPrice');
       if (searchParams.has('maxPrice')) nextFilters.maxPrice = searchParams.get('maxPrice');
       if (searchParams.has('bedrooms')) nextFilters.bedrooms = searchParams.get('bedrooms');
+      if (searchParams.has('bathrooms')) nextFilters.bathrooms = searchParams.get('bathrooms');
 
       const { listings: nextBatch } = await getListings(nextFilters);
       setListings(prev => [...prev, ...nextBatch]);
@@ -272,6 +322,60 @@ const SearchPage: React.FC = () => {
       </Helmet>
       
       <div className="container mx-auto px-4">
+        {/* Active Filters Bar */}
+        {activeFilters.length > 0 && (
+          <div className="mb-6 bg-white border border-slate-100 p-4 rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in relative overflow-hidden">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mr-2">
+                <Icon name="filter" size={14} className="text-brand-600" />
+                <span>Filters ({activeFilters.length})</span>
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {activeFilters.map(filter => (
+                  <div 
+                    key={filter.key} 
+                    className="inline-flex items-center gap-1.5 bg-brand-50/70 border border-brand-100 hover:border-brand-200 transition-colors pl-3 pr-2 py-1 rounded-2xl text-xs font-semibold text-brand-700"
+                  >
+                    <span>{filter.label}:</span>
+                    <span className="text-slate-700 font-bold">{filter.value}</span>
+                    <button 
+                      onClick={() => {
+                        const params = new URLSearchParams(location.search);
+                        if (filter.key === 'price') {
+                          params.delete('minPrice');
+                          params.delete('maxPrice');
+                        } else {
+                          params.delete(filter.key);
+                        }
+                        navigate(`/search?${params.toString()}`);
+                      }}
+                      className="w-4 h-4 rounded-full hover:bg-brand-200/50 flex items-center justify-center text-brand-500 hover:text-brand-800 transition-colors"
+                      title={`Remove ${filter.label} filter`}
+                    >
+                      <Icon name="x" size={10} strokeWidth={3} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <button
+              onClick={() => {
+                setLocalFilters({
+                  priceRange: 'Price Range',
+                  bedrooms: 'Beds',
+                  bathrooms: 'Baths',
+                  propertyType: 'Property Type'
+                });
+                navigate('/search');
+              }}
+              className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-100 font-bold text-xs rounded-2xl transition-all flex items-center gap-1.5 shrink-0 self-end sm:self-auto group active:scale-95 cursor-pointer"
+            >
+              <Icon name="trash" size={12} className="group-hover:animate-bounce" />
+              Clear all filters
+            </button>
+          </div>
+        )}
            
          {error ? (
            <ErrorBanner message={error} onRetry={() => setRetryKey(k => k + 1)} />

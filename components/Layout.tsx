@@ -145,6 +145,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (filters?.maxPrice) searchParams.set('maxPrice', filters.maxPrice);
     if (filters?.location) searchParams.set('location', filters.location);
     if (filters?.propertyType) searchParams.set('propertyType', filters.propertyType);
+    if (filters?.categoryId) searchParams.set('categoryId', filters.categoryId);
+    if (filters?.subcategoryId) searchParams.set('subcategoryId', filters.subcategoryId);
+    if (filters?.bedrooms) searchParams.set('bedrooms', String(filters.bedrooms));
+    if (filters?.bathrooms) searchParams.set('bathrooms', String(filters.bathrooms));
+    if (filters?.countryCode) searchParams.set('countryCode', filters.countryCode);
+    if (filters?.sortBy) searchParams.set('sortBy', filters.sortBy);
     
     navigate(`/search?${searchParams.toString()}`);
   };
@@ -267,8 +273,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
 
             {/* Search Mobile - Show only on mobile */}
-            <div className="md:hidden px-4 pb-4">
-                <SmartSearchInput variant="simple" onSearch={handleSearch} placeholder="Search..." />
+            <div className="md:hidden px-4 pb-4 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <div className="flex-grow">
+                  <SmartSearchInput variant="simple" onSearch={handleSearch} placeholder="Search..." />
+                </div>
+                <div className="flex-shrink-0">
+                  <CountrySelector />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 px-1 animate-fade-in">
+                <span className="inline-flex items-center gap-1 bg-brand-50 border border-brand-100/60 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-brand-700 tracking-wide shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Browsing: {userLocData.country || 'Ghana'}
+                </span>
+              </div>
             </div>
 
             </div>

@@ -69,7 +69,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('user_location', JSON.stringify(data));
     
     // If detection failed to find a known country, we might need selection
-    if (data.country === 'Unknown') {
+    const selected = localStorage.getItem('user_country_selected') === 'true';
+    const browseForNow = sessionStorage.getItem('browse_for_now') === 'true';
+    if (data.country === 'Unknown' && !selected && !browseForNow) {
       setNeedsCountrySelection(true);
     }
     
@@ -95,22 +97,25 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const completeCountrySelection = () => {
-    localStorage.setItem('user_country_selected', 'true');
+    sessionStorage.setItem('browse_for_now', 'true');
     setNeedsCountrySelection(false);
   };
 
   useEffect(() => {
     const saved = localStorage.getItem('user_location');
-    const selected = localStorage.getItem('user_country_selected');
+    const selected = localStorage.getItem('user_country_selected') === 'true';
+    const browseForNow = sessionStorage.getItem('browse_for_now') === 'true';
     
     if (!saved) {
       refreshLocation().then(() => {
-        if (!localStorage.getItem('user_country_selected')) {
+        const afterSelected = localStorage.getItem('user_country_selected') === 'true';
+        const afterBrowse = sessionStorage.getItem('browse_for_now') === 'true';
+        if (!afterSelected && !afterBrowse) {
           setNeedsCountrySelection(true);
         }
       });
     } else {
-      if (!selected) {
+      if (!selected && !browseForNow) {
         setNeedsCountrySelection(true);
       }
       setIsLoading(false);

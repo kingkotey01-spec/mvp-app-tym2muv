@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getListingById, getUserProfile, getListings, toggleSavedListing, createViewRequest } from '../services/supabaseService';
+import { getListingById, getUserProfile, getListings, toggleSavedListing, createViewRequest, createReport } from '../services/supabaseService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { Listing, User } from '../types';
@@ -33,13 +33,41 @@ const ListingDetails: React.FC = () => {
     }
   }, [listing]);
 
-  const EXCHANGE_RATE = 14.5;
+  const [exchangeRate, setExchangeRate] = useState<number>(14.5);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const cached = localStorage.getItem('ghs_usd_exchange_rate');
+        const cacheTime = localStorage.getItem('ghs_usd_exchange_rate_time');
+        
+        // Use 12 hour cache to minimize API calls
+        if (cached && cacheTime && Date.now() - Number(cacheTime) < 12 * 60 * 60 * 1000) {
+          setExchangeRate(Number(cached));
+          return;
+        }
+
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        if (data && data.rates && data.rates.GHS) {
+          const rate = data.rates.GHS;
+          setExchangeRate(rate);
+          localStorage.setItem('ghs_usd_exchange_rate', String(rate));
+          localStorage.setItem('ghs_usd_exchange_rate_time', String(Date.now()));
+        }
+      } catch (err) {
+        console.warn('Failed to fetch live exchange rate, using fallback of 14.5:', err);
+      }
+    };
+    fetchRate();
+  }, []);
+
   const displayCurrency = currencyMode;
   const displayPrice = listing 
     ? (listing.currency === 'GHS' && currencyMode === 'USD'
-      ? listing.price / EXCHANGE_RATE
+      ? listing.price / exchangeRate
       : (listing.currency === 'USD' && currencyMode === 'GHS'
-        ? listing.price * EXCHANGE_RATE
+        ? listing.price * exchangeRate
         : listing.price))
     : 0;
 
@@ -55,8 +83,6 @@ const ListingDetails: React.FC = () => {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [safetyAction, setSafetyAction] = useState<(() => void) | null>(null);
   const [isDeliveryRequested, setIsDeliveryRequested] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [requestedTime, setRequestedTime] = useState('10:00');
@@ -64,18 +90,26 @@ const ListingDetails: React.FC = () => {
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
 
-  const submitReport = () => {
+  const submitReport = async () => {
     if (!reportReason) {
       toast('Please select a reason for reporting.', 'warning');
       return;
     }
-    // Mock submit
-    setIsReportOpen(false);
-    setToastMessage("Report submitted successfully.");
-    setShowSuccessToast(true);
-    setTimeout(() => setShowSuccessToast(false), 3000);
-    setReportReason('');
-    setReportDetails('');
+    try {
+      await createReport({
+        reporterId: user?.id,
+        targetType: 'property',
+        targetId: id || '',
+        reason: reportDetails ? `${reportReason}: ${reportDetails}` : reportReason
+      });
+      setIsReportOpen(false);
+      toast("Report submitted successfully.", 'success');
+      setReportReason('');
+      setReportDetails('');
+    } catch (err) {
+      console.error('Failed to submit report:', err);
+      toast('Failed to submit report. Please try again.', 'error');
+    }
   };
 
   useEffect(() => {
@@ -247,9 +281,7 @@ const ListingDetails: React.FC = () => {
       await toggleSavedListing(user.id, listing.id);
       // If we had a mechanism to update the AuthContext's user directly, we would do it here.
       // For now, it will sync next time auth state loads, or we can just rely on local state.
-      setToastMessage(previousState ? "Removed from saved" : "Saved to favorites");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      toast(previousState ? "Removed from saved" : "Saved to favorites", 'success');
     } catch (e) {
       // Revert on failure
       setIsSaved(previousState);
@@ -284,14 +316,10 @@ const ListingDetails: React.FC = () => {
         message: 'I would like to view this property.'
       });
       
-      setToastMessage("Property view requested! The agent will contact you.");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      toast("Property view requested! The agent will contact you.", 'success');
     } catch (error) {
       console.error("Error creating view request:", error);
-      setToastMessage("Failed to send request. Please try again.");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      toast("Failed to send request. Please try again.", 'error');
     } finally {
       setIsDeliveryRequested(false);
     }
@@ -300,15 +328,11 @@ const ListingDetails: React.FC = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
       .then(() => {
-        setToastMessage("Link copied to clipboard! 📋");
-        setShowSuccessToast(true);
-        setTimeout(() => setShowSuccessToast(false), 3000);
+        toast("Link copied to clipboard! 📋", 'success');
       })
       .catch((err) => {
         console.error("Failed to copy link:", err);
-        setToastMessage("Failed to copy link. Please copy it from url bar.");
-        setShowSuccessToast(true);
-        setTimeout(() => setShowSuccessToast(false), 3000);
+        toast("Failed to copy link. Please copy it from url bar.", 'warning');
       });
   };
 
@@ -324,9 +348,7 @@ const ListingDetails: React.FC = () => {
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-        setToastMessage("Shared successfully!");
-        setShowSuccessToast(true);
-        setTimeout(() => setShowSuccessToast(false), 3000);
+        toast("Shared successfully!", 'success');
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           console.error("Error sharing:", err);
@@ -432,6 +454,11 @@ const ListingDetails: React.FC = () => {
                   {displayPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   {listing.type === 'Rent' && <span className="text-[10px] font-medium text-slate-400">/mo</span>}
                 </div>
+                {listing.currency !== currencyMode && (
+                  <p className="text-[8px] text-slate-400 italic">
+                    Converted at 1 USD = {exchangeRate.toFixed(2)} GHS (exchange rates are approximate and parsed live)
+                  </p>
+                )}
                 <p className="text-[8px] text-slate-450 mt-0.5 flex items-center gap-1.5">
                   <Icon name="clock" size={8} />
                   Posted {listing.datePosted}
@@ -949,18 +976,6 @@ const ListingDetails: React.FC = () => {
           if (safetyAction) safetyAction();
         }}
       />
-
-      {/* Success Toast */}
-      {showSuccessToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[300] animate-slide-up">
-          <div className="bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-white/10">
-            <div className="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center">
-              <Icon name="check" size={14} />
-            </div>
-            <span className="text-sm font-bold">{toastMessage}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

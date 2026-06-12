@@ -5,6 +5,8 @@ import { CATEGORIES } from '../constants';
 import { SearchFilters } from '../types';
 import LocationSelect from './LocationSelect';
 import useDebounce from '../hooks/useDebounce';
+import { useLocation as useAppLocation } from '../context/LocationContext';
+import { AFRICAN_COUNTRIES } from '../services/location';
 
 interface SmartSearchInputProps {
   placeholder?: string;
@@ -20,23 +22,33 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
   variant = 'simple'
 }) => {
   const { toast } = useToast();
-  const [query, setQuery] = useState('');
+  const { location: userLocation } = useAppLocation();
+  const symbol = userLocation?.symbol || '$';
+  
+  const [query, setQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('q') || '';
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [isListening, setIsListening] = useState(false);
   
-  // Filter States
-  const [filters, setFilters] = useState<SearchFilters>({
-    categoryId: '',
-    subcategoryId: '',
-    minPrice: '',
-    maxPrice: '',
-    location: '',
-    type: undefined,
-    propertyType: undefined,
-    bedrooms: undefined,
-    bathrooms: undefined,
-    sortBy: 'newest'
+  // Filter States - Read initially from URL parameters for seamless sync
+  const [filters, setFilters] = useState<SearchFilters>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      categoryId: params.get('categoryId') || '',
+      subcategoryId: params.get('subcategoryId') || '',
+      minPrice: params.get('minPrice') || '',
+      maxPrice: params.get('maxPrice') || '',
+      location: params.get('location') || '',
+      type: (params.get('type') as any) || undefined,
+      propertyType: (params.get('propertyType') as any) || undefined,
+      bedrooms: params.get('bedrooms') ? parseInt(params.get('bedrooms')!) : undefined,
+      bathrooms: params.get('bathrooms') ? parseInt(params.get('bathrooms')!) : undefined,
+      sortBy: params.get('sortBy') || 'newest',
+      countryCode: params.get('countryCode') || ''
+    };
   });
 
   const debouncedQuery = useDebounce(query, 500);
@@ -105,7 +117,8 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
         propertyType: undefined,
         bedrooms: undefined,
         bathrooms: undefined,
-        sortBy: 'newest' 
+        sortBy: 'newest',
+        countryCode: ''
     });
   };
 
@@ -243,24 +256,46 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
                 <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Price Range</label>
                 <div className="flex gap-2">
                   <div className="relative w-1/2">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px]">{symbol}</span>
                     <input 
                         type="number" 
                         placeholder="Min" 
                         value={filters.minPrice ?? ''}
                         onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 font-medium"
+                        className={`w-full bg-slate-50 border border-slate-200 rounded-lg ${symbol.length > 2 ? 'pl-10' : symbol.length > 1 ? 'pl-8' : 'pl-6'} pr-2 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 font-medium`}
                     />
                   </div>
                   <div className="relative w-1/2">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px]">{symbol}</span>
                     <input 
                         type="number" 
                         placeholder="Max" 
                         value={filters.maxPrice ?? ''}
                         onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 font-medium"
+                        className={`w-full bg-slate-50 border border-slate-200 rounded-lg ${symbol.length > 2 ? 'pl-10' : symbol.length > 1 ? 'pl-8' : 'pl-6'} pr-2 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 font-medium`}
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Country Selection */}
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Country</label>
+                <div className="relative">
+                  <select 
+                    value={filters.countryCode || ''} 
+                    onChange={(e) => handleFilterChange('countryCode', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/10 appearance-none font-medium text-slate-700"
+                  >
+                    <option value="">Any Country</option>
+                    {AFRICAN_COUNTRIES.map(ctry => (
+                      <option key={ctry.code} value={ctry.code}>
+                        {ctry.flag} {ctry.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <Icon name="chevronRight" size={10} className="rotate-90" />
                   </div>
                 </div>
               </div>

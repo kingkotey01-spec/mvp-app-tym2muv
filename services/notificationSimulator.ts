@@ -1,3 +1,5 @@
+import { supabase } from '../supabaseClient';
+
 export interface SimulatedEmail {
   id: string;
   sender: string;
@@ -9,34 +11,24 @@ export interface SimulatedEmail {
   read: boolean;
 }
 
-export const sendWelcomeComms = (emailAddress: string, userName: string, role: string) => {
+export const sendWelcomeComms = async (emailAddress: string, userName: string, role: string) => {
   try {
     // 1. In-app notification creation
-    const cachedNotifs = localStorage.getItem('tym2muv_notifications');
-    let notificationsList = [];
-    if (cachedNotifs) {
-      notificationsList = JSON.parse(cachedNotifs);
-    } else {
-      notificationsList = [
-        { id: 1, title: 'New Message', text: 'You have a new message from Agent John', time: '5m ago', read: false, link: '/chat' },
-        { id: 2, title: 'Property Update', text: 'Price dropped for "Luxury Villa in Cantonments"', time: '1h ago', read: false, link: '/listing/1' },
-        { id: 3, title: 'Payment Success', text: 'Your premium ad payment was successful.', time: '1d ago', read: true, link: '/profile/me' },
-      ];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          title: 'Welcome to tym2muv! 🔑',
+          text: `Hey ${userName || 'friend'}, welcome! Your account is active. Explore verified listings and our Advance Skip features!`,
+          link: `/profile/${user.id}?tab=inbox`,
+          read: false
+        });
+      if (error) {
+        console.error("Error creating welcome notification inside Supabase", error);
+      }
     }
-
-    // Add new notification at the top of the list
-    const newNotifId = notificationsList.length > 0 ? Math.max(...notificationsList.map((n: any) => n.id)) + 1 : 1;
-    
-    notificationsList.unshift({
-      id: newNotifId,
-      title: 'Welcome to tym2muv! 🔑',
-      text: `Hey ${userName || 'friend'}, welcome! Your account is active. Explore verified listings and our Advance Skip features!`,
-      time: 'Just now',
-      read: false,
-      link: '/profile/me?tab=inbox'
-    });
-
-    localStorage.setItem('tym2muv_notifications', JSON.stringify(notificationsList));
 
     // Dispatch a custom event to notify other components (like NotificationDropdown) that state changed
     window.dispatchEvent(new Event('tym2muv_notifications_updated'));

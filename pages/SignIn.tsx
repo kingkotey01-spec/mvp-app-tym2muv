@@ -174,7 +174,7 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
       setIsLoading(true);
       setError(null);
       localStorage.setItem('oauth_selected_role', selectedRole);
-      if (pendingVendor) {
+      if (pendingVendor || selectedRole === 'Agent') {
         localStorage.setItem('oauth_pending_vendor', 'true');
       }
       if (from) {
@@ -193,7 +193,7 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
       setIsLoading(true);
       setError(null);
       localStorage.setItem('oauth_selected_role', selectedRole);
-      if (pendingVendor) {
+      if (pendingVendor || selectedRole === 'Agent') {
         localStorage.setItem('oauth_pending_vendor', 'true');
       }
       if (from) {

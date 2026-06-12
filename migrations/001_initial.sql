@@ -1,26 +1,21 @@
 -- ==========================================
--- TYM2MUV MASTER PRODUCTION DATABASE SCHEMA
--- Target: Supabase PostgreSQL
+-- MIGRATION: 001_initial.sql
+-- Description: Bootstraps the initial schema, enums, core tables, triggers, indexes, and RLS policies.
 -- ==========================================
 
 -- Enable essential extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
--- ==========================================
--- 1. ENUMS (Lifecycle States & Roles)
--- ==========================================
+-- 1. ENUMS
 CREATE TYPE user_role AS ENUM ('tenant', 'agent', 'admin', 'super_admin');
 CREATE TYPE property_lifecycle AS ENUM ('pending', 'approved', 'active', 'rejected', 'suspended', 'rented');
 CREATE TYPE request_lifecycle AS ENUM ('pending', 'approved', 'active', 'completed', 'cancelled');
 CREATE TYPE payment_lifecycle AS ENUM ('pending', 'paid', 'overdue');
 CREATE TYPE report_status AS ENUM ('open', 'investigating', 'resolved', 'dismissed');
 
--- ==========================================
 -- 2. CORE TABLES
--- ==========================================
 
--- Profiles (Extends auth.users, applies to ALL users)
 CREATE TABLE profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     role user_role NOT NULL DEFAULT 'tenant',
@@ -37,7 +32,6 @@ CREATE TABLE profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Agents (Detailed profile for agents)
 CREATE TABLE agents (
     id UUID REFERENCES profiles(id) ON DELETE CASCADE PRIMARY KEY,
     company_name TEXT,
@@ -50,46 +44,21 @@ CREATE TABLE agents (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Properties
 CREATE TABLE properties (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     agent_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
-    property_type TEXT NOT NULL, -- e.g., Apartment, House, Studio
+    property_type TEXT NOT NULL,
     price NUMERIC(12, 2),
     currency TEXT DEFAULT 'USD',
     city TEXT,
     country TEXT,
-    location TEXT,
     location_text TEXT DEFAULT 'Not specified',
-    country_code TEXT,
-    images TEXT[] DEFAULT '{}'::TEXT[],
-    videos TEXT[] DEFAULT '{}'::TEXT[],
-    category_id TEXT,
-    subcategory_id TEXT,
-    listing_type TEXT,
-    is_premium BOOLEAN DEFAULT false,
-    is_verified BOOLEAN DEFAULT false,
-    is_featured BOOLEAN DEFAULT false,
-    expiry_date TIMESTAMPTZ,
-    pets_allowed BOOLEAN DEFAULT false,
-    year_built INTEGER,
-    sqft INTEGER,
-    furnished BOOLEAN DEFAULT false,
-    parking BOOLEAN DEFAULT false,
-    security BOOLEAN DEFAULT false,
-    virtual_tour_url TEXT,
-    floor_plan_url TEXT,
-    bedrooms INTEGER DEFAULT 0,
-    bathrooms INTEGER DEFAULT 0,
-    status property_lifecycle DEFAULT 'pending',
-    amenities JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Property Images
 CREATE TABLE property_images (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     property_id UUID REFERENCES properties(id) ON DELETE CASCADE,
@@ -99,7 +68,6 @@ CREATE TABLE property_images (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Saved Properties (Favorites)
 CREATE TABLE saved_properties (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     tenant_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -108,11 +76,6 @@ CREATE TABLE saved_properties (
     UNIQUE(tenant_id, property_id)
 );
 
--- ==========================================
--- 3. RENTAL BUSINESS LOGIC
--- ==========================================
-
--- Rental Requests
 CREATE TABLE rental_requests (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     property_id UUID REFERENCES properties(id) ON DELETE CASCADE,
@@ -124,7 +87,6 @@ CREATE TABLE rental_requests (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Rental Agreements (Active Contracts)
 CREATE TABLE rental_agreements (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     request_id UUID REFERENCES rental_requests(id) ON DELETE CASCADE,
@@ -140,7 +102,6 @@ CREATE TABLE rental_agreements (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Payment Plans (Monthly Rent Tracking)
 CREATE TABLE payment_plans (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     agreement_id UUID REFERENCES rental_agreements(id) ON DELETE CASCADE,
@@ -154,11 +115,6 @@ CREATE TABLE payment_plans (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ==========================================
--- 4. COMMUNICATION & MESSAGING
--- ==========================================
-
--- Messages
 CREATE TABLE messages (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     sender_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -169,11 +125,6 @@ CREATE TABLE messages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ==========================================
--- 5. ADMIN, REPORTS, & SYSTEM
--- ==========================================
-
--- Reports (Abuse/Fraud)
 CREATE TABLE reports (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     reporter_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -186,7 +137,6 @@ CREATE TABLE reports (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Admin Logs (Audit Trail)
 CREATE TABLE admin_logs (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     admin_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
@@ -197,7 +147,6 @@ CREATE TABLE admin_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- System Settings
 CREATE TABLE system_settings (
     key TEXT PRIMARY KEY,
     value JSONB NOT NULL,
@@ -206,9 +155,7 @@ CREATE TABLE system_settings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ==========================================
--- 6. TRIGGERS (Auto Updated_At)
--- ==========================================
+-- 3. TRIGGERS
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -225,7 +172,6 @@ CREATE TRIGGER update_agr_modtime BEFORE UPDATE ON rental_agreements FOR EACH RO
 CREATE TRIGGER update_pay_modtime BEFORE UPDATE ON payment_plans FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 CREATE TRIGGER update_sys_modtime BEFORE UPDATE ON system_settings FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
--- Auto-insert into profiles when auth.users is created
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -236,7 +182,6 @@ BEGIN
       COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture'),
       COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'tenant')
   );
-  -- If role is agent, insert into agents table
   IF NEW.raw_user_meta_data->>'role' = 'agent' THEN
       INSERT INTO public.agents (id, company_name)
       VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'company_name', ''));
@@ -245,28 +190,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ONLY RUN ONCE IF NOT EXISTS
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- ==========================================
--- 7. PERFORMANCE OPTIMIZATION (INDEXES)
--- ==========================================
--- Properties Indexing
+-- 4. INDEXES
 CREATE INDEX idx_props_agent ON properties (agent_id);
 CREATE INDEX idx_props_status ON properties (status);
 CREATE INDEX idx_props_price ON properties (price);
 CREATE INDEX idx_props_city ON properties (city);
-CREATE INDEX idx_props_type ON properties (property_type);
-
--- Fast text search using Trigraph logic
-CREATE INDEX idx_props_search ON properties USING GIN (
-  (title || ' ' || COALESCE(city, '') || ' ' || COALESCE(location_text, '')) gin_trgm_ops
-);
-
--- Relational indexes
 CREATE INDEX idx_images_prop ON property_images (property_id);
 CREATE INDEX idx_reqs_tenant ON rental_requests (tenant_id);
 CREATE INDEX idx_reqs_prop ON rental_requests (property_id);
@@ -275,11 +208,7 @@ CREATE INDEX idx_agreements_agent ON rental_agreements (agent_id);
 CREATE INDEX idx_pays_tenant ON payment_plans (tenant_id);
 CREATE INDEX idx_msgs_participants ON messages (sender_id, receiver_id);
 
--- ==========================================
--- 8. ZERO-TRUST SECURITY (RLS POLICIES)
--- ==========================================
-
--- Enable Row Level Security globally
+-- 5. Row Level Security Globally
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
@@ -293,7 +222,6 @@ ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
--- Security Helper Functions
 CREATE OR REPLACE FUNCTION get_user_role() RETURNS user_role AS $$
     SELECT role FROM profiles WHERE id = auth.uid();
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
@@ -302,26 +230,20 @@ CREATE OR REPLACE FUNCTION is_admin() RETURNS BOOLEAN AS $$
     SELECT EXISTS(SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'));
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
--- 8.1 PROFILES & AGENTS
 CREATE POLICY "Public can view non-blocked profiles" ON profiles FOR SELECT USING (is_blocked = false OR is_admin());
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Public can view agents" ON agents FOR SELECT USING (true);
 CREATE POLICY "Agents can update own profile" ON agents FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert own agent profile" ON agents FOR INSERT WITH CHECK (auth.uid() = id);
-
--- 8.2 PROPERTIES & IMAGES
 CREATE POLICY "Public sees approved properties" ON properties FOR SELECT USING (status = 'approved' OR is_admin() OR auth.uid() = agent_id);
 CREATE POLICY "Agents insert properties" ON properties FOR INSERT WITH CHECK (auth.uid() = agent_id AND get_user_role() = 'agent');
 CREATE POLICY "Agents modify own properties" ON properties FOR UPDATE USING (auth.uid() = agent_id OR is_admin());
 CREATE POLICY "Agents delete own properties" ON properties FOR DELETE USING (auth.uid() = agent_id OR is_admin());
-
 CREATE POLICY "Public sees property images" ON property_images FOR SELECT USING (true);
 CREATE POLICY "Agents manage images of own properties" ON property_images FOR ALL USING (
     EXISTS (SELECT 1 FROM properties WHERE id = property_images.property_id AND agent_id = auth.uid()) OR is_admin()
 );
-
--- 8.3 RENTALS & PAYMENTS
 CREATE POLICY "Users see own saved props" ON saved_properties FOR ALL USING (auth.uid() = tenant_id);
 CREATE POLICY "Tenants create requests" ON rental_requests FOR INSERT WITH CHECK (auth.uid() = tenant_id);
 CREATE POLICY "Tenants and Agents view requests" ON rental_requests FOR SELECT USING (
@@ -330,122 +252,15 @@ CREATE POLICY "Tenants and Agents view requests" ON rental_requests FOR SELECT U
 CREATE POLICY "Agents update requests" ON rental_requests FOR UPDATE USING (
     EXISTS (SELECT 1 FROM properties WHERE id = property_id AND agent_id = auth.uid()) OR is_admin()
 );
-
 CREATE POLICY "Tenants and Agents view agreements" ON rental_agreements FOR SELECT USING (auth.uid() = tenant_id OR auth.uid() = agent_id OR is_admin());
 CREATE POLICY "Tenants view own payments" ON payment_plans FOR SELECT USING (auth.uid() = tenant_id OR EXISTS (SELECT 1 FROM rental_agreements WHERE id = agreement_id AND agent_id = auth.uid()) OR is_admin());
-
--- 8.4 MESSAGING
 CREATE POLICY "Users view participant messages" ON messages FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id OR is_admin());
 CREATE POLICY "Users send messages" ON messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
 CREATE POLICY "Users mark messages as read" ON messages FOR UPDATE USING (auth.uid() = receiver_id);
-
--- 8.5 ADMIN SYSTEM (REPORTS, LOGS, SETTINGS)
 CREATE POLICY "Users insert reports" ON reports FOR INSERT WITH CHECK (auth.uid() = reporter_id);
 CREATE POLICY "Users see own reports" ON reports FOR SELECT USING (auth.uid() = reporter_id OR is_admin());
 CREATE POLICY "Admins manage reports" ON reports FOR ALL USING (is_admin());
-
 CREATE POLICY "Admins read logs" ON admin_logs FOR SELECT USING (is_admin());
 CREATE POLICY "Admins insert logs" ON admin_logs FOR INSERT WITH CHECK (is_admin());
-
 CREATE POLICY "Admins read settings" ON system_settings FOR SELECT USING (is_admin());
 CREATE POLICY "Admins write settings" ON system_settings FOR ALL USING (is_admin());
-
-
--- ============================================================
--- 9. ADDITIONAL/MISSING TABLES FOR FULL REAL-WORLD FUNCTIONALITY
--- ============================================================
-
--- 9.1 CHATS (Real-time messaging threads)
-CREATE TABLE IF NOT EXISTS public.chats (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  participants UUID[] NOT NULL,
-  listing_id UUID REFERENCES public.properties(id) ON DELETE SET NULL,
-  last_message TEXT DEFAULT '',
-  last_message_time TIMESTAMPTZ DEFAULT NOW(),
-  unread_count INTEGER DEFAULT 0,
-  lead_source TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see their own chats" ON public.chats FOR SELECT USING (auth.uid() = ANY(participants));
-CREATE POLICY "Users create chats they are part of" ON public.chats FOR INSERT WITH CHECK (auth.uid() = ANY(participants));
-CREATE POLICY "Users update chats they are part of" ON public.chats FOR UPDATE USING (auth.uid() = ANY(participants));
-CREATE POLICY "Users delete chats they are part of" ON public.chats FOR DELETE USING (auth.uid() = ANY(participants));
-
-CREATE INDEX IF NOT EXISTS idx_chats_participants ON public.chats USING GIN (participants);
-
--- 9.2 VIEW REQUESTS (Book a property viewing)
-CREATE TABLE IF NOT EXISTS public.view_requests (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  listing_id UUID REFERENCES public.properties(id) ON DELETE CASCADE,
-  tenant_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  agent_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'completed')),
-  requested_date TIMESTAMPTZ,
-  requested_time TEXT,
-  message TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.view_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenants see own view requests" ON public.view_requests FOR SELECT USING (auth.uid() = tenant_id OR auth.uid() = agent_id OR public.is_admin());
-CREATE POLICY "Tenants create view requests" ON public.view_requests FOR INSERT WITH CHECK (auth.uid() = tenant_id);
-CREATE POLICY "Agents update view request status" ON public.view_requests FOR UPDATE USING (auth.uid() = agent_id OR public.is_admin());
-
-CREATE INDEX IF NOT EXISTS idx_view_requests_tenant ON public.view_requests (tenant_id);
-CREATE INDEX IF NOT EXISTS idx_view_requests_agent ON public.view_requests (agent_id);
-
--- 9.3 REVIEWS (Agent / vendor ratings)
-CREATE TABLE IF NOT EXISTS public.reviews (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  vendor_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  customer_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  rating NUMERIC(2,1) NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  comment TEXT,
-  is_verified BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(vendor_id, customer_id)
-);
-
-ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Anyone can view reviews" ON public.reviews FOR SELECT USING (true);
-CREATE POLICY "Customers create their own reviews" ON public.reviews FOR INSERT WITH CHECK (auth.uid() = customer_id);
-CREATE POLICY "Customers update their own reviews" ON public.reviews FOR UPDATE USING (auth.uid() = customer_id);
-
-CREATE INDEX IF NOT EXISTS idx_reviews_vendor ON public.reviews (vendor_id);
-
--- 9.4 RENT FINANCING APPLICATIONS
-CREATE TABLE IF NOT EXISTS public.rent_financing_applications (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  full_name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  employment_status TEXT NOT NULL,
-  monthly_income NUMERIC(12,2) NOT NULL,
-  id_type TEXT NOT NULL,
-  id_number TEXT NOT NULL,
-  monthly_rent NUMERIC(12,2) NOT NULL,
-  landlord_name TEXT NOT NULL,
-  landlord_phone TEXT NOT NULL,
-  move_in_date DATE NOT NULL,
-  lease_duration INTEGER NOT NULL,
-  street_address TEXT NOT NULL,
-  city TEXT NOT NULL,
-  state_region TEXT NOT NULL,
-  country TEXT NOT NULL,
-  postal_code TEXT,
-  amount_required NUMERIC(12,2) NOT NULL,
-  repayment_duration INTEGER NOT NULL CHECK (repayment_duration <= 36),
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'under_review')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.rent_financing_applications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users view own applications" ON public.rent_financing_applications FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
-CREATE POLICY "Users create own applications" ON public.rent_financing_applications FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
-CREATE POLICY "Admins manage applications" ON public.rent_financing_applications FOR ALL USING (public.is_admin());

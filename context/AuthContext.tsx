@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '../types';
-import { getUserProfile, logout as backendLogout } from '../services/supabaseService';
+import { getUserProfile, logout as backendLogout, createNotification } from '../services/supabaseService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import Icon from '../components/Icon';
@@ -101,25 +101,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               // Inject in-app welcome notification and simulated email trigger when the user signs up
               const welcomeSentKey = `tym2muv_welcome_sent_${sUser.id}`;
               if (!localStorage.getItem(welcomeSentKey)) {
-                const cachedNotifsRaw = localStorage.getItem('tym2muv_notifications');
-                let notifications = [];
-                try {
-                  notifications = cachedNotifsRaw ? JSON.parse(cachedNotifsRaw) : [];
-                } catch (_) {
-                  notifications = [];
-                }
-
-                const hasWelcomeNotification = notifications.some((n: any) => n.link === '#welcome-email');
-                if (!hasWelcomeNotification) {
-                  const welcomeNotif = {
-                    id: Date.now(),
-                    title: 'you’re in. welcome to tym2muv 🔑',
-                    text: `Hey ${currentUserDoc.name || 'friend'}! Your account is active. Click here to preview your official welcome deliverable and login guide.`,
-                    time: 'Just now',
-                    read: false,
-                    link: '#welcome-email'
-                  };
-                  localStorage.setItem('tym2muv_notifications', JSON.stringify([welcomeNotif, ...notifications]));
+                await createNotification(
+                  sUser.id,
+                  'you’re in. welcome to tym2muv 🔑',
+                  `Hey ${currentUserDoc.name || 'friend'}! Your account is active. Click here to preview your official welcome deliverable and login guide.`,
+                  '#welcome-email'
+                ).catch((e) => console.error("Could not write welcome notification to Supabase:", e));
                   
                   // Track welcome email in a simulated outbox/deliveries store too
                   const emailDelivery = {
@@ -146,7 +133,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     window.dispatchEvent(new Event('open_welcome_email'));
                   }, 1200);
                 }
-              }
             } else {
               setUser(null);
             }

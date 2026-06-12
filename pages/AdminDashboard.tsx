@@ -322,7 +322,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: 'Agent' | 'Customer' | 'Admin') => {
+  const handleRoleChange = async (userId: string, newRole: 'Agent' | 'Tenant' | 'Admin') => {
     await updateUserRole(userId, newRole);
     fetchData();
   };
@@ -665,7 +665,7 @@ const AdminDashboard: React.FC = () => {
                           data={[
                             { name: 'Admins', value: stats?.userRoles?.Admin || 0 },
                             { name: 'Agents', value: stats?.userRoles?.Agent || 0 },
-                            { name: 'Customers', value: stats?.userRoles?.Customer || 0 },
+                            { name: 'Tenants', value: stats?.userRoles?.Tenant || 0 },
                           ]}
                           cx="50%"
                           cy="50%"
@@ -683,7 +683,7 @@ const AdminDashboard: React.FC = () => {
                     </ResponsiveContainer>
                   </div>
                   <div className="flex justify-center gap-6 mt-4">
-                    {['Admins', 'Agents', 'Customers'].map((role, i) => (
+                    {['Admins', 'Agents', 'Tenants'].map((role, i) => (
                       <div key={role} className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
                         <span className="text-sm text-gray-600">{role}</span>
@@ -735,7 +735,7 @@ const AdminDashboard: React.FC = () => {
                             'bg-gray-100 text-gray-700'
                           }`}
                         >
-                          <option value="Customer">Customer</option>
+                          <option value="Tenant">Tenant</option>
                           <option value="Agent">Agent</option>
                           <option value="Admin">Admin</option>
                         </select>

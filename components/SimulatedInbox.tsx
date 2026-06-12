@@ -18,7 +18,7 @@ const SimulatedInbox: React.FC = () => {
   // Custom trigger inputs
   const [customName, setCustomName] = useState(user?.name || '');
   const [customEmail, setCustomEmail] = useState(user?.email || 'kingkotey01@gmail.com');
-  const [customRole, setCustomRole] = useState<'Tenant' | 'Agent' | 'Customer'>('Tenant');
+  const [customRole, setCustomRole] = useState<'Tenant' | 'Agent'>('Tenant');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const loadEmails = () => {
@@ -133,7 +133,6 @@ const SimulatedInbox: React.FC = () => {
             >
               <option value="Tenant">Tenant</option>
               <option value="Agent">Agent</option>
-              <option value="Customer">Customer</option>
             </select>
           </div>
           <div>

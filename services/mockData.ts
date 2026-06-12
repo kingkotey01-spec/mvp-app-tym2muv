@@ -528,7 +528,7 @@ for (let i = 1; i <= 20; i++) {
       memberSince: `Apr 2024`,
       bio,
       verified: i % 5 === 0,
-      role: i % 5 === 1 ? 'Tenant' : 'Customer',
+      role: 'Tenant',
       socials: {
         email: `${firstName.toLowerCase()}@example.com`
       }

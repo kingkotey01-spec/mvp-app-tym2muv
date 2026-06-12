@@ -87,7 +87,7 @@ export interface SearchFilters {
   savedIds?: string[];
 }
 
-export type UserRole = 'Agent' | 'Customer' | 'Admin' | 'Tenant';
+export type UserRole = 'Agent' | 'Admin' | 'Tenant';
 
 export interface User {
   id: string;

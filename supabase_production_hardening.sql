@@ -15,7 +15,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
-    CREATE TYPE property_lifecycle AS ENUM ('pending', 'approved', 'rejected', 'suspended', 'rented');
+    CREATE TYPE property_lifecycle AS ENUM ('pending', 'approved', 'active', 'rejected', 'suspended', 'rented');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN

@@ -8,7 +8,7 @@ const AdBanner: React.FC = () => {
 
   const handlePostClick = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!isAuthenticated || !user || user.role === 'Tenant' || user.role === 'Customer') {
+    if (!isAuthenticated || !user || user.role === 'Tenant') {
       await logout();
       navigate('/signup', { state: { role: 'Tenant' } });
     } else {

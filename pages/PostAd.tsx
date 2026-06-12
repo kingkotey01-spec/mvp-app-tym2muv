@@ -279,16 +279,21 @@ const PostAd: React.FC = () => {
         views: 0
       };
 
+      let newListingId = '';
       if (editId) {
         await updateListing(editId, listingData as any);
       } else {
-        await createListing(listingData as any);
+        newListingId = await createListing(listingData as any);
       }
       
-      if (user) {
-        navigate(`/profile/${user.id}`);
+      if (editId) {
+        if (user) {
+          navigate(`/profile/${user.id}`);
+        } else {
+          navigate('/');
+        }
       } else {
-        navigate('/');
+        navigate(`/payment/${newListingId}?intent=promotion`);
       }
     } catch (error) {
       console.error("Error publishing ad:", error);
@@ -604,20 +609,7 @@ const PostAd: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-2.5 bg-brand-50 rounded-xl border border-brand-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-xs text-brand-900">Premium Listing</h4>
-                      <p className="text-[10px] text-brand-600">Premium listings stay live for 91 days and get top ranking for the first 10 days.</p>
-                    </div>
-                    <button
-                      onClick={() => setFormData(prev => ({ ...prev, isPremium: !prev.isPremium }))}
-                      className={`w-10 h-5.5 rounded-full transition-colors relative flex items-center shrink-0 ${formData.isPremium ? 'bg-brand-600' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-4.5 h-4.5 rounded-full bg-white transition-all ${formData.isPremium ? 'left-[20px]' : 'left-0.5'}`}></div>
-                    </button>
-                  </div>
-                </div>
+
 
                <div>
                  <label className="block text-xs font-bold text-slate-700 mb-1">Location</label>

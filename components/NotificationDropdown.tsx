@@ -3,58 +3,55 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Icon from './Icon';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { getNotificationsForUser, markNotificationRead, markAllNotificationsReadForUser, clearAllNotificationsForUser, Notification } from '../services/supabaseService';
+
+const formatTimeAgo = (dateString: string) => {
+  try {
+    const rDate = new Date(dateString);
+    const seconds = Math.floor((new Date().getTime() - rDate.getTime()) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  } catch (_) {
+    return 'Recently';
+  }
+};
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, user } = useAuth();
-  
-  const [notifications, setNotifications] = useState(() => {
-    const profileLink = user?.id ? `/profile/${user.id}` : '/profile/me';
-    const initNotifications = [
-      { id: 1, title: 'New Message', text: 'You have a new message from Agent John', time: '5m ago', read: false, link: '/chat' },
-      { id: 2, title: 'Property Update', text: 'Price dropped for "Luxury Villa in Cantonments"', time: '1h ago', read: false, link: '/listing/1' },
-      { id: 3, title: 'Payment Success', text: 'Your premium ad payment was successful.', time: '1d ago', read: true, link: profileLink },
-    ];
-    try {
-      const cached = localStorage.getItem('tym2muv_notifications');
-      return cached ? JSON.parse(cached) : initNotifications;
-    } catch (e) {
-      return initNotifications;
-    }
-  });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Update existing /profile/me links once user profile is loaded
-  useEffect(() => {
+  const fetchNotifs = async () => {
     if (user?.id) {
-      setNotifications((prev: any[]) => 
-        prev.map(n => n.link === '/profile/me' ? { ...n, link: `/profile/${user.id}` } : n)
-      );
+      setLoading(true);
+      const data = await getNotificationsForUser(user.id);
+      setNotifications(data);
+      setLoading(false);
     }
-  }, [user]);
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tym2muv_notifications', JSON.stringify(notifications));
-    } catch (e) {
-      console.error('Error saving notifications to localStorage', e);
-    }
-  }, [notifications]);
+    fetchNotifs();
+  }, [user?.id]);
 
   useEffect(() => {
-    const handleWelcomeReceived = () => {
-      try {
-        const cached = localStorage.getItem('tym2muv_notifications');
-        if (cached) {
-          setNotifications(JSON.parse(cached));
-        }
-      } catch (e) {
-        console.error('Error syncing notifications on welcome event', e);
-      }
+    const handleNotifUpdate = () => {
+      fetchNotifs();
     };
-    window.addEventListener('welcome_email_received', handleWelcomeReceived);
-    return () => window.removeEventListener('welcome_email_received', handleWelcomeReceived);
-  }, []);
+    window.addEventListener('tym2muv_notifications_updated', handleNotifUpdate);
+    window.addEventListener('welcome_email_received', handleNotifUpdate);
+    return () => {
+      window.removeEventListener('tym2muv_notifications_updated', handleNotifUpdate);
+      window.removeEventListener('welcome_email_received', handleNotifUpdate);
+    };
+  }, [user?.id]);
 
   const unreadCount = notifications.filter((n: any) => !n.read).length;
 
@@ -68,20 +65,29 @@ const NotificationDropdown = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleMarkAllAsRead = (e: React.MouseEvent) => {
+  const handleMarkAllAsRead = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setNotifications((prev: any[]) => prev.map(n => ({ ...n, read: true })));
+    if (user?.id) {
+      await markAllNotificationsReadForUser(user.id);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
   };
 
-  const handleClearAll = (e: React.MouseEvent) => {
+  const handleClearAll = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setNotifications([]);
+    if (user?.id) {
+      await clearAllNotificationsForUser(user.id);
+      setNotifications([]);
+    }
   };
 
-  const handleNotificationClick = (notif: any) => {
-    setNotifications((prev: any[]) => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+  const handleNotificationClick = async (notif: Notification) => {
+    if (!notif.read) {
+      await markNotificationRead(notif.id);
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+    }
     setIsOpen(false);
     if (notif.link === '#welcome-email') {
       window.dispatchEvent(new Event('open_welcome_email'));
@@ -94,8 +100,9 @@ const NotificationDropdown = () => {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1.5 sm:p-2 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-full transition-all relative group"
+        className="p-1.5 sm:p-2 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-full transition-all relative group shadow-none outline-none focus:ring-2 focus:ring-brand-500/20"
         aria-label="Notifications"
+        id="notification-dropdown-trigger"
       >
         <Icon name="bell" size={20} className="sm:w-[22px] sm:h-[22px]" />
         {unreadCount > 0 && (
@@ -108,6 +115,7 @@ const NotificationDropdown = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div 
+            id="notification-dropdown-menu"
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -120,12 +128,14 @@ const NotificationDropdown = () => {
                 <button 
                   onClick={handleMarkAllAsRead}
                   className="text-[9px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full hover:bg-brand-100 transition-colors cursor-pointer"
+                  id="mark-all-read-btn"
                 >
                   Mark read
                 </button>
                 <button 
                   onClick={handleClearAll}
                   className="text-[9px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
+                  id="clear-all-read-btn"
                 >
                   Clear all
                 </button>
@@ -133,26 +143,31 @@ const NotificationDropdown = () => {
             </div>
             
             <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
-              {notifications.length > 0 ? (
+              {loading && notifications.length === 0 ? (
+                <div className="p-6 text-center text-slate-400 text-xs font-semibold">
+                  Loading...
+                </div>
+              ) : notifications.length > 0 ? (
                 <div className="flex flex-col">
-                  {notifications.map((notif: any) => (
+                  {notifications.map((notif: Notification) => (
                     <Link 
                       key={notif.id}
-                      to={notif.link === '#welcome-email' ? '#' : notif.link}
+                      to={notif.link === '#welcome-email' ? '#' : (notif.link || '#')}
                       onClick={(e) => {
-                        if (notif.link === '#welcome-email') {
+                        if (notif.link === '#welcome-email' || !notif.link) {
                           e.preventDefault();
                         }
                         handleNotificationClick(notif);
                       }}
                       className={`p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-brand-50/30 font-medium' : ''}`}
+                      id={`notification-item-${notif.id}`}
                     >
                       <div className="flex gap-2">
                         <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${!notif.read ? 'bg-brand-500' : 'bg-transparent'}`} />
                         <div className="flex-1">
                           <h4 className={`text-xs font-bold leading-tight ${!notif.read ? 'text-slate-900' : 'text-slate-600'}`}>{notif.title}</h4>
-                          <p className="text-[11px] text-slate-550 mt-0.5 leading-snug">{notif.text}</p>
-                          <span className="text-[9px] font-semibold text-slate-400 mt-1 block">{notif.time}</span>
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{notif.text}</p>
+                          <span className="text-[9px] font-semibold text-slate-400 mt-1 block">{formatTimeAgo(notif.createdAt)}</span>
                         </div>
                       </div>
                     </Link>

@@ -11,16 +11,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useToast } from '../components/Toast';
 
-const generate30DaysAnalytics = (realRequests: any[]) => {
+const generate30DaysAnalytics = (realViews: any[], realConversions: any[]) => {
   const data = [];
   const today = new Date();
   
-  const requestMap: Record<string, number> = {};
-  if (Array.isArray(realRequests)) {
-    realRequests.forEach(req => {
+  const viewsMap: Record<string, number> = {};
+  if (Array.isArray(realViews)) {
+    realViews.forEach(v => {
       try {
-        const dateStr = new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        requestMap[dateStr] = (requestMap[dateStr] || 0) + 1;
+        if (!v.created_at) return;
+        const dateStr = new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        viewsMap[dateStr] = (viewsMap[dateStr] || 0) + 1;
+      } catch (_) {}
+    });
+  }
+
+  const conversionsMap: Record<string, number> = {};
+  if (Array.isArray(realConversions)) {
+    realConversions.forEach(c => {
+      try {
+        if (!c.created_at) return;
+        const dateStr = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        conversionsMap[dateStr] = (conversionsMap[dateStr] || 0) + 1;
       } catch (_) {}
     });
   }
@@ -30,20 +42,8 @@ const generate30DaysAnalytics = (realRequests: any[]) => {
     d.setDate(today.getDate() - i);
     const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     
-    // Real conversions from request data
-    const realConversions = requestMap[dateStr] || 0;
-    
-    // Generate organic-looking views of properties (smooth pseudo-sine curve with mild randomness + real metrics)
-    const baseline = 24 + Math.round(Math.sin((30 - i) * 0.4) * 12) + (i % 7 === 0 ? 8 : 0);
-    const randomNoise = Math.floor(Math.random() * 6);
-    const views = realConversions > 0 
-      ? (realConversions * 10 + baseline + randomNoise) 
-      : (baseline + randomNoise);
-      
-    // Set conversion count - prioritize real database conversions, or a reasonable synthetic conversion representation matching those views
-    const conversions = realConversions > 0 
-      ? realConversions 
-      : (views > 35 ? 2 : (views > 18 ? 1 : 0));
+    const views = viewsMap[dateStr] || 0;
+    const conversions = conversionsMap[dateStr] || 0;
     
     data.push({
       date: dateStr,
@@ -63,6 +63,7 @@ const AgentDashboard: React.FC = () => {
   const [newLeadsCount, setNewLeadsCount] = useState(0);
   const [featuredIds, setFeaturedIds] = useState<string[]>([]);
   const [analyticsData, setAnalyticsData] = useState<{ date: string; views: number; conversions: number }[]>([]);
+  const totalAnalyticsActivity = analyticsData.reduce((sum, item) => sum + item.views + item.conversions, 0);
   
   // Quick Edit drawer states
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
@@ -197,30 +198,50 @@ const AgentDashboard: React.FC = () => {
           toast('Could not load your listings. Please refresh to try again.', 'error');
         }
 
-        // 2. Fetch rental requests matching the current agent's owned listings
+        // 2. Fetch rental requests and view requests matching the current agent's owned listings
         try {
-          const { count, data: requests } = await supabase
+          const { count: rentalCount, data: rentalRequests } = await supabase
             .from('rental_requests')
             .select('id, created_at', { count: 'exact' })
             .eq('agent_id', user.id);
             
-          setRentalRequestsCount(count || 0);
+          setRentalRequestsCount(rentalCount || 0);
+
+          let dbViewRequests: any[] = [];
+          try {
+            const { data: viewRequests } = await supabase
+              .from('view_requests')
+              .select('id, created_at')
+              .eq('agent_id', user.id);
+            dbViewRequests = viewRequests || [];
+          } catch (viewErr) {
+            console.error('Error fetching view requests:', viewErr);
+          }
+
+          const dbRentalRequests = rentalRequests || [];
+          const totalRequests = [...dbRentalRequests, ...dbViewRequests];
 
           // Calculate leads this week (last 7 days window)
-          if (requests && Array.isArray(requests)) {
+          if (totalRequests.length > 0) {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const recentLeads = requests.filter(r => new Date(r.created_at) >= sevenDaysAgo);
+            const recentLeads = totalRequests.filter(r => {
+              try {
+                return new Date(r.created_at) >= sevenDaysAgo;
+              } catch (_) {
+                return false;
+              }
+            });
             setNewLeadsCount(recentLeads.length);
-            
-            setAnalyticsData(generate30DaysAnalytics(requests));
           } else {
-            setAnalyticsData(generate30DaysAnalytics([]));
+            setNewLeadsCount(0);
           }
+
+          setAnalyticsData(generate30DaysAnalytics(dbViewRequests, dbRentalRequests));
         } catch (err) {
-          console.error('Rental requests unavailable:', err);
+          console.error('Rental requests analytical compilation failed:', err);
           toast('Could not load viewing requests. This feature is being set up.', 'warning');
-          setAnalyticsData(generate30DaysAnalytics([]));
+          setAnalyticsData(generate30DaysAnalytics([], []));
         }
 
       } catch (err) {
@@ -463,59 +484,71 @@ const AgentDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="w-full h-64 sm:h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={analyticsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis 
-                dataKey="date" 
-                stroke="#94a3b8" 
-                fontSize={9} 
-                className="font-bold tracking-wider"
-                tickLine={false} 
-                axisLine={false}
-                dy={12}
-              />
-              <YAxis 
-                stroke="#94a3b8" 
-                fontSize={9} 
-                className="font-bold tracking-wider"
-                tickLine={false} 
-                axisLine={false}
-                dx={-6}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#ffffff', 
-                  borderRadius: '16px', 
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  fontFamily: 'sans-serif'
-                }} 
-                cursor={{ stroke: '#f1f5f9', strokeWidth: 1.5 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="views" 
-                stroke="rgb(99, 102, 241)" 
-                strokeWidth={2.5} 
-                dot={{ r: 2.5, stroke: 'rgb(99, 102, 241)', strokeWidth: 1.5, fill: '#fff' }}
-                activeDot={{ r: 4.5, strokeWidth: 0, fill: 'rgb(99, 102, 241)' }}
-                name="Views"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="conversions" 
-                stroke="rgb(16, 185, 129)" 
-                strokeWidth={2.5} 
-                dot={{ r: 2.5, stroke: 'rgb(16, 185, 129)', strokeWidth: 1.5, fill: '#fff' }}
-                activeDot={{ r: 4.5, strokeWidth: 0, fill: 'rgb(16, 185, 129)' }}
-                name="Conversions"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="w-full h-64 sm:h-72 relative">
+          {totalAnalyticsActivity === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-center p-6 animate-fade-in">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                <Icon name="activity" size={24} className="text-slate-400 animate-pulse" />
+              </div>
+              <h4 className="font-bold text-slate-800 text-sm">Not enough insights data yet</h4>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                Promote your properties or share links to your dashboard profile to start gathering views, booking requests, and tenancy interactions.
+              </p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={analyticsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#94a3b8" 
+                  fontSize={9} 
+                  className="font-bold tracking-wider"
+                  tickLine={false} 
+                  axisLine={false}
+                  dy={12}
+                />
+                <YAxis 
+                  stroke="#94a3b8" 
+                  fontSize={9} 
+                  className="font-bold tracking-wider"
+                  tickLine={false} 
+                  axisLine={false}
+                  dx={-6}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#ffffff', 
+                    borderRadius: '16px', 
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    fontFamily: 'sans-serif'
+                  }} 
+                  cursor={{ stroke: '#f1f5f9', strokeWidth: 1.5 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="views" 
+                  stroke="rgb(99, 102, 241)" 
+                  strokeWidth={2.5} 
+                  dot={{ r: 2.5, stroke: 'rgb(99, 102, 241)', strokeWidth: 1.5, fill: '#fff' }}
+                  activeDot={{ r: 4.5, strokeWidth: 0, fill: 'rgb(99, 102, 241)' }}
+                  name="Views"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="conversions" 
+                  stroke="rgb(16, 185, 129)" 
+                  strokeWidth={2.5} 
+                  dot={{ r: 2.5, stroke: 'rgb(16, 185, 129)', strokeWidth: 1.5, fill: '#fff' }}
+                  activeDot={{ r: 4.5, strokeWidth: 0, fill: 'rgb(16, 185, 129)' }}
+                  name="Conversions"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -818,11 +851,19 @@ const AgentDashboard: React.FC = () => {
       </div>
 
       {listings.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
-          <Icon name="home" size={40} className="mx-auto mb-3 opacity-30 text-slate-400"/>
-          <p className="text-sm font-semibold text-slate-550">You haven't posted any properties yet.</p>
-          <Link to="/post" className="inline-block mt-3 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg transition shadow-sm">
-            List Your First Property
+        <div className="text-center py-16 bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
+          <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+            <Icon name="home" size={28} />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 mb-1 font-display">You have no listings yet</h3>
+          <p className="text-xs text-slate-500 max-w-xs mx-auto mb-6">Create your first property listing to start receiving tenant leads and managing rent deposits.</p>
+          <Link 
+            to="/post" 
+            className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition shadow-md hover:shadow-brand-500/10 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+            id="post-first-listing-cta"
+          >
+            <Icon name="plus" size={14} />
+            <span>Post Your First Listing</span>
           </Link>
         </div>
       ) : viewMode === 'table' ? (

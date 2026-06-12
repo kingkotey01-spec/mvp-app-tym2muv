@@ -1,7 +1,0 @@
--- DEPRECATED: This migration was for a previous Cloudinary integration.
--- The app now uses Supabase Storage for all image uploads.
--- See supabase/migrations/storage_rls.sql for the current storage setup.
---
--- No SQL changes needed here — existing image URLs stored in `properties.images`
--- are full public URLs and will continue to work whether they point to
--- Supabase Storage or any other host.

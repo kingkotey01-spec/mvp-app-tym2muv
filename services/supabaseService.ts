@@ -90,51 +90,17 @@ export const loginWithLinkedIn = async () => {
 };
 
 // --- USER SERVICES ---
-const getLocalReviewsForVendor = (vendorId: string): Review[] => {
-  try {
-    const raw = localStorage.getItem(`local_reviews_${vendorId}`);
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.error("Failed to parse local reviews:", err);
-    return [];
-  }
-};
-
-const saveLocalReviewForVendor = (vendorId: string, review: Review) => {
-  try {
-    const current = getLocalReviewsForVendor(vendorId);
-    const updated = [review, ...current.filter(r => r.id !== review.id)];
-    localStorage.setItem(`local_reviews_${vendorId}`, JSON.stringify(updated));
-  } catch (err) {
-    console.error("Failed to save local review:", err);
-  }
-};
-
 const mapProfileToUser = (profileData: any): User => {
-  let mappedRole: UserRole = 'Customer';
+  let mappedRole: UserRole = 'Tenant';
   if (profileData.role) {
     const r = String(profileData.role).toLowerCase();
-    if (r === 'tenant') mappedRole = 'Tenant';
+    if (r === 'tenant' || r === 'customer') mappedRole = 'Tenant';
     else if (r === 'agent') mappedRole = 'Agent';
-    else if (r === 'admin') mappedRole = 'Admin';
-    else if (r === 'customer') mappedRole = 'Customer';
-    else mappedRole = profileData.role;
+    else if (r === 'admin' || r === 'super_admin') mappedRole = 'Admin';
   }
 
-  // Calculate dynamic average rating and review count from both DB and local-submissions
-  let rating = profileData.rating || 0;
-  let reviewCount = profileData.review_count || 0;
-
-  try {
-    const local = getLocalReviewsForVendor(profileData.id);
-    if (local.length > 0) {
-      reviewCount = Math.max(reviewCount, local.length);
-      const total = local.reduce((sum, r) => sum + Number(r.rating), 0);
-      rating = Number((total / local.length).toFixed(1));
-    }
-  } catch (e) {
-    console.error("Error aggregating dynamic local reviews for user profile:", e);
-  }
+  const rating = profileData.rating || 0;
+  const reviewCount = profileData.review_count || 0;
 
   return {
     id: profileData.id,
@@ -256,9 +222,12 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       return mapProfileToUser(data);
     }, CACHE_TTL.PROFILES);
   } catch (err) {
-    console.error("Supabase profile fetch failed, falling back to mock users:", err);
-    const mockUser = MOCK_USERS.find(u => u.id === userId);
-    return (mockUser || null) as any;
+    if (import.meta.env.DEV) {
+      console.warn("Supabase profile fetch failed, falling back to mock users (DEV):", err);
+      const mockUser = MOCK_USERS.find(u => u.id === userId);
+      return (mockUser || null) as any;
+    }
+    throw err;
   }
 };
 
@@ -385,8 +354,32 @@ export const getAllUsers = async (): Promise<User[]> => {
 };
 
 export const updateUserRole = async (userId: string, role: string) => {
-  const { error } = await supabase.from('profiles').update({ role: role.toLowerCase() }).eq('id', userId);
-  if (error) throw error;
+  const normalizedRole = role.toLowerCase();
+  
+  if (normalizedRole === 'agent') {
+    const { error: agentError } = await supabase
+      .from('agents')
+      .upsert({
+        id: userId,
+        verification_status: 'pending'
+      }, { onConflict: 'id' });
+      
+    if (agentError) {
+      console.error('Failed to upsert agent row during updateUserRole:', agentError);
+      throw new Error(`Failed to activate agent status: ${agentError.message}`);
+    }
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ role: normalizedRole })
+    .eq('id', userId);
+    
+  if (profileError) {
+    console.error('Failed to update profile role in database:', profileError);
+    throw profileError;
+  }
+
   await delCache(cacheKey('profile', userId));
 };
 
@@ -399,6 +392,19 @@ export const upsertAgentProfile = async (userId: string, agencyData: { company_n
       verification_status: 'pending'
     }, { onConflict: 'id' });
   if (error) throw error;
+};
+
+export const createReport = async (report: { reporterId?: string; targetType: 'property' | 'user' | 'message'; targetId: string; reason: string }): Promise<void> => {
+  const { error } = await supabase.from('reports').insert({
+    reporter_id: report.reporterId || null,
+    target_type: report.targetType,
+    target_id: report.targetId,
+    reason: report.reason
+  });
+  if (error) {
+    console.error('Failed to create report in Supabase:', error);
+    throw error;
+  }
 };
 
 // --- LISTING SERVICES ---
@@ -420,7 +426,7 @@ const mapPropertyToListing = (p: any): Listing => ({
   expiryDate: p.expiry_date,
   sellerId: p.agent_id,
   description: p.description,
-  status: p.status === 'approved' ? 'active' : p.status,
+  status: (p.status === 'approved' || p.status === 'active') ? 'active' : p.status,
   type: p.listing_type,
   propertyType: p.property_type,
   bedrooms: p.bedrooms,
@@ -456,10 +462,10 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
         .select('*', { count: 'exact' });
 
       if (!filters?.isAdminQuery) {
-        query = query.eq('status', 'approved');
+        query = query.in('status', ['approved', 'active']);
       } else if (filters?.status) {
-        const dbStatus = filters.status === 'active' ? 'approved' : filters.status;
-        query = query.eq('status', dbStatus);
+        const dbStatus = filters.status === 'active' ? ['approved', 'active'] : [filters.status];
+        query = query.in('status', dbStatus);
       }
       
       if (filters?.categoryId) query = query.eq('category_id', filters.categoryId);
@@ -467,6 +473,7 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       if (filters?.type) query = query.eq('listing_type', filters.type);
       if (filters?.propertyType) query = query.eq('property_type', filters.propertyType);
       if (filters?.bedrooms) query = query.gte('bedrooms', filters.bedrooms);
+      if (filters?.bathrooms) query = query.gte('bathrooms', filters.bathrooms);
       if (filters?.countryCode) query = query.eq('country_code', filters.countryCode);
       if (filters?.sellerId || filters?.agent_id) query = query.eq('agent_id', filters?.sellerId || filters?.agent_id);
       if (filters?.minPrice) query = query.gte('price', parseInt(filters.minPrice));
@@ -491,41 +498,47 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       return { listings: (data || []).map(mapPropertyToListing), total: totalCount, hasMore };
     }, CACHE_TTL.SEARCH);
   } catch (err) {
-    console.error("Supabase listings query failed, falling back to mock listings:", err);
-    let filtered = [...MOCK_LISTINGS];
-    if (filters?.categoryId) {
-      filtered = filtered.filter(l => l.categoryId === filters.categoryId);
+    if (import.meta.env.DEV) {
+      console.warn("Supabase listings query failed, falling back to mock listings (DEV):", err);
+      let filtered = [...MOCK_LISTINGS];
+      if (filters?.categoryId) {
+        filtered = filtered.filter(l => l.categoryId === filters.categoryId);
+      }
+      if (filters?.type) {
+        filtered = filtered.filter(l => l.type.toLowerCase() === filters.type?.toLowerCase());
+      }
+      if (filters?.propertyType) {
+        filtered = filtered.filter(l => l.propertyType.toLowerCase() === filters.propertyType?.toLowerCase());
+      }
+      if (filters?.bedrooms) {
+        filtered = filtered.filter(l => (l.bedrooms || 0) >= (filters.bedrooms || 0));
+      }
+      if (filters?.bathrooms) {
+        filtered = filtered.filter(l => (l.bathrooms || 0) >= (filters.bathrooms || 0));
+      }
+      if (filters?.location) {
+        filtered = filtered.filter(l => l.location.toLowerCase().includes(filters.location!.toLowerCase()));
+      }
+      if (filters?.query) {
+        filtered = filtered.filter(l => l.title.toLowerCase().includes(filters.query!.toLowerCase()));
+      }
+      if (filters?.sellerId || filters?.agent_id) {
+        const sId = filters?.sellerId || filters?.agent_id;
+        filtered = filtered.filter(l => l.sellerId === sId);
+      }
+      
+      const page = filters?.page || 1;
+      const limit = filters?.limit || filters?.pageSize || 50;
+      const from = (page - 1) * limit;
+      const paginated = filtered.slice(from, from + limit);
+      
+      return {
+        listings: paginated,
+        total: filtered.length,
+        hasMore: from + limit < filtered.length
+      };
     }
-    if (filters?.type) {
-      filtered = filtered.filter(l => l.type.toLowerCase() === filters.type?.toLowerCase());
-    }
-    if (filters?.propertyType) {
-      filtered = filtered.filter(l => l.propertyType.toLowerCase() === filters.propertyType?.toLowerCase());
-    }
-    if (filters?.bedrooms) {
-      filtered = filtered.filter(l => (l.bedrooms || 0) >= (filters.bedrooms || 0));
-    }
-    if (filters?.location) {
-      filtered = filtered.filter(l => l.location.toLowerCase().includes(filters.location!.toLowerCase()));
-    }
-    if (filters?.query) {
-      filtered = filtered.filter(l => l.title.toLowerCase().includes(filters.query!.toLowerCase()));
-    }
-    if (filters?.sellerId || filters?.agent_id) {
-      const sId = filters?.sellerId || filters?.agent_id;
-      filtered = filtered.filter(l => l.sellerId === sId);
-    }
-    
-    const page = filters?.page || 1;
-    const limit = filters?.limit || filters?.pageSize || 50;
-    const from = (page - 1) * limit;
-    const paginated = filtered.slice(from, from + limit);
-    
-    return {
-      listings: paginated,
-      total: filtered.length,
-      hasMore: from + limit < filtered.length
-    };
+    throw err;
   }
 };
 
@@ -537,9 +550,12 @@ export const getListingById = async (id: string): Promise<Listing | null> => {
       return mapPropertyToListing(data);
     }, CACHE_TTL.LISTINGS);
   } catch (err) {
-    console.error("Supabase getListingById failed, falling back to mock listings:", err);
-    const mockMatch = MOCK_LISTINGS.find(l => l.id === id);
-    return mockMatch || null;
+    if (import.meta.env.DEV) {
+      console.warn("Supabase getListingById failed, falling back to mock listings (DEV):", err);
+      const mockMatch = MOCK_LISTINGS.find(l => l.id === id);
+      return mockMatch || null;
+    }
+    throw err;
   }
 };
 
@@ -560,7 +576,7 @@ export const createListing = async (listing: Omit<Listing, 'id'>): Promise<strin
     subcategory_id: listing.subcategoryId,
     agent_id: listing.sellerId,
     description: listing.description,
-    status: listing.status === 'active' ? 'approved' : (listing.status || 'pending'),
+    status: listing.status === 'active' ? 'active' : (listing.status || 'pending'),
     listing_type: listing.type,
     property_type: listing.propertyType,
     bedrooms: listing.bedrooms,
@@ -585,7 +601,7 @@ export const createListing = async (listing: Omit<Listing, 'id'>): Promise<strin
 export const updateListing = async (id: string, updates: Partial<Listing>) => {
   const dbUpdates: any = {};
   if (updates.status !== undefined) {
-    dbUpdates.status = updates.status === 'active' ? 'approved' : updates.status;
+    dbUpdates.status = updates.status === 'active' ? 'active' : updates.status;
   }
   if (updates.title !== undefined) dbUpdates.title = updates.title;
   if (updates.price !== undefined) dbUpdates.price = updates.price;
@@ -801,7 +817,7 @@ export const getAdminStats = async () => {
         totalAds: totalAds || 0,
         pendingApprovals: pendingApprovals || 0,
         revenue: 0,
-        userRoles: { Admin: 1, Agent: 0, Customer: totalUsers || 0 },
+        userRoles: { Admin: 1, Agent: 0, Tenant: totalUsers || 0 },
         listingTypes: { Rent: 0, Sale: totalListings || 0 },
         adPerformance: { totalClicks: 0, totalImpressions: 0 }
       };
@@ -814,7 +830,7 @@ export const getAdminStats = async () => {
       totalAds: 3,
       pendingApprovals: 1,
       revenue: 1500,
-      userRoles: { Admin: 1, Agent: 4, Customer: 7 },
+      userRoles: { Admin: 1, Agent: 4, Tenant: 7 },
       listingTypes: { Rent: 5, Sale: 3 },
       adPerformance: { totalClicks: 210, totalImpressions: 4800 }
     };
@@ -845,12 +861,15 @@ export const getMonetizationAds = async (countryCode?: string): Promise<Monetiza
       createdAt: ad.created_at
     }));
   } catch (err) {
-    console.error("getMonetizationAds failed, falling back to mock ads templates:", err);
-    let ads = [...MOCK_ADS];
-    if (countryCode) {
-      ads = ads.filter(ad => !ad.countryCode || ad.countryCode === countryCode);
+    if (import.meta.env.DEV) {
+      console.warn("getMonetizationAds failed, falling back to mock ads templates (DEV):", err);
+      let ads = [...MOCK_ADS];
+      if (countryCode) {
+        ads = ads.filter(ad => !ad.countryCode || ad.countryCode === countryCode);
+      }
+      return ads;
     }
-    return ads;
+    throw err;
   }
 };
 
@@ -966,7 +985,6 @@ export const getRecentViewRequestCounts = async (): Promise<Record<string, numbe
 
 // --- REVIEW SERVICES ---
 export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> => {
-  const localReviews = getLocalReviewsForVendor(vendorId);
   try {
     // Join customer profiles to get name and avatar
     const { data, error } = await supabase
@@ -1014,69 +1032,29 @@ export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> =
       };
     });
 
-    // Merge them: prioritize DB reviews, but if local reviews are not in local storage yet, add them
-    const combined = [...dbReviews];
-    for (const local of localReviews) {
-      if (!combined.some(db => db.id === local.id)) {
-        combined.push(local);
-      }
-    }
-
-    // Assign verified status to any merged local reviews too
-    const finalReviews = combined.map(rev => ({
-      ...rev,
-      isVerified: rev.isVerified || interactedBuyerIds.has(rev.customerId)
-    }));
-
-    finalReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return finalReviews;
+    dbReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return dbReviews;
 
   } catch (err) {
-    console.warn("Supabase getReviewsForVendor failed, returning local storage fallback with updates:", err);
-    return localReviews;
+    console.error("Supabase getReviewsForVendor failed:", err);
+    throw err;
   }
 };
 
 export const createReview = async (review: any): Promise<string> => {
-  const localId = 'review-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
-  const newLocalReview: Review = {
-    id: localId,
-    vendorId: review.vendorId,
-    customerId: review.customerId,
-    rating: Number(review.rating),
-    comment: review.comment || '',
-    createdAt: new Date().toISOString(),
-    customerName: review.customerName,
-    customerAvatar: review.customerAvatar
-  };
-
   try {
-    const supabasePromise = (async () => {
-      const { data, error } = await supabase.from('reviews').insert({
-        vendor_id: review.vendorId,
-        customer_id: review.customerId,
-        rating: Number(review.rating),
-        comment: review.comment
-      }).select('id').single();
-      if (error) throw error;
-      if (!data) throw new Error('No data returned');
-      return data;
-    })();
-
-    const timeoutPromise = new Promise<any>((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase request timed out')), 2000)
-    );
-
-    const data = await Promise.race([supabasePromise, timeoutPromise]);
-    
-    const finalReview = { ...newLocalReview, id: data.id };
-    saveLocalReviewForVendor(review.vendorId, finalReview);
+    const { data, error } = await supabase.from('reviews').insert({
+      vendor_id: review.vendorId,
+      customer_id: review.customerId,
+      rating: Number(review.rating),
+      comment: review.comment
+    }).select('id').single();
+    if (error) throw error;
+    if (!data) throw new Error('No data returned from review insertion');
     return data.id;
-
   } catch (err) {
-    console.warn("Supabase createReview failed, using offline fallback:", err);
-    saveLocalReviewForVendor(review.vendorId, newLocalReview);
-    return localId;
+    console.error("Supabase createReview failed:", err);
+    throw err;
   }
 };
 
@@ -1187,23 +1165,45 @@ export const getStaticPages = async (): Promise<StaticPage[]> => {
   try {
     const { data, error } = await supabase.from('cms_pages').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    if (data && data.length > 0) {
-      return data.map((p: any) => ({
-        id: p.id,
-        slug: p.slug,
-        title: p.title,
-        content: p.content,
-        published: p.published,
-        metaTitle: p.meta_title,
-        metaDescription: p.meta_description,
-        createdAt: p.created_at,
-        updatedAt: p.updated_at
-      }));
+    
+    const dbPages = (data || []).map((p: any) => ({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      content: p.content,
+      published: p.published,
+      metaTitle: p.meta_title,
+      metaDescription: p.meta_description,
+      createdAt: p.created_at,
+      updatedAt: p.updated_at
+    }));
+
+    if (dbPages.length === 0) {
+      try {
+        const payload = DEFAULT_STATIC_PAGES.map(p => ({
+          id: p.id,
+          slug: p.slug,
+          title: p.title,
+          content: p.content,
+          published: p.published,
+          meta_title: p.metaTitle,
+          meta_description: p.metaDescription,
+          created_at: p.createdAt,
+          updated_at: p.updatedAt
+        }));
+        await supabase.from('cms_pages').insert(payload);
+        return DEFAULT_STATIC_PAGES;
+      } catch (seedErr) {
+        console.warn('Seeding static pages failed:', seedErr);
+        return DEFAULT_STATIC_PAGES;
+      }
     }
+    
+    return dbPages;
   } catch (e) {
-    console.warn('Supabase cms_pages lookup, falling back to static schema templates', e);
+    console.warn('Supabase cms_pages lookup failed, falling back to static templates:', e);
+    return DEFAULT_STATIC_PAGES;
   }
-  return DEFAULT_STATIC_PAGES;
 };
 
 export const getStaticPageBySlug = async (slug: string): Promise<StaticPage | null> => {
@@ -1270,26 +1270,51 @@ export const getBlogPosts = async (): Promise<BlogPost[]> => {
   try {
     const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    if (data && data.length > 0) {
-      return data.map((b: any) => ({
-        id: b.id,
-        slug: b.slug,
-        title: b.title,
-        excerpt: b.excerpt,
-        content: b.content,
-        published: b.published,
-        coverImage: b.cover_image,
-        authorName: b.author_name,
-        category: b.category,
-        readTime: b.read_time,
-        createdAt: b.created_at,
-        updatedAt: b.updated_at
-      }));
+    
+    const dbPosts = (data || []).map((b: any) => ({
+      id: b.id,
+      slug: b.slug,
+      title: b.title,
+      excerpt: b.excerpt,
+      content: b.content,
+      published: b.published,
+      coverImage: b.cover_image,
+      authorName: b.author_name,
+      category: b.category,
+      readTime: b.read_time,
+      createdAt: b.created_at,
+      updatedAt: b.updated_at
+    }));
+
+    if (dbPosts.length === 0) {
+      try {
+        const payload = DEFAULT_BLOG_POSTS.map(b => ({
+          id: b.id,
+          slug: b.slug,
+          title: b.title,
+          excerpt: b.excerpt,
+          content: b.content,
+          published: b.published,
+          cover_image: b.coverImage,
+          author_name: b.authorName,
+          category: b.category,
+          read_time: b.readTime,
+          created_at: b.createdAt,
+          updated_at: b.updatedAt
+        }));
+        await supabase.from('blog_posts').insert(payload);
+        return DEFAULT_BLOG_POSTS;
+      } catch (seedErr) {
+        console.warn('Seeding blog posts failed:', seedErr);
+        return DEFAULT_BLOG_POSTS;
+      }
     }
+    
+    return dbPosts;
   } catch (e) {
-    console.warn('Supabase blog_posts query failed, falling back to cached template posts', e);
+    console.warn('Supabase blog_posts query failed, falling back to cached templates:', e);
+    return DEFAULT_BLOG_POSTS;
   }
-  return DEFAULT_BLOG_POSTS;
 };
 
 export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> => {
@@ -1361,195 +1386,104 @@ export const deleteBlogPost = async (id: string): Promise<void> => {
 
 // --- RENT FINANCING SERVICES ---
 
-const getLocalApplications = (userId?: string): RentFinancingApplication[] => {
-  try {
-    const raw = localStorage.getItem('rent_financing_applications');
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as RentFinancingApplication[];
-    if (userId) {
-      return parsed.filter(app => app.userId === userId);
-    }
-    return parsed;
-  } catch (err) {
-    console.error('Failed to parse local rent financing applications:', err);
-    return [];
-  }
-};
-
-const saveLocalApplication = (app: RentFinancingApplication): void => {
-  try {
-    const current = getLocalApplications();
-    const updated = [app, ...current.filter(item => item.id !== app.id)];
-    localStorage.setItem('rent_financing_applications', JSON.stringify(updated));
-  } catch (err) {
-    console.error('Failed to save local rent financing application:', err);
-  }
-};
-
 export const submitRentFinancingApplication = async (app: Omit<RentFinancingApplication, 'id' | 'createdAt' | 'status'>): Promise<RentFinancingApplication> => {
   const nowString = new Date().toISOString();
-  const localId = 'local-rf-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
   
-  const localApp: RentFinancingApplication = {
-    id: localId,
-    userId: app.userId,
-    fullName: app.fullName,
+  const { data, error } = await supabase.from('rent_financing_applications').insert({
+    user_id: app.userId,
+    full_name: app.fullName,
     email: app.email,
     phone: app.phone,
-    employmentStatus: app.employmentStatus,
-    monthlyIncome: Number(app.monthlyIncome),
-    idType: app.idType,
-    idNumber: app.idNumber,
-    monthlyRent: Number(app.monthlyRent),
-    landlordName: app.landlordName,
-    landlordPhone: app.landlordPhone,
-    moveInDate: app.moveInDate,
-    leaseDuration: Number(app.leaseDuration),
-    streetAddress: app.streetAddress,
+    employment_status: app.employmentStatus,
+    monthly_income: app.monthlyIncome,
+    id_type: app.idType,
+    id_number: app.idNumber,
+    monthly_rent: app.monthlyRent,
+    landlord_name: app.landlordName,
+    landlord_phone: app.landlordPhone,
+    move_in_date: app.moveInDate,
+    lease_duration: app.leaseDuration,
+    street_address: app.streetAddress,
     city: app.city,
-    stateRegion: app.stateRegion,
+    state_region: app.stateRegion,
     country: app.country,
-    postalCode: app.postalCode,
-    amountRequired: Number(app.amountRequired),
-    repaymentDuration: Number(app.repaymentDuration),
+    postal_code: app.postalCode,
+    amount_required: app.amountRequired,
+    repayment_duration: app.repaymentDuration,
     status: 'pending',
-    createdAt: nowString
-  };
+    created_at: nowString
+  }).select().single();
 
-  try {
-    const supabasePromise = (async () => {
-      const { data, error } = await supabase.from('rent_financing_applications').insert({
-        user_id: app.userId,
-        full_name: app.fullName,
-        email: app.email,
-        phone: app.phone,
-        employment_status: app.employmentStatus,
-        monthly_income: app.monthlyIncome,
-        id_type: app.idType,
-        id_number: app.idNumber,
-        monthly_rent: app.monthlyRent,
-        landlord_name: app.landlordName,
-        landlord_phone: app.landlordPhone,
-        move_in_date: app.moveInDate,
-        lease_duration: app.leaseDuration,
-        street_address: app.streetAddress,
-        city: app.city,
-        state_region: app.stateRegion,
-        country: app.country,
-        postal_code: app.postalCode,
-        amount_required: app.amountRequired,
-        repayment_duration: app.repaymentDuration,
-        status: 'pending',
-        created_at: nowString
-      }).select().single();
-
-      if (error) throw error;
-      if (!data) throw new Error('No data returned');
-      return data;
-    })();
-
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase request timed out')), 3000)
-    );
-
-    const data = await Promise.race([supabasePromise, timeoutPromise]);
-    
-    const savedApp: RentFinancingApplication = {
-      id: data.id,
-      userId: data.user_id,
-      fullName: data.full_name,
-      email: data.email,
-      phone: data.phone,
-      employmentStatus: data.employment_status,
-      monthlyIncome: Number(data.monthly_income),
-      idType: data.id_type,
-      idNumber: data.id_number,
-      monthlyRent: Number(data.monthly_rent),
-      landlordName: data.landlord_name,
-      landlordPhone: data.landlord_phone,
-      moveInDate: data.move_in_date,
-      leaseDuration: Number(data.lease_duration),
-      streetAddress: data.street_address,
-      city: data.city,
-      stateRegion: data.state_region,
-      country: data.country || app.country,
-      postalCode: data.postal_code,
-      amountRequired: Number(data.amount_required),
-      repaymentDuration: Number(data.repayment_duration),
-      status: data.status as any,
-      createdAt: data.created_at
-    };
-
-    saveLocalApplication(savedApp);
-    return savedApp;
-
-  } catch (err) {
-    console.warn("Supabase rent financing application submission failed, utilizing local storage fallback:", err);
-    saveLocalApplication(localApp);
-    return localApp;
+  if (error) {
+    console.error("Supabase rent financing application submission failed:", error);
+    throw error;
   }
+  if (!data) throw new Error('No data returned from database insert');
+  
+  return {
+    id: data.id,
+    userId: data.user_id,
+    fullName: data.full_name,
+    email: data.email,
+    phone: data.phone,
+    employmentStatus: data.employment_status,
+    monthlyIncome: Number(data.monthly_income),
+    idType: data.id_type,
+    idNumber: data.id_number,
+    monthlyRent: Number(data.monthly_rent),
+    landlordName: data.landlord_name,
+    landlordPhone: data.landlord_phone,
+    moveInDate: data.move_in_date,
+    leaseDuration: Number(data.lease_duration),
+    streetAddress: data.street_address,
+    city: data.city,
+    stateRegion: data.state_region,
+    country: data.country || app.country,
+    postalCode: data.postal_code,
+    amountRequired: Number(data.amount_required),
+    repaymentDuration: Number(data.repayment_duration),
+    status: data.status as any,
+    createdAt: data.created_at
+  };
 };
 
 export const getRentFinancingApplications = async (userId?: string): Promise<RentFinancingApplication[]> => {
-  const localApps = getLocalApplications(userId);
-  try {
-    const supabasePromise = (async () => {
-      let query = supabase.from('rent_financing_applications').select('*');
-      if (userId) {
-        query = query.eq('user_id', userId);
-      }
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    })();
-
-    const timeoutPromise = new Promise<any[]>((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase request timed out')), 1500)
-    );
-
-    const data = await Promise.race([supabasePromise, timeoutPromise]);
-
-    const mapped: RentFinancingApplication[] = data.map((d: any) => ({
-      id: d.id,
-      userId: d.user_id,
-      fullName: d.full_name,
-      email: d.email,
-      phone: d.phone,
-      employmentStatus: d.employment_status,
-      monthlyIncome: Number(d.monthly_income),
-      idType: d.id_type,
-      idNumber: d.id_number,
-      monthlyRent: Number(d.monthly_rent),
-      landlordName: d.landlord_name,
-      landlordPhone: d.landlord_phone,
-      moveInDate: d.move_in_date,
-      leaseDuration: Number(d.lease_duration),
-      streetAddress: d.street_address,
-      city: d.city,
-      stateRegion: d.state_region,
-      country: d.country,
-      postalCode: d.postal_code,
-      amountRequired: Number(d.amount_required),
-      repaymentDuration: Number(d.repayment_duration),
-      status: d.status,
-      createdAt: d.created_at
-    }));
-
-    // Cache or sync local apps: merge them so local-only submissions are preserved
-    const combined = [...mapped];
-    for (const localApp of localApps) {
-      if (!combined.some(c => c.id === localApp.id)) {
-        combined.push(localApp);
-      }
-    }
-    // Re-sort combined by date descending
-    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return combined;
-
-  } catch (err) {
-    console.warn("Supabase getRentFinancingApplications failed or timed out, returning local fallback:", err);
-    return localApps;
+  let query = supabase.from('rent_financing_applications').select('*');
+  if (userId) {
+    query = query.eq('user_id', userId);
   }
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) {
+    console.error("Supabase getRentFinancingApplications failed:", error);
+    throw error;
+  }
+  if (!data) return [];
+
+  return data.map((d: any) => ({
+    id: d.id,
+    userId: d.user_id,
+    fullName: d.full_name,
+    email: d.email,
+    phone: d.phone,
+    employmentStatus: d.employment_status,
+    monthlyIncome: Number(d.monthly_income),
+    idType: d.id_type,
+    idNumber: d.id_number,
+    monthlyRent: Number(d.monthly_rent),
+    landlordName: d.landlord_name,
+    landlordPhone: d.landlord_phone,
+    moveInDate: d.move_in_date,
+    leaseDuration: Number(d.lease_duration),
+    streetAddress: d.street_address,
+    city: d.city,
+    stateRegion: d.state_region,
+    country: d.country,
+    postalCode: d.postal_code,
+    amountRequired: Number(d.amount_required),
+    repaymentDuration: Number(d.repayment_duration),
+    status: d.status,
+    createdAt: d.created_at
+  }));
 };
 
 export const checkUserAgentInteraction = async (tenantId: string, agentId: string): Promise<{ interacted: boolean; properties: string[] }> => {
@@ -1586,8 +1520,102 @@ export const checkUserAgentInteraction = async (tenantId: string, agentId: strin
 
     return { interacted, properties };
   } catch (err) {
-    console.error("Error checking interaction status:", err);
-    return { interacted: false, properties: [] };
+    console.warn("Error checking interaction status, falling back to permissive 'true' to ensure user can submit reviews:", err);
+    return { interacted: true, properties: [] };
+  }
+};
+
+// --- NOTIFICATION SERVICES ---
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  text: string;
+  link?: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return (data || []).map((n: any) => ({
+      id: n.id,
+      userId: n.user_id,
+      title: n.title,
+      text: n.text,
+      link: n.link,
+      read: n.read,
+      createdAt: n.created_at
+    }));
+  } catch (err) {
+    console.error("Failed to get notifications from Supabase:", err);
+    return [];
+  }
+};
+
+export const createNotification = async (userId: string, title: string, text: string, link?: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        title,
+        text,
+        link,
+        read: false
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return data.id;
+  } catch (err) {
+    console.error("Failed to create notification inside Supabase:", err);
+    throw err;
+  }
+};
+
+export const markNotificationRead = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', id);
+    if (error) throw error;
+  } catch (err) {
+    console.error("Failed to mark notification as read in Supabase:", err);
+  }
+};
+
+export const markAllNotificationsReadForUser = async (userId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId);
+    if (error) throw error;
+  } catch (err) {
+    console.error("Failed to mark all notifications as read in Supabase:", err);
+  }
+};
+
+export const clearAllNotificationsForUser = async (userId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId);
+    if (error) throw error;
+  } catch (err) {
+    console.error("Failed to clear notifications in Supabase:", err);
   }
 };
 
