@@ -6,23 +6,59 @@ import { MOCK_LISTINGS, MOCK_USERS, MOCK_ADS, MOCK_CHATS } from './mockData';
 
 // --- AUTH SERVICES ---
 export const loginWithEmail = async (email: string, password: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  
-  // Fetch the actual DB role — don't trust the UI selection for sign-in
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', data.user!.id)
-    .maybeSingle();
+  try {
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (signInError) {
+      // Check if it corresponds to an autoprovisioned demo credentials
+      const isDemo = ['renter@tym2muv.com', 'agent@tym2muv.com', 'admin@tym2muv.com'].includes(email.toLowerCase());
+      if (isDemo && (signInError.status === 400 || signInError.message?.includes('Invalid login') || signInError.message?.includes('credentials'))) {
+        console.log(`Auto-provisioning demo role: ${email}`);
+        let name = 'Theresa Carter (Renter)';
+        let role: 'Tenant' | 'Agent' | 'Admin' = 'Tenant';
+        
+        if (email.toLowerCase().includes('agent')) {
+          name = 'Arthur Pendelton (Agent)';
+          role = 'Agent';
+        } else if (email.toLowerCase().includes('admin')) {
+          name = 'Marcus Aurelius (Admin)';
+          role = 'Admin';
+        }
+        
+        // Dynamic provision via signUp
+        await signupWithEmail(email, password, name, role);
+        
+        // Re-authenticate
+        const retryResult = await supabase.auth.signInWithPassword({ email, password });
+        if (retryResult.error) throw retryResult.error;
+        
+        return Object.assign(retryResult.data.user || {}, {
+          isNewAccount: true,
+          role: role,
+          id: retryResult.data.user?.id,
+          uid: retryResult.data.user?.id
+        });
+      }
+      throw signInError;
+    }
 
-  const actualRole = profile?.role || selectedRole.toLowerCase();
-  return Object.assign(data.user || {}, { 
-    isNewAccount: false, 
-    role: actualRole.charAt(0).toUpperCase() + actualRole.slice(1), 
-    id: data.user?.id, 
-    uid: data.user?.id 
-  });
+    // Fetch the actual DB role — don't trust the UI selection for sign-in
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', signInData.user!.id)
+      .maybeSingle();
+
+    const actualRole = profile?.role || selectedRole.toLowerCase();
+    return Object.assign(signInData.user || {}, { 
+      isNewAccount: false, 
+      role: actualRole.charAt(0).toUpperCase() + actualRole.slice(1), 
+      id: signInData.user?.id, 
+      uid: signInData.user?.id 
+    });
+  } catch (err) {
+    throw err;
+  }
 };
 
 export const signupWithEmail = async (email: string, password: string, name: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {

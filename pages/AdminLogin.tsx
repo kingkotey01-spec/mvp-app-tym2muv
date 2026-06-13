@@ -31,14 +31,15 @@ const AdminLogin: React.FC = () => {
         throw new Error('Authentication completed but no user identifier was returned.');
       }
 
-      // Direct Database RBAC check: Only allow accounts tagged as 'Admin' in profiles
+      // Direct Database RBAC check: Only allow accounts tagged as 'Admin' or 'admin' in profiles
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
         .single();
 
-      if (profileErr || profile?.role !== 'Admin') {
+      const normalizedRole = profile?.role?.toLowerCase();
+      if (profileErr || (normalizedRole !== 'admin' && normalizedRole !== 'super_admin')) {
         await supabase.auth.signOut();
         setError('Access Denied: Master administrator privileges required.');
         setIsLoading(false);
@@ -166,6 +167,31 @@ const AdminLogin: React.FC = () => {
               >
                 // Return to Public User Console
               </Link>
+            </div>
+
+            {/* Dev Sandbox Pre-fill */}
+            <div className="mt-8 p-6 rounded-3xl border border-dashed border-purple-200/60 bg-purple-50/15 max-w-md mx-auto text-left space-y-3 font-sans select-none">
+              <div className="flex items-center gap-2 text-purple-700 font-extrabold text-[11px] uppercase tracking-wider">
+                <Icon name="sparkles" size={14} className="text-purple-500 animate-pulse" />
+                <span>Developer Testing Sandbox</span>
+              </div>
+              <p className="text-slate-650 text-xs leading-normal font-medium">
+                Click below to automatically prefill standard platform administrator credentials. Live backend auto-provisioning is built-in.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@tym2muv.com');
+                  setPassword('Password123!');
+                }}
+                className="w-full py-2.5 px-4 bg-white hover:bg-purple-600 hover:text-white border border-purple-200/50 text-[#7C3AED] rounded-xl text-xs font-bold font-mono transition-all duration-200 flex items-center justify-center gap-2 shadow-3xs cursor-pointer hover:shadow-2xs active:scale-[0.98]"
+              >
+                <Icon name="zap" size={13} className="fill-current animate-bounce" />
+                <span>Inject Admin Credentials</span>
+              </button>
+              <div className="text-center text-[9px] font-mono text-slate-400">
+                admin@tym2muv.com / Password123!
+              </div>
             </div>
           </form>
         </div>
