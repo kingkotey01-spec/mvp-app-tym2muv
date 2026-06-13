@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Redis } from "https://esm.sh/@upstash/redis";
 
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -10,8 +11,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Global rate limiting map (for Deno memory during invocation)
-const rateLimits = new Map<string, number>();
+const redisUrl = Deno.env.get('UPSTASH_REDIS_REST_URL') || '';
+const redisToken = Deno.env.get('UPSTASH_REDIS_REST_TOKEN') || '';
+
+const redis = redisUrl && redisToken ? new Redis({
+  url: redisUrl,
+  token: redisToken,
+}) : null;
+
+// Fallback in-memory map if Redis is not configured or fails
+const localRateLimits = new Map<string, number>();
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -38,16 +47,45 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1.5 Rate Limiting (Server-side)
-    const now = Date.now();
-    const lastRequest = rateLimits.get(user.id) || 0;
-    if (now - lastRequest < 60000) { // 60 seconds cooldown
+    // 1.5 Rate Limiting (Server-side) via Upstash Redis
+    const rateLimitKey = `ratelimit:payment:${user.id}`;
+    let isRateLimited = false;
+
+    if (redis) {
+      try {
+        const count = await redis.incr(rateLimitKey);
+        if (count === 1) {
+          await redis.expire(rateLimitKey, 60); // 60 seconds cooldown window
+        }
+        if (count > 1) {
+          isRateLimited = true;
+        }
+      } catch (redisError) {
+        console.error("Redis rate limiting failed, falling back to local memory:", redisError);
+        const now = Date.now();
+        const lastRequest = localRateLimits.get(user.id) || 0;
+        if (now - lastRequest < 60000) {
+          isRateLimited = true;
+        } else {
+          localRateLimits.set(user.id, now);
+        }
+      }
+    } else {
+      const now = Date.now();
+      const lastRequest = localRateLimits.get(user.id) || 0;
+      if (now - lastRequest < 60000) {
+        isRateLimited = true;
+      } else {
+        localRateLimits.set(user.id, now);
+      }
+    }
+
+    if (isRateLimited) {
       return new Response(
         JSON.stringify({ error: "Too many payment attempts. Please wait 60 seconds." }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    rateLimits.set(user.id, now);
 
     const { reference, listingId, idempotencyKey } = await req.json();
 

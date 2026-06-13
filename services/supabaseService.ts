@@ -161,14 +161,29 @@ const mapProfileToUser = (profileData: any): User => {
 export const getUserProfile = async (userId: string): Promise<User | null> => {
   try {
     return await withCache(cacheKey('profile', userId), async () => {
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      let data = null;
+
+      // Add retry logic to wait for database trigger to create the profile row (OAuth race condition safeguard)
+      for (let i = 0; i < 10; i++) {
+        const query = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (query.data) {
+          data = query.data;
+          break;
+        }
+
+        if (i < 9) {
+          console.log(`Waiting for user profile triggered creation... attempt ${i + 1}`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
         
       if (!data) {
-        console.log("No profile found for authenticated user in database. Initiating dynamic client-side profile creation.");
+        console.log("No profile found for authenticated user in database after retries. Initiating dynamic client-side profile creation.");
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser && authUser.id === userId) {
           const fullName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Unknown';

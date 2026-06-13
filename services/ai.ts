@@ -1,113 +1,78 @@
-let aiInstance: any = null;
+import { supabase } from '../supabaseClient';
 
-const getAiInstance = async () => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY;
-  if (!apiKey) throw new Error('Gemini API key not configured. Set VITE_GEMINI_API_KEY.');
-  if (!aiInstance) {
-    const { GoogleGenAI } = await import('@google/genai');
-    aiInstance = new GoogleGenAI({ apiKey });
-  }
-  return aiInstance;
-};
+/**
+ * AI Service using Supabase Edge Functions proxy to completely secure and isolate 
+ * the Gemini API key on the backend. No developer API keys are exposed to the browser.
+ */
 
 export const generateAdDescription = async (details: any): Promise<string> => {
   try {
-    const ai = await getAiInstance();
-    const prompt = `Write a compelling, professional, and detailed real estate listing description based on the following details:
-    - Property Type: ${details.propertyType}
-    - Listing Type: ${details.type}
-    - Bedrooms: ${details.bedrooms}
-    - Bathrooms: ${details.bathrooms}
-    - Square Footage: ${details.sqft}
-    - Year Built: ${details.yearBuilt}
-    - Location: ${details.location}
-    - Furnished: ${details.furnished ? 'Yes' : 'No'}
-    - Parking: ${details.parking ? 'Yes' : 'No'}
-    - Pets Allowed: ${details.petsAllowed ? 'Yes' : 'No'}
-    
-    The description should be engaging, highlight the key features, and appeal to potential ${details.type === 'Rent' ? 'tenants' : 'buyers'}. Keep it under 150 words.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
+    const { data, error } = await supabase.functions.invoke('gemini-api', {
+      body: {
+        action: 'generate-description',
+        details
+      }
     });
 
-    return response.text || '';
+    if (error) {
+       console.error("Supabase Edge Function error generating description:", error);
+       throw error;
+    }
+
+    return data?.text || '';
   } catch (error) {
-    console.error("Error generating description:", error);
+    console.error("Error calling generate description edge function:", error);
     return '';
   }
 };
 
 export const suggestPriceRange = async (details: any): Promise<{ min: number; max: number } | null> => {
   try {
-    const ai = await getAiInstance();
-    const prompt = `Based on the following real estate property details, suggest a realistic price range in ${details.currency}.
-    - Property Type: ${details.propertyType}
-    - Listing Type: ${details.type}
-    - Bedrooms: ${details.bedrooms}
-    - Bathrooms: ${details.bathrooms}
-    - Square Footage: ${details.sqft}
-    - Location: ${details.location}
-    
-    Return ONLY a JSON object with 'min' and 'max' numeric properties representing the suggested price range.`;
-
-    const { Type } = await import('@google/genai');
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            min: { type: Type.NUMBER },
-            max: { type: Type.NUMBER }
-          },
-          required: ["min", "max"]
-        }
+    const { data, error } = await supabase.functions.invoke('gemini-api', {
+      body: {
+        action: 'suggest-price',
+        details
       }
     });
 
-    if (response.text) {
-      return JSON.parse(response.text);
+    if (error) {
+       console.error("Supabase Edge Function error suggesting price:", error);
+       throw error;
+    }
+
+    if (data?.text) {
+      try {
+        return JSON.parse(data.text);
+      } catch (e) {
+        console.error("Error parsing Gemini JSON response:", e);
+      }
     }
     return null;
   } catch (error) {
-    console.error("Error suggesting price:", error);
+    console.error("Error calling suggest price edge function:", error);
     return null;
   }
 };
 
 export const enhanceImage = async (base64Image: string, mimeType: string): Promise<string | null> => {
   try {
-    const ai = await getAiInstance();
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-preview-image-generation',
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Image.split(',')[1], // Remove data URL prefix
-              mimeType: mimeType,
-            },
-          },
-          {
-            text: 'Enhance this real estate photo. Make it look professional, well-lit, and attractive, as if taken by a professional real estate photographer. Improve lighting, contrast, and color balance.',
-          },
-        ],
-      },
+    const { data, error } = await supabase.functions.invoke('gemini-api', {
+      body: {
+        action: 'enhance-image',
+        base64Image,
+        mimeType
+      }
     });
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:image/jpeg;base64,${part.inlineData.data}`;
-      }
+    if (error) {
+       console.error("Supabase Edge Function error enhancing image:", error);
+       throw error;
     }
-    return null;
-  } catch (error: any) {
-    console.error("Error enhancing image:", error);
+
+    // Returns the enhanced base64 representation
+    return data?.enhancedBase64 || base64Image;
+  } catch (error) {
+    console.error("Error calling enhance image edge function:", error);
     throw error;
   }
 };
