@@ -5,11 +5,12 @@ import { supabase } from '../supabaseClient';
 import { Listing, Chat as ChatType, User } from '../types';
 import ListingCard from '../components/ListingCard';
 import Icon from '../components/Icon';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useToast } from '../components/Toast';
+import { AgentDashboardSkeleton } from '../components/DashboardSkeleton';
 
 const generate30DaysAnalytics = (realViews: any[], realConversions: any[]) => {
   const data = [];
@@ -57,6 +58,7 @@ const generate30DaysAnalytics = (realViews: any[], realConversions: any[]) => {
 const AgentDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [rentalRequestsCount, setRentalRequestsCount] = useState(0);
@@ -69,6 +71,7 @@ const AgentDashboard: React.FC = () => {
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [quickPrice, setQuickPrice] = useState<string>('');
   const [quickDescription, setQuickDescription] = useState<string>('');
+  const [quickAvailability, setQuickAvailability] = useState<'available' | 'sold' | 'rented'>('available');
   const [saving, setSaving] = useState(false);
   const [drawerError, setDrawerError] = useState<string>('');
 
@@ -257,6 +260,7 @@ const AgentDashboard: React.FC = () => {
     setEditingListing(listing);
     setQuickPrice(listing.price.toString());
     setQuickDescription(listing.description);
+    setQuickAvailability(listing.availabilityStatus || 'available');
     setDrawerError('');
   };
 
@@ -271,14 +275,33 @@ const AgentDashboard: React.FC = () => {
     try {
       setSaving(true);
       setDrawerError('');
+      
+      let availabilityChangedAt = editingListing.availabilityChangedAt;
+      if (quickAvailability !== (editingListing.availabilityStatus || 'available')) {
+        if (quickAvailability === 'sold' || quickAvailability === 'rented') {
+          availabilityChangedAt = new Date().toISOString();
+        } else {
+          availabilityChangedAt = undefined;
+        }
+      }
+
       await updateListing(editingListing.id, {
         price: priceNum,
-        description: quickDescription
+        description: quickDescription,
+        availabilityStatus: quickAvailability,
+        availabilityChangedAt: availabilityChangedAt
       });
       
-      // Update local storage/state listings
-      setListings(prev => prev.map(l => l.id === editingListing.id ? { ...l, price: priceNum, description: quickDescription } : l));
+      // Update local listings state
+      setListings(prev => prev.map(l => l.id === editingListing.id ? { 
+        ...l, 
+        price: priceNum, 
+        description: quickDescription,
+        availabilityStatus: quickAvailability,
+        availabilityChangedAt: availabilityChangedAt as any
+      } : l));
       setEditingListing(null);
+      toast("Property listing updated successfully!", "success");
     } catch (err) {
       console.error("Failed to fast-update listing metadata:", err);
       setDrawerError("Save failed. Please check parameters and try again.");
@@ -311,11 +334,7 @@ const AgentDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="animate-spin h-10 w-10 rounded-full border-4 border-brand-200 border-t-brand-600" />
-      </div>
-    );
+    return <AgentDashboardSkeleton />;
   }
 
   // Derive specialized tags from user profile parameters
@@ -952,27 +971,73 @@ const AgentDashboard: React.FC = () => {
 
                     {/* Status Badge */}
                     <td className="py-3 px-4">
-                      <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                        l.status === 'active' || !l.status
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                          : l.status === 'pending'
-                          ? 'bg-amber-50 text-amber-700 border-amber-100'
-                          : 'bg-red-50 text-red-700 border-red-100 animate-pulse'
-                      }`}>
-                        <span className={`w-1 h-1 rounded-full ${
+                      {l.availabilityStatus === 'sold' || l.availabilityStatus === 'rented' ? (
+                        <div className="flex flex-col gap-1">
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                            l.availabilityStatus === 'sold' 
+                              ? 'bg-amber-100 text-amber-805 border-amber-200 shadow-2xs'
+                              : 'bg-blue-100 text-blue-805 border-blue-200 shadow-2xs'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${l.availabilityStatus === 'sold' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+                            <span className="font-extrabold">{l.availabilityStatus}</span>
+                          </span>
+                          {(() => {
+                            if (!l.availabilityChangedAt) return <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">7 Days Left</span>;
+                            const d = new Date(l.availabilityChangedAt);
+                            const now = new Date();
+                            const diffTime = d.getTime() + (7 * 24 * 60 * 60 * 1000) - now.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            return (
+                              <span className="text-[8px] text-slate-400 whitespace-nowrap font-bold uppercase tracking-wider">
+                                {diffDays <= 0 ? "Hidden (Expired)" : `${diffDays} Day${diffDays === 1 ? '' : 's'} Left`}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                           l.status === 'active' || !l.status
-                            ? 'bg-emerald-500'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                             : l.status === 'pending'
-                            ? 'bg-amber-500'
-                            : 'bg-red-500'
-                        }`} />
-                        <span>{l.status || 'Active'}</span>
-                      </span>
+                            ? 'bg-amber-50 text-amber-700 border-amber-100'
+                            : 'bg-red-50 text-red-700 border-red-100 animate-pulse'
+                        }`}>
+                          <span className={`w-1 h-1 rounded-full ${
+                            l.status === 'active' || !l.status
+                              ? 'bg-emerald-500'
+                              : l.status === 'pending'
+                              ? 'bg-amber-500'
+                              : 'bg-red-500'
+                          }`} />
+                          <span>{l.status || 'Active'}</span>
+                        </span>
+                      )}
                     </td>
 
                     {/* Mini Actions cell */}
                     <td className="py-3 px-5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Premium Boost action */}
+                        {l.isPremium ? (
+                          <span 
+                            className="bg-purple-100 text-purple-700 font-extrabold border border-purple-200 text-[9px] uppercase tracking-wider px-2 py-1 rounded-lg flex items-center gap-1 shadow-2xs"
+                            title="Active Premium Listing - boosted to top of search results."
+                          >
+                            <Icon name="zap" size={10} className="fill-purple-600 text-purple-600 animate-pulse" />
+                            Premium
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/payment/${l.id}?intent=promotion`)}
+                            className="p-1.5 bg-purple-50 hover:bg-purple-600 text-purple-600 hover:text-white rounded-lg border border-purple-150 transition cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95"
+                            title="Upgrade to Premium (Boost to Top)"
+                          >
+                            <Icon name="zap" size={12} className="fill-current" />
+                            <span className="text-[10px] font-extrabold tracking-tight">Boost</span>
+                          </button>
+                        )}
+
                         {/* Preview button */}
                         <button
                           type="button"
@@ -1049,7 +1114,28 @@ const AgentDashboard: React.FC = () => {
                 </motion.button>
                 
                 {/* Tactical actions dock bar */}
-                <div className="flex border-t border-slate-100 bg-slate-50 text-slate-700 divide-x divide-slate-100 relative z-30">
+                <div className="flex border-t border-slate-100 bg-slate-50 text-slate-700 divide-x divide-slate-100 relative z-30 font-wix">
+                  {/* Premium Boost button */}
+                  {l.isPremium ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 py-3 text-[10px] font-bold text-purple-705 flex items-center justify-center gap-1 bg-purple-50/70 transition duration-200 cursor-default"
+                    >
+                      <Icon name="zap" size={12} className="fill-purple-600 text-purple-600 animate-pulse" />
+                      <span className="text-purple-705 font-black uppercase tracking-widest text-[8px]">Premium</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/payment/${l.id}?intent=promotion`)}
+                      className="flex-1 py-3 text-[10px] font-extrabold text-[#7C3AED] hover:text-[#6D28D9] hover:bg-white transition duration-200 flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Icon name="zap" size={12} className="text-purple-500 fill-purple-100 animate-bounce" />
+                      <span>Boost Premium</span>
+                    </button>
+                  )}
+
                   <button 
                     type="button"
                     onClick={() => {
@@ -1170,6 +1256,56 @@ const AgentDashboard: React.FC = () => {
                       placeholder="Enter price amount"
                     />
                   </div>
+                </div>
+
+                {/* Form Inputs: Availability Status */}
+                <div className="space-y-1.5" id="availability-status-container">
+                  <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                    Availability Tag
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      id="status-available-btn"
+                      onClick={() => setQuickAvailability('available')}
+                      className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wider transition cursor-pointer ${
+                        quickAvailability === 'available'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-500/10'
+                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
+                      }`}
+                    >
+                      Available
+                    </button>
+                    <button
+                      type="button"
+                      id="status-sold-btn"
+                      onClick={() => setQuickAvailability('sold')}
+                      className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wider transition cursor-pointer ${
+                        quickAvailability === 'sold'
+                          ? 'bg-amber-50 text-amber-700 border-amber-300 ring-2 ring-amber-500/10'
+                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
+                      }`}
+                    >
+                      Sold
+                    </button>
+                    <button
+                      type="button"
+                      id="status-rented-btn"
+                      onClick={() => setQuickAvailability('rented')}
+                      className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wider transition cursor-pointer ${
+                        quickAvailability === 'rented'
+                          ? 'bg-blue-50 text-blue-800 border-blue-300 ring-2 ring-blue-500/10'
+                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
+                      }`}
+                    >
+                      Rented
+                    </button>
+                  </div>
+                  {(quickAvailability === 'sold' || quickAvailability === 'rented') && (
+                    <div className="p-2.5 bg-brand-50/50 rounded-xl border border-brand-100 text-[10px] text-brand-700 leading-relaxed font-semibold">
+                      ⚡ <strong>Availability Rule Applied</strong>: Tagging this property as <strong>{quickAvailability}</strong> means it remains active on the public listings page for exactly <strong>7 days</strong>, and then will automatically be hidden from the public explore and search pages.
+                    </div>
+                  )}
                 </div>
 
                 {/* Form Inputs: Description */}

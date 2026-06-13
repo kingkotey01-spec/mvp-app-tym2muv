@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getUserProfile, getListings, getReviewsForVendor, createReview, checkUserAgentInteraction } from '../services/supabaseService';
-import { User, Listing, Review } from '../types';
+import { getUserProfile, getListings, getReviewsForVendor, createReview, checkUserAgentInteraction, getRentFinancingApplications } from '../services/supabaseService';
+import { User, Listing, Review, RentFinancingApplication } from '../types';
 import ListingCard from '../components/ListingCard';
 import AdCard from '../components/AdCard';
 import Icon from '../components/Icon';
@@ -31,6 +31,298 @@ const Profile: React.FC = () => {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [interactedProperties, setInteractedProperties] = useState<string[]>([]);
   const [checkingInteraction, setCheckingInteraction] = useState(true);
+
+  // Rent Financing States for profile tab integration
+  const [financingApps, setFinancingApps] = useState<any[]>([]);
+  const [loadingFinancing, setLoadingFinancing] = useState(false);
+
+  useEffect(() => {
+    const loadFinancingApps = async () => {
+      if (user?.id && isMe && user.role === 'Tenant') {
+        setLoadingFinancing(true);
+        try {
+          let dbApps: any[] = [];
+          try {
+            dbApps = await getRentFinancingApplications(user.id);
+          } catch (_) {}
+          
+          const localStored = localStorage.getItem('rent_financing_local');
+          const parsedLocal = localStored ? JSON.parse(localStored) : [];
+          
+          // Filter to make sure it belongs to current user
+          const userParsedLocal = parsedLocal.filter((x: any) => x.userId === user.id);
+          
+          const combined = [...userParsedLocal, ...dbApps];
+          
+          // Deduplicate by ID
+          const unique = combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+          setFinancingApps(unique);
+        } catch (err) {
+          console.error("Failed to load financing applications in profile:", err);
+        } finally {
+          setLoadingFinancing(false);
+        }
+      }
+    };
+
+    if (activeTab === 'financing') {
+      loadFinancingApps();
+    }
+  }, [activeTab, user?.id, isMe]);
+
+  const handlePrintApplication = (app: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast("Pop-up blocker active! Please allow pop-ups to print your application page.", "error");
+      return;
+    }
+
+    const calculatedInstallment = Math.round((app.amountRequired + (app.amountRequired * (1.5/100) * app.repaymentDuration)) / app.repaymentDuration);
+    const totalRepayable = calculatedInstallment * app.repaymentDuration;
+    const interestAccrued = totalRepayable - app.amountRequired;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Rent Financing Application - ${app.id}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap');
+            body {
+              font-family: 'Inter', sans-serif;
+              color: #1e293b;
+              background-color: #ffffff;
+              padding: 40px;
+              line-height: 1.6;
+            }
+            .header {
+              border-bottom: 2px solid #e2e8f0;
+              padding-bottom: 24px;
+              margin-bottom: 30px;
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+            }
+            .logo {
+              font-size: 24px;
+              font-weight: 800;
+              color: #4f46e5;
+              letter-spacing: -0.05em;
+            }
+            .title {
+              font-size: 16px;
+              font-weight: 600;
+              text-align: right;
+              color: #64748b;
+            }
+            .app-id {
+              font-family: 'JetBrains Mono', monospace;
+              color: #4f46e5;
+              font-weight: 700;
+            }
+            .section {
+              margin-bottom: 28px;
+            }
+            .section-title {
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+              color: #94a3b8;
+              font-weight: 800;
+              border-bottom: 1px solid #f1f5f9;
+              padding-bottom: 4px;
+              margin-bottom: 12px;
+            }
+            .grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 16px 24px;
+            }
+            .item-label {
+              font-size: 11px;
+              color: #64748b;
+              text-transform: lowercase;
+              font-weight: 600;
+            }
+            .item-value {
+              font-size: 13px;
+              font-weight: 600;
+              color: #0f172a;
+              margin-top: 2px;
+            }
+            .badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 9999px;
+              font-size: 10px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .badge-pending { background-color: #fef08a; color: #854d0e; }
+            .badge-approved { background-color: #bbf7d0; color: #166534; }
+            .badge-rejected { background-color: #fecaca; color: #991b1b; }
+            .badge-incomplete { background-color: #ffedd5; color: #9a3412; }
+            .badge-under_review { background-color: #e0f2fe; color: #075985; }
+            
+            .box-calculation {
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              margin-top: 15px;
+            }
+            .footer {
+              margin-top: 60px;
+              border-top: 1px solid #f1f5f9;
+              padding-top: 20px;
+              font-size: 11px;
+              color: #64748b;
+              text-align: center;
+            }
+            @media print {
+              body { padding: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="logo">Tym2Muv</div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 4px;">Verified Local Rent Financing Solutions</div>
+            </div>
+            <div class="title">
+              Financing Application Record<br/>
+              <span class="app-id">ID: ${app.id}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Application Metadata</div>
+            <div class="grid">
+              <div>
+                <div class="item-label">Status</div>
+                <div class="item-value">
+                  <span class="badge badge-${app.status}">${app.status.replace('_', ' ')}</span>
+                </div>
+              </div>
+              <div>
+                <div class="item-label">Submitted On</div>
+                <div class="item-value">${new Date(app.createdAt).toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Applicant Personal Profile</div>
+            <div class="grid">
+              <div>
+                <div class="item-label">Full Legal Name</div>
+                <div class="item-value">${app.fullName}</div>
+              </div>
+              <div>
+                <div class="item-label">Email Address</div>
+                <div class="item-value">${app.email}</div>
+              </div>
+              <div>
+                <div class="item-label">Phone Coordinates</div>
+                <div class="item-value">${app.phone}</div>
+              </div>
+              <div>
+                <div class="item-label">Employment Classification</div>
+                <div class="item-value">${app.employmentStatus}</div>
+              </div>
+              <div>
+                <div class="item-label">Reported Monthly Income</div>
+                <div class="item-value">GH¢${app.monthlyIncome.toLocaleString()}</div>
+              </div>
+              <div>
+                <div class="item-label">${app.idType ? app.idType.toUpperCase() : 'ID'} Doc Number</div>
+                <div class="item-value">${app.idNumber}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Landlord & Physical Properties Details</div>
+            <div class="grid">
+              <div>
+                <div class="item-label">Target Property Coordinates</div>
+                <div class="item-value">${app.streetAddress}, ${app.city}, ${app.stateRegion}, ${app.country}</div>
+              </div>
+              <div>
+                <div class="item-label">Target Monthly Rent</div>
+                <div class="item-value">GH¢${app.monthlyRent.toLocaleString()}</div>
+              </div>
+              <div>
+                <div class="item-label">Landlord Representative Name</div>
+                <div class="item-value">${app.landlordName}</div>
+              </div>
+              <div>
+                <div class="item-label">Landlord Phone Coordinates</div>
+                <div class="item-value">${app.landlordPhone}</div>
+              </div>
+              <div>
+                <div class="item-label">Preferred Move-In Schedule</div>
+                <div class="item-value">${app.moveInDate ? new Date(app.moveInDate).toLocaleDateString() : 'N/A'}</div>
+              </div>
+              <div>
+                <div class="item-label">Drafted Lease Schedule</div>
+                <div class="item-value">${app.leaseDuration} Months</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Approved Rent Financing Ledger Breakdown</div>
+            <div class="box-calculation">
+              <div class="grid">
+                <div>
+                  <div class="item-label">Requested Escrow Capital</div>
+                  <div class="item-value" style="font-size: 16px; color: #4f46e5; font-weight: 800;">GH¢${app.amountRequired.toLocaleString()}</div>
+                </div>
+                <div>
+                  <div class="item-label">Repayment Installment Amount</div>
+                  <div class="item-value" style="font-size: 16px; color: #1e293b; font-weight: 800;">GH¢${calculatedInstallment.toLocaleString()} / month</div>
+                </div>
+                <div>
+                  <div class="item-label">Tenure Duration</div>
+                  <div class="item-value">${app.repaymentDuration} Months</div>
+                </div>
+                <div>
+                  <div class="item-label">Accumulated Capital Intermediation</div>
+                  <div class="item-value">GH¢${interestAccrued.toLocaleString()} (1.5% p.m.)</div>
+                </div>
+                <div style="grid-column: span 2; border-top: 1px dashed #cbd5e1; padding-top: 12px; margin-top: 6px;">
+                  <div class="item-label">Total Repayable Obligations</div>
+                  <div class="item-value" style="font-size: 18px; color: #0f172a; font-weight: 800;">GH¢${totalRepayable.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Credit Underwriter Comments</div>
+            <div class="item-value" style="font-weight: 500; color: #475569; background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e1e8f0; font-size: 11.5px; font-family: 'JetBrains Mono', monospace;">
+              ${app.adminNotes || 'Verification engine is currently performing primary credential integrity checks.'}
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Securely sealed and recorded on the Tym2Muv Credit Ledger.</p>
+            <p style="font-size: 9px; margin-top: 5px; color: #94a3b8;">SYSTEM GENERATED RECORD — VERIFIABLE COPIES CAN BE AUDITED BY ESCROW COORDINATORS.</p>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   // Sorting and Filtering State
   const [sortBy, setSortBy] = useState<'recent' | 'highest' | 'lowest'>('recent');
@@ -464,12 +756,21 @@ const Profile: React.FC = () => {
             <div className="border-b border-slate-200 mb-4 overflow-x-auto no-scrollbar">
                 <div className="flex gap-4 whitespace-nowrap">
                     {user.role === 'Tenant' && isMe ? (
-                      <button 
-                         onClick={() => setActiveTab('saved')}
-                         className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'saved' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                      >
-                          Saved Properties ({savedListings.length})
-                      </button>
+                      <>
+                        <button 
+                           onClick={() => setActiveTab('saved')}
+                           className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'saved' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Saved Properties ({savedListings.length})
+                        </button>
+                        <button 
+                           onClick={() => setActiveTab('financing')}
+                           id="profile-financing-tab"
+                           className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'financing' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1`}
+                        >
+                            <Icon name="clock" size={13} className={activeTab === 'financing' ? 'text-brand-500' : 'text-slate-400'} /> Rent Financing
+                        </button>
+                      </>
                     ) : null}
                     
                     {(user.role === 'Agent' || user.role === 'Admin') && (
@@ -507,23 +808,41 @@ const Profile: React.FC = () => {
 
             {activeTab === 'listings' ? (
                 listings.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                        {mixedContent.map((item, idx) => (
-                            item.type === 'listing' ? (
-                                <ListingCard key={item.data.id} listing={item.data} />
-                            ) : (
-                                <AdCard 
-                                    key={`ad-${idx}`} 
-                                    type={item.data.type}
-                                    title={item.data.title}
-                                    description={item.data.description}
-                                    cta={item.data.cta}
-                                    image={item.data.image}
-                                    color={item.data.color}
-                                    className={`col-start-1 sm:col-start-${(idx % 2) + 1} lg:col-start-${(idx % 3) + 1} xl:col-start-${(idx % 4) + 1}`}
-                                />
-                            )
-                        ))}
+                    <div className="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                        {(() => {
+                            let adIndex = -1;
+                            return mixedContent.map((item, idx) => {
+                                if (item.type === 'listing') {
+                                    return (
+                                        <ListingCard key={item.data.id} listing={item.data} />
+                                    );
+                                } else {
+                                    adIndex++;
+                                    const adSeq = adIndex % 3;
+                                    let colSpanClass = "";
+                                    if (adSeq === 0) {
+                                        colSpanClass = "col-start-1 sm:col-start-1 lg:col-start-1 xl:col-start-1";
+                                    } else if (adSeq === 1) {
+                                        colSpanClass = "col-start-1 sm:col-start-2 lg:col-start-3 xl:col-start-3";
+                                    } else {
+                                        colSpanClass = "col-start-1 sm:col-start-1 lg:col-start-2 xl:col-start-4";
+                                    }
+
+                                    return (
+                                        <AdCard 
+                                            key={`ad-${idx}`} 
+                                            type="tall"
+                                            title={item.data.title}
+                                            description={item.data.description}
+                                            cta={item.data.cta}
+                                            image={item.data.image}
+                                            color={item.data.color}
+                                            className={`row-span-2 h-full ${colSpanClass}`}
+                                        />
+                                    );
+                                }
+                            });
+                        })()}
                     </div>
                 ) : (
                     <div className="py-20 text-center">
@@ -552,6 +871,115 @@ const Profile: React.FC = () => {
                         <p className="text-slate-500 mt-1">You haven't saved any listings to your favorites yet.</p>
                     </div>
                 )
+            ) : activeTab === 'inbox' ? (
+                <SimulatedInbox />
+            ) : activeTab === 'financing' ? (
+                 <div className="space-y-6 animate-fade-in relative z-10 text-slate-705">
+                     <div className="bg-white border border-slate-200 rounded-3xl p-5 md:p-6 shadow-xs">
+                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-2.5 border-b border-slate-100">
+                             <div>
+                                 <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                                     <Icon name="clock" size={18} className="text-[#ff007f]" />
+                                     Rent Financing Applications Status & Logs
+                                 </h3>
+                                 <p className="text-xs text-slate-500 font-semibold mt-1">Track payments, status changes, underwriter comments, and export certified PDF forms.</p>
+                             </div>
+                             <Link
+                                 to="/rent-financing"
+                                 className="px-3.5 py-1.5 bg-brand-600 font-extrabold hover:bg-brand-700 rounded-lg text-white text-xs lowercase transition-all cursor-pointer shadow-3xs"
+                             >
+                                 + Apply for financing
+                             </Link>
+                         </div>
+
+                         {loadingFinancing ? (
+                             <div className="flex flex-col items-center justify-center py-16 gap-3">
+                                 <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                                 <span className="text-xs text-slate-500 font-bold">Retrieving rent financing applications history...</span>
+                             </div>
+                         ) : financingApps.length === 0 ? (
+                             <div className="py-16 text-center">
+                                 <div className="w-14 h-14 bg-slate-100/80 rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-150 text-slate-400">
+                                     <Icon name="clock" size={26} />
+                                 </div>
+                                 <h4 className="font-extrabold text-slate-700 text-sm">No Active Applications Found</h4>
+                                 <p className="text-slate-500 text-xs mt-1 leading-relaxed max-w-sm mx-auto font-medium">
+                                     You haven't requested rent financing yet. Use the rent financing calculator to benchmark your limits and submit.
+                                 </p>
+                             </div>
+                         ) : (
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                 {financingApps.map((app) => {
+                                     const calculatedInstallment = Math.round((app.amountRequired + (app.amountRequired * (1.5/100) * app.repaymentDuration)) / app.repaymentDuration);
+                                     
+                                     return (
+                                         <div key={app.id} id={`financing-card-${app.id}`} className="p-4 bg-white border border-slate-200/85 hover:border-slate-350 rounded-2xl transition-all shadow-3xs flex flex-col justify-between">
+                                             <div>
+                                                 <div className="flex justify-between items-start gap-2 pb-2 border-b border-slate-100">
+                                                     <div>
+                                                         <div className="flex items-center gap-2">
+                                                             <span className="text-[10px] font-mono text-indigo-650 font-black uppercase tracking-wider">ID: {app.id}</span>
+                                                             <span className="text-[10px] text-slate-400 font-bold">• {new Date(app.createdAt).toLocaleDateString()}</span>
+                                                         </div>
+                                                         <h4 className="font-bold text-slate-800 text-xs mt-0.5 leading-snug">
+                                                             {app.streetAddress}, {app.city}
+                                                         </h4>
+                                                     </div>
+                                                     {/* Status Badges */}
+                                                     <div className="shrink-0">
+                                                         {app.status === 'approved' && <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100">Approved</span>}
+                                                         {app.status === 'rejected' && <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-red-50 text-red-750 border border-red-100">Rejected</span>}
+                                                         {app.status === 'pending' && <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-50 text-amber-700 border border-amber-100">Pending Review</span>}
+                                                         {app.status === 'incomplete' && <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-orange-50 text-orange-700 border border-orange-100">Incomplete</span>}
+                                                         {app.status === 'under_review' && <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-sky-50 text-sky-700 border border-sky-100">Under Review</span>}
+                                                     </div>
+                                                 </div>
+
+                                                 <div className="grid grid-cols-2 gap-y-3 gap-x-2 mt-3 text-xs leading-none font-semibold">
+                                                     <div>
+                                                         <span className="text-[10px] text-slate-450 block mb-0.5">Advance Capital</span>
+                                                         <span className="font-bold font-mono text-slate-850 text-sm">GH¢{app.amountRequired.toLocaleString()}</span>
+                                                     </div>
+                                                     <div>
+                                                         <span className="text-[10px] text-slate-450 block mb-0.5">Spread Repayment</span>
+                                                         <span className="font-bold text-slate-800">GH¢{calculatedInstallment.toLocaleString()}/m</span>
+                                                     </div>
+                                                     <div>
+                                                         <span className="text-[10px] text-slate-450 block mb-0.5">Tenure</span>
+                                                         <span className="font-bold text-slate-800">{app.repaymentDuration} months</span>
+                                                     </div>
+                                                     <div>
+                                                         <span className="text-[10px] text-slate-450 block mb-0.5">Landlord Coordinates</span>
+                                                         <span className="font-bold text-slate-800 truncate block max-w-[120px]">{app.landlordName}</span>
+                                                     </div>
+                                                 </div>
+
+                                                 {app.adminNotes && (
+                                                     <div className="mt-3 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+                                                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block font-mono">underwriter feedback log</span>
+                                                         <p className="text-[10px] text-slate-600 mt-0.5 leading-snug font-medium italic">"{app.adminNotes}"</p>
+                                                     </div>
+                                                 )}
+                                             </div>
+
+                                             <div className="flex gap-2 items-center justify-end mt-4 pt-3 border-t border-slate-100">
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => handlePrintApplication(app)}
+                                                     id={`print-${app.id}`}
+                                                     className="px-3 py-1.5 duration-150 text-slate-600 hover:text-indigo-700 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wide cursor-pointer"
+                                                 >
+                                                     <Icon name="printer" size={13} />
+                                                     <span>Print Application</span>
+                                                 </button>
+                                             </div>
+                                         </div>
+                                     );
+                                 })}
+                             </div>
+                         )}
+                     </div>
+                 </div>
             ) : activeTab === 'inbox' ? (
                 <SimulatedInbox />
             ) : (

@@ -33,7 +33,7 @@ export const Logo: React.FC<{ className?: string }> = ({ className = "" }) => (
       />
     </div>
     <div className="flex flex-col justify-center">
-      <span className="font-bold text-lg sm:text-2xl tracking-tight leading-none text-slate-800 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-brand-600 group-hover:to-fuchsia-500 transition-all font-display">
+      <span className="hidden sm:block font-bold text-lg sm:text-2xl tracking-tight leading-none text-slate-800 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-brand-600 group-hover:to-fuchsia-500 transition-all font-display">
         tym2muv
       </span>
     </div>

@@ -75,6 +75,75 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading, i
     return list.filter(Boolean).length > 0 ? list.filter(Boolean) as string[] : [FALLBACK_IMAGE];
   }, [listing.images, listing.imageUrl]);
 
+  const features = useMemo(() => {
+    const list = [];
+    if (listing.bedrooms) {
+      list.push({
+        id: 'beds',
+        label: `${listing.bedrooms} ${listing.bedrooms === 1 ? 'bed' : 'beds'}`,
+        value: listing.bedrooms.toString(),
+        icon: 'bed',
+        title: 'Bedrooms'
+      });
+    }
+    if (listing.bathrooms) {
+      list.push({
+        id: 'baths',
+        label: `${listing.bathrooms} ${listing.bathrooms === 1 ? 'bath' : 'baths'}`,
+        value: listing.bathrooms.toString(),
+        icon: 'bath',
+        title: 'Bathrooms'
+      });
+    }
+    if (listing.sqft) {
+      const formattedSqft = listing.sqft >= 1000 ? `${(listing.sqft / 1000).toFixed(1)}k` : listing.sqft.toString();
+      list.push({
+        id: 'sqft',
+        label: `${listing.sqft.toLocaleString()} sqft`,
+        value: formattedSqft,
+        icon: 'maximize',
+        title: 'Square Feet'
+      });
+    }
+    if (listing.parking) {
+      list.push({
+        id: 'parking',
+        label: 'parking',
+        value: 'yes',
+        icon: 'parking',
+        title: 'Parking Available'
+      });
+    }
+    if (listing.furnished) {
+      list.push({
+        id: 'furnished',
+        label: 'furnished',
+        value: 'yes',
+        icon: 'armchair',
+        title: 'Furnished'
+      });
+    }
+    if (listing.petsAllowed) {
+      list.push({
+        id: 'pets',
+        label: 'pets',
+        value: 'yes',
+        icon: 'paw',
+        title: 'Pets Allowed'
+      });
+    }
+    if (listing.security) {
+      list.push({
+        id: 'security',
+        label: 'security',
+        value: 'yes',
+        icon: 'security',
+        title: 'Secure Community'
+      });
+    }
+    return list;
+  }, [listing]);
+
   const [isFlipped, setIsFlipped] = useState(false);
   const [frontImageIndex, setFrontImageIndex] = useState(0);
   const [backImageIndex, setBackImageIndex] = useState(1 % images.length);
@@ -111,7 +180,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading, i
     
     const interval = setInterval(() => {
       handleNext();
-    }, 28000);
+    }, 17000);
     
     return () => clearInterval(interval);
   }, [images.length, frontImageIndex, backImageIndex, isFlipped]);
@@ -171,6 +240,17 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading, i
           fallbackSrc={FALLBACK_IMAGE}
         />
         
+        {(listing.availabilityStatus === 'sold' || listing.availabilityStatus === 'rented') && (
+          <div className="absolute inset-0 bg-slate-950/25 backdrop-blur-[1.5px] z-20 flex items-center justify-center">
+            <div className={`px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest text-white shadow-md flex items-center gap-1.5 ${
+              listing.availabilityStatus === 'sold' ? 'bg-amber-600/95 border-amber-400' : 'bg-blue-600/95 border-blue-405'
+            }`}>
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping shrink-0" />
+              <span>{listing.availabilityStatus}</span>
+            </div>
+          </div>
+        )}
+        
         {/* Floating Badges */}
         <div className="absolute top-2 left-2 flex flex-row flex-wrap gap-1 z-30 pointer-events-none drop-shadow-md">
            {listing.isVerified && (
@@ -181,6 +261,16 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading, i
            {listing.isPremium && (
              <div className="text-amber-600 flex items-center justify-center bg-amber-50 rounded-full p-0.5" title="Premium">
                <Icon name="award" size={10} />
+             </div>
+           )}
+           {listing.availabilityStatus === 'sold' && (
+             <div className="bg-amber-500 text-white px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-[0.05em] shadow-sm flex items-center gap-0.5" title="Property Sold">
+               SOLD
+             </div>
+           )}
+           {listing.availabilityStatus === 'rented' && (
+             <div className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-[0.05em] shadow-sm flex items-center gap-0.5" title="Property Rented">
+               RENTED
              </div>
            )}
            {isHot && (
@@ -239,29 +329,23 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, seller, isLoading, i
                })}
             </h3>
 
-            <div className="grid grid-cols-4 gap-1.5 mb-3">
-               {listing.bedrooms && (
-                 <div className="flex items-center justify-start gap-1 h-7 w-full" title="Bedrooms">
-                   <Icon name="bed" size={14} className="text-slate-500 shrink-0" />
-                   <span className="text-[11px] font-bold text-slate-700 truncate">{listing.bedrooms}</span>
+            <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 mb-2 px-1 mt-1 border-t border-slate-50 pt-2">
+               {features.slice(0, 3).map((feat) => (
+                 <div 
+                   key={feat.id} 
+                   title={feat.title}
+                   className="flex items-center gap-1.5 cursor-help py-0.5"
+                 >
+                   <Icon 
+                     name={feat.icon} 
+                     size={13} 
+                     className="text-zinc-600 shrink-0" 
+                   />
+                   <span className="text-[11px] font-bold text-zinc-700 select-none leading-none">
+                     {feat.value}
+                   </span>
                  </div>
-               )}
-               {listing.bathrooms && (
-                 <div className="flex items-center justify-start gap-1 h-7 w-full" title="Bathrooms">
-                   <Icon name="bath" size={14} className="text-slate-500 shrink-0" />
-                   <span className="text-[11px] font-bold text-slate-700 truncate">{listing.bathrooms}</span>
-                 </div>
-               )}
-               {listing.parking && (
-                 <div className="flex items-center justify-start gap-1 h-7 w-full" title="Parking Available">
-                   <Icon name="parking" size={14} className="text-slate-500 shrink-0" />
-                 </div>
-               )}
-               {listing.petsAllowed && (
-                 <div className="flex items-center justify-start gap-1 h-7 w-full" title="Pets Allowed">
-                   <Icon name="paw" size={14} className="text-slate-500 shrink-0" />
-                 </div>
-               )}
+               ))}
             </div>
          </div>
 

@@ -61,10 +61,22 @@ const Home: React.FC = () => {
               // Avoid duplicates in case of React double rendering
               const existingIds = new Set(prev.map(l => l.id));
               const uniqueNew = fetchedListings.filter(l => !existingIds.has(l.id));
-              return [...prev, ...uniqueNew];
+              const merged = [...prev, ...uniqueNew];
+              return merged.sort((a, b) => {
+                const aPremium = a.isPremium ? 1 : 0;
+                const bPremium = b.isPremium ? 1 : 0;
+                if (bPremium !== aPremium) return bPremium - aPremium;
+                return new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime();
+              });
           });
       } else {
-          setListings(fetchedListings);
+          const sorted = [...fetchedListings].sort((a, b) => {
+            const aPremium = a.isPremium ? 1 : 0;
+            const bPremium = b.isPremium ? 1 : 0;
+            if (bPremium !== aPremium) return bPremium - aPremium;
+            return new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime();
+          });
+          setListings(sorted);
       }
       setTotalItems(total);
     } catch (err) {
@@ -268,7 +280,7 @@ const Home: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[10px] md:text-[11px] font-mono text-slate-300">
                 <div className="flex items-center gap-1">
                   <Icon name="check" size={12} className="text-[#00ffcc]" />
-                  <span>5,000+ Daily Verified Listings</span>
+                  <span>Verified listings</span>
                 </div>
                 <div className="w-0.5 h-0.5 bg-slate-700 rounded-full hidden sm:block"></div>
                 <div className="flex items-center gap-1">
@@ -284,158 +296,9 @@ const Home: React.FC = () => {
             </div>
           </section>
 
-          {/* Category Quick Filter Bento section */}
-          <section className="mt-1">
-            <div className="glass-card rounded-3xl p-4 md:p-5 shadow-sm border border-slate-100/50 bg-white/45 backdrop-blur-md">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 mb-4">
-                <div>
-                  <h2 className="text-base font-display font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                    <Icon name="sliders" size={16} className="text-brand-600 animate-pulse" />
-                    How can we help you today?
-                  </h2>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {[
-                  {
-                    id: 'houses',
-                    name: 'Houses & Apartments',
-                    description: 'Explore verified apartments, homes, condos, and premium villas.',
-                    textColor: 'text-blue-600',
-                    lightBg: 'bg-blue-50/70',
-                    icon: 'home',
-                  },
-                  {
-                    id: 'land',
-                    name: 'Lands & Plots',
-                    description: 'Find verified residential, agricultural, and commercial plots.',
-                    textColor: 'text-emerald-600',
-                    lightBg: 'bg-emerald-50/70',
-                    icon: 'mapPin',
-                  },
-                  {
-                    id: 'offices',
-                    name: 'Offices & Shops',
-                    description: 'Browse prime corporate offices, co-working, and commercial settings.',
-                    textColor: 'text-amber-600',
-                    lightBg: 'bg-amber-50/70',
-                    icon: 'briefcase',
-                  },
-                  {
-                    id: 'warehouses',
-                    name: 'Warehouses & Storage',
-                    description: 'Find storage facilities, cold storage, cargo docks, and fulfillment sites.',
-                    textColor: 'text-indigo-600',
-                    lightBg: 'bg-indigo-50/70',
-                    icon: 'package',
-                  }
-                ].map(cat => (
-                  <Link
-                    key={cat.id}
-                    to={`/search?categoryId=${cat.id}`}
-                    className="group relative overflow-hidden rounded-2xl p-4 border border-slate-200/60 bg-white/80 hover:border-transparent transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between min-h-[125px] duration-300"
-                  >
-                    {/* Hover subtle overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500 from-purple-500 to-indigo-600" />
-                    
-                    <div className="flex justify-between items-start z-10">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${cat.lightBg} ${cat.textColor} group-hover:scale-105 transition-transform duration-300 shadow-sm`}>
-                        <Icon name={cat.icon} size={16} />
-                      </div>
-                      <span className="text-slate-300 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all duration-300">
-                        <Icon name="chevronRight" size={14} />
-                      </span>
-                    </div>
 
-                    <div className="mt-3 relative z-10">
-                      <h3 className="font-bold text-slate-800 text-xs sm:text-sm group-hover:text-brand-700 transition-colors tracking-tight">{cat.name}</h3>
-                      <p className="text-slate-400 text-[11px] mt-1 leading-normal group-hover:text-slate-600 transition-colors">{cat.description}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
 
-          {/* Muv Now, Pay Monthly Rent Financing Program */}
-          <section className="mt-1 animate-slide-up">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8607C1] to-[#240035] text-white p-5 md:p-7 border border-[#CF8EED]/20 shadow-lg shadow-[#8607C1]/10">
-              {/* Decorative Glows */}
-              <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none"></div>
-              <div className="absolute bottom-0 left-0 w-[150px] h-[150px] bg-[#fb00ff]/5 rounded-full blur-[80px] pointer-events-none"></div>
-
-              <div className="relative z-10 flex flex-col gap-5">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-[#CF8EED]/10 pb-4">
-                  <div className="space-y-1">
-                    <div className="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wider font-mono lowercase">
-                      <span className="w-1 h-1 rounded-full bg-[#39FF14] animate-ping"></span>
-                      tym2muv rent financing program
-                    </div>
-                    <h2 className="text-lg md:text-xl font-black font-sans tracking-tight text-white leading-tight lowercase">
-                      muv now, pay monthly.
-                    </h2>
-                    <p className="text-slate-350 text-[11px] md:text-xs max-w-xl lowercase leading-relaxed">
-                      struggling with huge upfront landlord advances? select any verified listings, we'll cover the landlord upfront while you pay us in stress-free monthly tiers.
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 w-full md:w-auto">
-                    <Link
-                      id="apply-financing-home-banner-btn"
-                      to="/rent-financing"
-                      className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-400 via-[#00ffcc] to-sky-450 hover:opacity-90 font-extrabold text-xs text-slate-950 px-4.5 py-2.5 rounded-lg shadow-md shadow-emerald-500/10 duration-200 transition-all hover:scale-[1.01] active:scale-99 w-full md:w-auto lowercase"
-                    >
-                      <span>calculate & apply now</span>
-                      <Icon name="chevronRight" size={13} />
-                    </Link>
-                  </div>
-                </div>
-
-                {/* 3 Step breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                  {/* Step 1 */}
-                  <div className="group relative overflow-hidden rounded-xl bg-black/25 border border-white/10 p-4 flex flex-col gap-2.5 hover:border-emerald-500/20 transition-all duration-300">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-950 text-[#00ffcc] font-mono font-bold text-xs border border-white/10 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
-                      01
-                    </div>
-                    <div className="space-y-0.5">
-                      <h3 className="font-bold text-white text-xs md:text-sm tracking-tight"><span className="text-[#00ffcc]">find the vibe:</span> browse 100% verified listings.</h3>
-                      <p className="text-slate-350 text-[11px] leading-relaxed lowercase">
-                        every listing on tym2muv goes through robust background validation to ensure what you see is what you lock down.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Step 2 */}
-                  <div className="group relative overflow-hidden rounded-xl bg-black/25 border border-white/10 p-4 flex flex-col gap-2.5 hover:border-[#ff007f]/20 transition-all duration-300">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-950 text-[#ff007f] font-mono font-bold text-xs border border-white/10 group-hover:bg-pink-500 group-hover:text-slate-950 transition-all">
-                      02
-                    </div>
-                    <div className="space-y-0.5">
-                      <h3 className="font-bold text-white text-xs md:text-sm tracking-tight"><span className="text-[#ff007f]">we pay upfront:</span> tym2muv covers the landlord's required advance.</h3>
-                      <p className="text-slate-350 text-[11px] leading-relaxed lowercase">
-                        no more saving up for 12 or 24 months of advance rent files. we handle the full upfront check for you instantly.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Step 3 */}
-                  <div className="group relative overflow-hidden rounded-xl bg-black/25 border border-white/10 p-4 flex flex-col gap-2.5 hover:border-sky-500/20 transition-all duration-300">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-950 text-sky-400 font-mono font-bold text-xs border border-white/10 group-hover:bg-sky-400 group-hover:text-slate-950 transition-all">
-                      03
-                    </div>
-                    <div className="space-y-0.5">
-                      <h3 className="font-bold text-white text-xs md:text-sm tracking-tight"><span className="text-sky-400">move in & pay monthly:</span> you move in immediately and pay a predictable, stress-free monthly rate.</h3>
-                      <p className="text-slate-350 text-[11px] leading-relaxed lowercase">
-                        take full control of your liquidity. split your rent over predictable, easy-to-manage monthly installments.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
 
           {/* Trending Listings */}
           <section id="trending-section">
@@ -459,27 +322,43 @@ const Home: React.FC = () => {
               ) : (
                 <>
                   {/* Grid */}
-                  <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
-                    {mixedContent.map((item, idx) => (
-                      item.type === 'listing' ? (
-                        <ListingCard key={item.data.id} listing={item.data} />
-                      ) : (
-                        <AdCard 
-                          key={`ad-${idx}`} 
-                          id={item.data.id}
-                          type={item.data.type}
-                          title={item.data.title}
-                          description={item.data.description}
-                          cta={item.data.cta}
-                          image={item.data.image}
-                          color={item.data.color}
-                          link={item.data.link}
-                          className={`${
-                            idx % 2 === 0 ? 'col-start-1' : 'col-start-2'
-                          } min-[420px]:col-start-${(idx % 3) + 1} sm:col-start-${(idx % 4) + 1} md:col-start-${(idx % 5) + 1} lg:col-start-${(idx % 6) + 1}`}
-                        />
-                      )
-                    ))}
+                  <div className="grid grid-flow-row-dense grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+                    {(() => {
+                      let adIndex = -1;
+                      return mixedContent.map((item, idx) => {
+                        if (item.type === 'listing') {
+                          return (
+                            <ListingCard key={item.data.id} listing={item.data} />
+                          );
+                        } else {
+                          adIndex++;
+                          const adSeq = adIndex % 3;
+                          let colSpanClass = "";
+                          if (adSeq === 0) {
+                            colSpanClass = "col-start-1 min-[420px]:col-start-1 sm:col-start-1 md:col-start-1 lg:col-start-1";
+                          } else if (adSeq === 1) {
+                            colSpanClass = "col-start-2 min-[420px]:col-start-3 sm:col-start-3 md:col-start-3 lg:col-start-3";
+                          } else {
+                            colSpanClass = "col-start-1 min-[420px]:col-start-1 sm:col-start-1 md:col-start-5 lg:col-start-5";
+                          }
+
+                          return (
+                            <AdCard 
+                              key={`ad-${idx}`} 
+                              id={item.data.id}
+                              type="tall"
+                              title={item.data.title}
+                              description={item.data.description}
+                              cta={item.data.cta}
+                              image={item.data.image}
+                              color={item.data.color}
+                              link={item.data.link}
+                              className={`row-span-2 h-full ${colSpanClass}`}
+                            />
+                          );
+                        }
+                      });
+                    })()}
                   </div>
 
                   {isLoading && isAppending && (

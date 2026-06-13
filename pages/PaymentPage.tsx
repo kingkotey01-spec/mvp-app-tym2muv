@@ -37,10 +37,27 @@ const PaymentPage: React.FC = () => {
   const [isLoadingListing, setIsLoadingListing] = useState(true);
   const [paymentIntent, setPaymentIntent] = useState<'promotion' | 'deposit' | null>(null);
 
+  const getPremiumPrice = (currency: string): number => {
+    switch (currency?.toUpperCase()) {
+      case 'GHS':
+        return 120; // 120 GHS
+      case 'NGN':
+        return 12000; // 12000 NGN
+      case 'ZAR':
+        return 150; // 150 ZAR
+      case 'KES':
+        return 1040; // 1040 KES
+      case 'UGX':
+        return 30000; // 30000 UGX
+      default:
+        return 8; // Default $8 USD
+    }
+  };
+
   const getPriceToPay = () => {
     if (!listing) return 0;
     if (paymentIntent === 'promotion') {
-      return listing.currency === 'GHS' ? 250 : 25;
+      return getPremiumPrice(listing.currency || 'USD');
     }
     return listing.price;
   };
@@ -285,7 +302,7 @@ const PaymentPage: React.FC = () => {
                   <div className="flex justify-between items-baseline mb-0.5">
                     <h4 className="font-bold text-slate-800 text-sm">Promote Listing (Boost)</h4>
                     <span className="font-extrabold text-brand-600 text-sm">
-                      {getSymbolFromCode(listing.currency || 'USD')}{listing.currency === 'GHS' ? '250' : '25'}
+                      {getSymbolFromCode(listing.currency || 'USD')}{getPremiumPrice(listing.currency || 'USD').toLocaleString()}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -375,7 +392,42 @@ const PaymentPage: React.FC = () => {
           </div>
         )}
         
-        <div className="mt-6 pt-4 border-t border-slate-100 text-center relative z-10">
+        {/* Row of recognizable payment provider icons to build trust */}
+        <div className="mt-5 p-3 px-4 bg-slate-50/80 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 relative z-10">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Accepted Payment Providers</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {/* Visa */}
+            <div className="px-2 py-0.5 bg-white border border-slate-200/60 rounded shadow-xs flex items-center justify-center h-5">
+              <span className="text-[10px] font-black italic text-blue-800 tracking-tighter">ViSA</span>
+            </div>
+            {/* Mastercard */}
+            <div className="px-1.5 py-0.5 bg-white border border-slate-200/60 rounded shadow-xs flex items-center gap-1 h-5">
+              <div className="flex -space-x-1 shrink-0">
+                <div className="w-2 h-2 rounded-full bg-rose-500 opacity-90"></div>
+                <div className="w-2 h-2 rounded-full bg-amber-500 opacity-90"></div>
+              </div>
+              <span className="text-[8px] font-black text-slate-600 tracking-tight">mastercard</span>
+            </div>
+            {/* MTN Mobile Money */}
+            <div className="px-1.5 py-0.5 bg-[#FFCC00] rounded shadow-xs flex items-center justify-center h-5">
+              <span className="text-[8px] font-black text-black tracking-tight shrink-0">MTN MoMo</span>
+            </div>
+            {/* Telecel Cash */}
+            <div className="px-1.5 py-0.5 bg-[#E60000] text-white rounded shadow-xs flex items-center justify-center h-5">
+              <span className="text-[8px] font-black tracking-tight shrink-0">telecel cash</span>
+            </div>
+            {/* AirtelTigo Money */}
+            <div className="px-1.5 py-0.5 bg-[#00529B] text-white rounded shadow-xs flex items-center justify-center h-5">
+              <span className="text-[8px] font-black tracking-tight shrink-0">airteltigo money</span>
+            </div>
+            {/* Paystack */}
+            <div className="px-1.5 py-0.5 bg-white border border-slate-200/60 rounded shadow-xs flex items-center justify-center h-5">
+              <span className="text-[8px] font-black text-[#00a3ff] tracking-tight">paystack</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 pt-3.5 border-t border-slate-100 text-center relative z-10">
            <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5 font-medium">
              <Icon name="shieldCheck" size={14} className="text-emerald-500" />
              Payments secured by Paystack

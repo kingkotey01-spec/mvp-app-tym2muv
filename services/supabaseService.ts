@@ -408,40 +408,82 @@ export const createReport = async (report: { reporterId?: string; targetType: 'p
 };
 
 // --- LISTING SERVICES ---
-const mapPropertyToListing = (p: any): Listing => ({
-  id: p.id,
-  title: p.title,
-  price: p.price,
-  currency: p.currency,
-  location: p.location,
-  country: p.country_code,
-  imageUrl: (p.images && p.images.length > 0) ? p.images[0] : (p.image_url || ''),
-  images: p.images || [],
-  videos: p.videos || [],
-  categoryId: p.category_id,
-  subcategoryId: p.subcategory_id,
-  isFeatured: p.is_featured,
-  isPremium: p.is_premium,
-  datePosted: p.created_at,
-  expiryDate: p.expiry_date,
-  sellerId: p.agent_id,
-  description: p.description,
-  status: (p.status === 'approved' || p.status === 'active') ? 'active' : p.status,
-  type: p.listing_type,
-  propertyType: p.property_type,
-  bedrooms: p.bedrooms,
-  bathrooms: p.bathrooms,
-  sqft: p.sqft,
-  amenities: p.amenities || [],
-  furnished: p.furnished,
-  parking: p.parking,
-  security: p.security,
-  petsAllowed: p.pets_allowed,
-  yearBuilt: p.year_built,
-  isVerified: p.is_verified,
-  virtualTourUrl: p.virtual_tour_url,
-  floorPlanUrl: p.floor_plan_url || p.floorPlanUrl,
-});
+const mapPropertyToListing = (p: any): Listing => {
+  let isPremium = p.is_premium;
+  if (isPremium) {
+    const ts = p.premium_upgraded_at || p.created_at || new Date().toISOString();
+    const upgradedDate = new Date(ts);
+    const now = new Date();
+    const diffTime = now.getTime() - upgradedDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    if (diffDays > 10) {
+      isPremium = false;
+      // Asynchronously update DB to untag
+      supabase.from('properties').update({ is_premium: false, premium_upgraded_at: null }).eq('id', p.id).then(({ error }) => {
+        if (error) console.error("Could not automatically untag expired premium listing:", p.id, error);
+      });
+    }
+  }
+
+  let availabilityStatus = p.availability_status || 'available';
+  let availabilityChangedAt = p.availability_changed_at;
+  if (availabilityStatus === 'sold' || availabilityStatus === 'rented') {
+    const ts = p.availability_changed_at || p.updated_at || p.created_at || new Date().toISOString();
+    const changedDate = new Date(ts);
+    const now = new Date();
+    const diffTime = now.getTime() - changedDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    if (diffDays > 7) {
+      availabilityStatus = 'available';
+      availabilityChangedAt = undefined;
+      // Asynchronously update DB to untag
+      supabase.from('properties').update({
+        availability_status: 'available',
+        availability_changed_at: null
+      }).eq('id', p.id).then(({ error }) => {
+        if (error) console.error("Could not automatically untag expired sold/rented status:", p.id, error);
+      });
+    }
+  }
+
+  return {
+    id: p.id,
+    title: p.title,
+    price: p.price,
+    currency: p.currency,
+    location: p.location,
+    country: p.country_code,
+    imageUrl: (p.images && p.images.length > 0) ? p.images[0] : (p.image_url || ''),
+    images: p.images || [],
+    videos: p.videos || [],
+    categoryId: p.category_id,
+    subcategoryId: p.subcategory_id,
+    isFeatured: p.is_featured,
+    isPremium: isPremium,
+    premiumUpgradedAt: p.premium_upgraded_at,
+    datePosted: p.created_at,
+    expiryDate: p.expiry_date,
+    sellerId: p.agent_id,
+    description: p.description,
+    status: (p.status === 'approved' || p.status === 'active') ? 'active' : p.status,
+    type: p.listing_type,
+    propertyType: p.property_type,
+    bedrooms: p.bedrooms,
+    bathrooms: p.bathrooms,
+    sqft: p.sqft,
+    amenities: p.amenities || [],
+    furnished: p.furnished,
+    parking: p.parking,
+    security: p.security,
+    petsAllowed: p.pets_allowed,
+    yearBuilt: p.year_built,
+    isVerified: p.is_verified,
+    virtualTourUrl: p.virtual_tour_url,
+    floorPlanUrl: p.floor_plan_url || p.floorPlanUrl,
+    availabilityStatus: availabilityStatus,
+    availabilityChangedAt: availabilityChangedAt || undefined,
+  };
+};
 
 /* DB_INDEXES_REQUIRED: see supabase_production_schema.sql 
 -- Run this once in Supabase SQL Editor:
@@ -495,7 +537,24 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       const totalCount = count || 0;
       const hasMore = from + limit < totalCount;
       
-      return { listings: (data || []).map(mapPropertyToListing), total: totalCount, hasMore };
+      let mapped = (data || []).map(mapPropertyToListing);
+      
+      // Filter out sold/rented properties that have been inactive for more than 7 days for public views
+      if (!filters?.isAdminQuery && !filters?.sellerId && !filters?.agent_id) {
+        mapped = mapped.filter(listing => {
+          if (listing.availabilityStatus === 'sold' || listing.availabilityStatus === 'rented') {
+            if (!listing.availabilityChangedAt) return true;
+            const changedDate = new Date(listing.availabilityChangedAt);
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - changedDate.getTime());
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            return diffDays <= 7;
+          }
+          return true;
+        });
+      }
+
+      return { listings: mapped, total: totalCount, hasMore };
     }, CACHE_TTL.SEARCH);
   } catch (err) {
     if (import.meta.env.DEV) {
@@ -503,6 +562,9 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       let filtered = [...MOCK_LISTINGS];
       if (filters?.categoryId) {
         filtered = filtered.filter(l => l.categoryId === filters.categoryId);
+      }
+      if (filters?.countryCode) {
+        filtered = filtered.filter(l => l.country?.toLowerCase() === filters.countryCode.toLowerCase());
       }
       if (filters?.type) {
         filtered = filtered.filter(l => l.type.toLowerCase() === filters.type?.toLowerCase());
@@ -527,13 +589,38 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
         filtered = filtered.filter(l => l.sellerId === sId);
       }
       
+      // Sort mock fallbacks: premium listing first, then newest listings
+      filtered.sort((a, b) => {
+        const aPremium = a.isPremium ? 1 : 0;
+        const bPremium = b.isPremium ? 1 : 0;
+        if (bPremium !== aPremium) {
+          return bPremium - aPremium;
+        }
+        return new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime();
+      });
+      
       const page = filters?.page || 1;
       const limit = filters?.limit || filters?.pageSize || 50;
       const from = (page - 1) * limit;
       const paginated = filtered.slice(from, from + limit);
       
+      let finalMockListings = paginated;
+      if (!filters?.isAdminQuery && !filters?.sellerId && !filters?.agent_id) {
+        finalMockListings = finalMockListings.filter(listing => {
+          if (listing.availabilityStatus === 'sold' || listing.availabilityStatus === 'rented') {
+            if (!listing.availabilityChangedAt) return true;
+            const changedDate = new Date(listing.availabilityChangedAt);
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - changedDate.getTime());
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            return diffDays <= 7;
+          }
+          return true;
+        });
+      }
+
       return {
-        listings: paginated,
+        listings: finalMockListings,
         total: filtered.length,
         hasMore: from + limit < filtered.length
       };
@@ -591,6 +678,7 @@ export const createListing = async (listing: Omit<Listing, 'id'>): Promise<strin
     virtual_tour_url: listing.virtualTourUrl,
     expiry_date: expiryDate,
     is_premium: listing.isPremium || false,
+    premium_upgraded_at: listing.isPremium ? new Date().toISOString() : null,
   }).select('id').single();
   
   if (error) throw error;
@@ -615,7 +703,16 @@ export const updateListing = async (id: string, updates: Partial<Listing>) => {
   if (updates.parking !== undefined) dbUpdates.parking = updates.parking;
   if (updates.petsAllowed !== undefined) dbUpdates.pets_allowed = updates.petsAllowed;
   if (updates.virtualTourUrl !== undefined) dbUpdates.virtual_tour_url = updates.virtualTourUrl;
-  if (updates.isPremium !== undefined) dbUpdates.is_premium = updates.isPremium;
+  if (updates.isPremium !== undefined) {
+    dbUpdates.is_premium = updates.isPremium;
+    if (updates.isPremium) {
+      dbUpdates.premium_upgraded_at = updates.premiumUpgradedAt || new Date().toISOString();
+    } else {
+      dbUpdates.premium_upgraded_at = null;
+    }
+  }
+  if (updates.availabilityStatus !== undefined) dbUpdates.availability_status = updates.availabilityStatus;
+  if (updates.availabilityChangedAt !== undefined) dbUpdates.availability_changed_at = updates.availabilityChangedAt;
   
   if (Object.keys(dbUpdates).length === 0) return;
   const { error } = await supabase.from('properties').update(dbUpdates).eq('id', id);
@@ -631,6 +728,40 @@ export const deleteListing = async (id: string) => {
   
   await invalidateCachePrefix('listings');
   await delCache(cacheKey('listing', id));
+};
+
+export const runAutomaticTagsCleanup = async () => {
+  try {
+    const tenDaysAgo = new Date();
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // 1. Clean Premium listings older than 10 days
+    const { error: premiumError } = await supabase
+      .from('properties')
+      .update({ is_premium: false, premium_upgraded_at: null })
+      .eq('is_premium', true)
+      .or(`premium_upgraded_at.lt.${tenDaysAgo.toISOString()},and(premium_upgraded_at.is.null,created_at.lt.${tenDaysAgo.toISOString()})`);
+      
+    if (premiumError) {
+      console.warn("Error auto-cleaning premium statuses:", premiumError);
+    }
+
+    // 2. Clean Sold/Rented listings older than 7 days
+    const { error: availabilityError } = await supabase
+      .from('properties')
+      .update({ availability_status: 'available', availability_changed_at: null })
+      .in('availability_status', ['sold', 'rented'])
+      .or(`availability_changed_at.lt.${sevenDaysAgo.toISOString()},and(availability_changed_at.is.null,created_at.lt.${sevenDaysAgo.toISOString()})`);
+
+    if (availabilityError) {
+      console.warn("Error auto-cleaning sold/rented statuses:", availabilityError);
+    }
+  } catch (err) {
+    console.error("Failed to run automatic tags cleanup:", err);
+  }
 };
 
 // --- STORAGE SERVICES ---
@@ -1482,8 +1613,30 @@ export const getRentFinancingApplications = async (userId?: string): Promise<Ren
     amountRequired: Number(d.amount_required),
     repaymentDuration: Number(d.repayment_duration),
     status: d.status,
-    createdAt: d.created_at
+    createdAt: d.created_at,
+    adminNotes: d.admin_notes
   }));
+};
+
+export const updateRentFinancingApplication = async (
+  id: string, 
+  updates: Partial<RentFinancingApplication & { adminNotes: string }>
+): Promise<void> => {
+  const dbUpdates: any = {};
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.adminNotes !== undefined) dbUpdates.admin_notes = updates.adminNotes;
+  if (updates.amountRequired !== undefined) dbUpdates.amount_required = updates.amountRequired;
+  if (updates.repaymentDuration !== undefined) dbUpdates.repayment_duration = updates.repaymentDuration;
+
+  const { error } = await supabase
+    .from('rent_financing_applications')
+    .update(dbUpdates)
+    .eq('id', id);
+
+  if (error) {
+    console.error("Supabase updateRentFinancingApplication failed:", error);
+    throw error;
+  }
 };
 
 export const checkUserAgentInteraction = async (tenantId: string, agentId: string): Promise<{ interacted: boolean; properties: string[] }> => {
@@ -1537,6 +1690,7 @@ export interface Notification {
 }
 
 export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
+  let dbNotifications: Notification[] = [];
   try {
     const { data, error } = await supabase
       .from('notifications')
@@ -1544,24 +1698,69 @@ export const getNotificationsForUser = async (userId: string): Promise<Notificat
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    
-    return (data || []).map((n: any) => ({
-      id: n.id,
-      userId: n.user_id,
-      title: n.title,
-      text: n.text,
-      link: n.link,
-      read: n.read,
-      createdAt: n.created_at
-    }));
+    if (!error && data) {
+      dbNotifications = data.map((n: any) => ({
+        id: n.id,
+        userId: n.user_id,
+        title: n.title,
+        text: n.text,
+        link: n.link,
+        read: n.read,
+        createdAt: n.created_at
+      }));
+    }
   } catch (err) {
     console.error("Failed to get notifications from Supabase:", err);
-    return [];
   }
+
+  // Load from local storage
+  let localNotifications: Notification[] = [];
+  try {
+    const localStored = localStorage.getItem('tym2muv_local_notifications');
+    if (localStored) {
+      localNotifications = JSON.parse(localStored);
+    }
+  } catch (err) {
+    console.error("Failed to get local notifications:", err);
+  }
+
+  // Merge and filter by userId
+  const merged = [...dbNotifications, ...localNotifications].filter(n => n.userId === userId);
+  
+  // Deduplicate by ID
+  const unique = merged.filter((n, index, self) => 
+    self.findIndex(t => t.id === n.id) === index
+  );
+
+  // Sort by createdAt descending
+  unique.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return unique;
 };
 
 export const createNotification = async (userId: string, title: string, text: string, link?: string): Promise<string> => {
+  const newId = 'notif_' + Math.random().toString(36).substring(2, 10);
+  const localNotif: Notification = {
+    id: newId,
+    userId,
+    title,
+    text,
+    link,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+
+  // Save to local storage first
+  try {
+    const localStored = localStorage.getItem('tym2muv_local_notifications');
+    const list: Notification[] = localStored ? JSON.parse(localStored) : [];
+    list.unshift(localNotif);
+    localStorage.setItem('tym2muv_local_notifications', JSON.stringify(list));
+  } catch (err) {
+    console.error("Failed to save local notification:", err);
+  }
+
+  // Attempt Supabase
   try {
     const { data, error } = await supabase
       .from('notifications')
@@ -1575,15 +1774,34 @@ export const createNotification = async (userId: string, title: string, text: st
       .select('id')
       .single();
 
-    if (error) throw error;
-    return data.id;
+    if (!error && data) {
+      // Trigger custom update events
+      window.dispatchEvent(new Event('tym2muv_notifications_updated'));
+      return data.id;
+    }
   } catch (err) {
-    console.error("Failed to create notification inside Supabase:", err);
-    throw err;
+    console.error("Failed to create notification inside Supabase (using local):", err);
   }
+
+  // Always trigger custom event so UI updates instantly
+  window.dispatchEvent(new Event('tym2muv_notifications_updated'));
+  return newId;
 };
 
 export const markNotificationRead = async (id: string): Promise<void> => {
+  // 1. Mark in localStorage
+  try {
+    const localStored = localStorage.getItem('tym2muv_local_notifications');
+    if (localStored) {
+      const list: Notification[] = JSON.parse(localStored);
+      const updated = list.map(n => n.id === id ? { ...n, read: true } : n);
+      localStorage.setItem('tym2muv_local_notifications', JSON.stringify(updated));
+    }
+  } catch (err) {
+    console.error("Failed to update local notification:", err);
+  }
+
+  // 2. Mark in Supabase
   try {
     const { error } = await supabase
       .from('notifications')
@@ -1593,9 +1811,22 @@ export const markNotificationRead = async (id: string): Promise<void> => {
   } catch (err) {
     console.error("Failed to mark notification as read in Supabase:", err);
   }
+  
+  window.dispatchEvent(new Event('tym2muv_notifications_updated'));
 };
 
 export const markAllNotificationsReadForUser = async (userId: string): Promise<void> => {
+  try {
+    const localStored = localStorage.getItem('tym2muv_local_notifications');
+    if (localStored) {
+      const list: Notification[] = JSON.parse(localStored);
+      const updated = list.map(n => n.userId === userId ? { ...n, read: true } : n);
+      localStorage.setItem('tym2muv_local_notifications', JSON.stringify(updated));
+    }
+  } catch (err) {
+    console.error("Failed to update local notifications:", err);
+  }
+
   try {
     const { error } = await supabase
       .from('notifications')
@@ -1605,9 +1836,22 @@ export const markAllNotificationsReadForUser = async (userId: string): Promise<v
   } catch (err) {
     console.error("Failed to mark all notifications as read in Supabase:", err);
   }
+
+  window.dispatchEvent(new Event('tym2muv_notifications_updated'));
 };
 
 export const clearAllNotificationsForUser = async (userId: string): Promise<void> => {
+  try {
+    const localStored = localStorage.getItem('tym2muv_local_notifications');
+    if (localStored) {
+      const list: Notification[] = JSON.parse(localStored);
+      const filtered = list.filter(n => n.userId !== userId);
+      localStorage.setItem('tym2muv_local_notifications', JSON.stringify(filtered));
+    }
+  } catch (err) {
+    console.error("Failed to clear local notifications:", err);
+  }
+
   try {
     const { error } = await supabase
       .from('notifications')
@@ -1617,6 +1861,8 @@ export const clearAllNotificationsForUser = async (userId: string): Promise<void
   } catch (err) {
     console.error("Failed to clear notifications in Supabase:", err);
   }
+
+  window.dispatchEvent(new Event('tym2muv_notifications_updated'));
 };
 
 

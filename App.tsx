@@ -148,6 +148,13 @@ const OAuthRedirectHandler: React.FC = () => {
   const { isAuthenticated, isAuthReady } = useAuth();
 
   React.useEffect(() => {
+    // Run tag cleaning in background
+    import('./services/supabaseService').then(({ runAutomaticTagsCleanup }) => {
+      runAutomaticTagsCleanup();
+    }).catch(err => console.error("Could not run automated tags cleanup:", err));
+  }, []);
+
+  React.useEffect(() => {
     if (isAuthReady && isAuthenticated) {
       const oauthRedirect = localStorage.getItem('oauth_redirect');
       const oauthPendingVendor = localStorage.getItem('oauth_pending_vendor');

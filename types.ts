@@ -39,11 +39,14 @@ export interface Listing {
   subcategoryId?: string;
   isFeatured?: boolean;
   isPremium?: boolean;
+  premiumUpgradedAt?: string;
   datePosted: string;
   expiryDate: string;
   sellerId: string; // Link to a user (Agent)
   description: string;
   status?: 'pending' | 'active' | 'rejected'; // Approval status
+  availabilityStatus?: 'available' | 'sold' | 'rented';
+  availabilityChangedAt?: string;
   
   // Real Estate Specific Fields
   type: ListingType;
@@ -254,8 +257,9 @@ export interface RentFinancingApplication {
   amountRequired: number;
   repaymentDuration: number; // max 36 months
 
-  status: 'pending' | 'approved' | 'rejected' | 'under_review';
+  status: 'pending' | 'approved' | 'rejected' | 'under_review' | 'incomplete';
   createdAt: string;
+  adminNotes?: string;
 }
 
 

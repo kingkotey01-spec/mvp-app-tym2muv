@@ -32,8 +32,7 @@ const MobileBottomNav = () => {
     { name: 'Home', path: '/', icon: 'home' },
     { name: 'Search', path: '/search', icon: 'search' },
     { name: 'Post', path: '/post', icon: 'plus', isFab: true, onClick: handlePostClick },
-    { name: 'Chat', path: isAuthenticated ? '/chat' : '/signin', icon: 'messageCircle',
-      state: !isAuthenticated ? { from: { pathname: '/chat' } } : undefined },
+    { name: 'Financing', path: '/rent-financing', icon: 'coins' },
     { name: 'Profile', path: profilePath, icon: 'user',
       state: !isAuthenticated ? { from: { pathname: `/profile` } } : undefined },
   ];

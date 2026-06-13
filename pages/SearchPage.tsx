@@ -14,7 +14,15 @@ import EmptyState from '../components/EmptyState';
 import useDebounce from '../hooks/useDebounce';
 import { getCountryByCode } from '../services/location';
 
-const ITEMS_PER_BATCH = 24; 
+// Responsive Items limit to cover exactly 8 rows of listings in any screen size
+const getResponsiveLimit = () => {
+  if (typeof window === 'undefined') return 24;
+  const w = window.innerWidth;
+  if (w >= 1024) return 48; // lg has 6 columns, 6 * 8 = 48 items
+  if (w >= 768) return 40;  // md has 5 columns, 5 * 8 = 40 items
+  if (w >= 640) return 32;  // sm has 4 columns, 4 * 8 = 32 items
+  return 24;                // mobile has 2-3 columns
+};
 
 const SearchPage: React.FC = () => {
   const { location: userLocation } = useAppLocation();
@@ -22,6 +30,17 @@ const SearchPage: React.FC = () => {
   const navigate = useNavigate();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const query = searchParams.get('q') || '';
+  
+  // Dynamic Items per page calculation
+  const [itemsPerPage, setItemsPerPage] = useState(getResponsiveLimit);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerPage(getResponsiveLimit());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Data State
   const [listings, setListings] = useState<any[]>([]);
@@ -233,7 +252,7 @@ const SearchPage: React.FC = () => {
       try {
         const initialFilters: any = {
           page: 1,
-          limit: ITEMS_PER_BATCH,
+          limit: itemsPerPage,
           countryCode: userLocation.countryCode,
         };
 
@@ -256,7 +275,13 @@ const SearchPage: React.FC = () => {
         if (searchParams.has('bathrooms')) initialFilters.bathrooms = searchParams.get('bathrooms');
 
         const { listings: fetchedListings, total } = await getListings(initialFilters);
-        setListings(fetchedListings);
+        const sortedListings = [...fetchedListings].sort((a, b) => {
+          const aPremium = a.isPremium ? 1 : 0;
+          const bPremium = b.isPremium ? 1 : 0;
+          if (bPremium !== aPremium) return bPremium - aPremium;
+          return new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime();
+        });
+        setListings(sortedListings);
         setTotalItems(total);
         setPage(1);
       } catch (err) {
@@ -278,7 +303,7 @@ const SearchPage: React.FC = () => {
       const nextPage = page + 1;
       const nextFilters: any = {
         page: nextPage,
-        limit: ITEMS_PER_BATCH,
+        limit: itemsPerPage,
         countryCode: userLocation.countryCode,
       };
       if (searchParams.has('location')) nextFilters.location = searchParams.get('location');
@@ -290,7 +315,15 @@ const SearchPage: React.FC = () => {
       if (searchParams.has('bathrooms')) nextFilters.bathrooms = searchParams.get('bathrooms');
 
       const { listings: nextBatch } = await getListings(nextFilters);
-      setListings(prev => [...prev, ...nextBatch]);
+      setListings(prev => {
+        const merged = [...prev, ...nextBatch];
+        return merged.sort((a, b) => {
+          const aPremium = a.isPremium ? 1 : 0;
+          const bPremium = b.isPremium ? 1 : 0;
+          if (bPremium !== aPremium) return bPremium - aPremium;
+          return new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime();
+        });
+      });
       setPage(nextPage);
     } catch (error) {
       console.error("Error loading more listings:", error);
@@ -393,27 +426,43 @@ const SearchPage: React.FC = () => {
             onAction={() => navigate('/search')}
           />
         ) : (
-          <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
-             {mixedContent.map((item, idx) => (
-                item.type === 'listing' ? (
-                  <ListingCard key={item.data.id} listing={item.data} isHot={(recentViewRequests[item.data.id] || 0) > 5 || item.data.isFeatured || (item.data.isPremium && idx % 3 === 0)} />
-                ) : (
-                  <AdCard 
-                    key={`ad-${idx}`} 
-                    id={item.data.id}
-                    type={item.data.type}
-                    title={item.data.title}
-                    description={item.data.description}
-                    cta={item.data.cta}
-                    image={item.data.image}
-                    color={item.data.color}
-                    link={item.data.link}
-                    className={`${
-                      idx % 2 === 0 ? 'col-start-1' : 'col-start-2'
-                    } min-[420px]:col-start-${(idx % 3) + 1} sm:col-start-${(idx % 4) + 1} md:col-start-${(idx % 5) + 1} lg:col-start-${(idx % 6) + 1}`}
-                  />
-                )
-             ))}
+          <div className="grid grid-flow-row-dense grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+             {(() => {
+                let adIndex = -1;
+                return mixedContent.map((item, idx) => {
+                  if (item.type === 'listing') {
+                    return (
+                      <ListingCard key={item.data.id} listing={item.data} isHot={(recentViewRequests[item.data.id] || 0) > 5 || item.data.isFeatured || (item.data.isPremium && idx % 3 === 0)} />
+                    );
+                  } else {
+                    adIndex++;
+                    const adSeq = adIndex % 3;
+                    let colSpanClass = "";
+                    if (adSeq === 0) {
+                      colSpanClass = "col-start-1 min-[420px]:col-start-1 sm:col-start-1 md:col-start-1 lg:col-start-1";
+                    } else if (adSeq === 1) {
+                      colSpanClass = "col-start-2 min-[420px]:col-start-3 sm:col-start-3 md:col-start-3 lg:col-start-3";
+                    } else {
+                      colSpanClass = "col-start-1 min-[420px]:col-start-1 sm:col-start-1 md:col-start-5 lg:col-start-5";
+                    }
+
+                    return (
+                      <AdCard 
+                        key={`ad-${idx}`} 
+                        id={item.data.id}
+                        type="tall"
+                        title={item.data.title}
+                        description={item.data.description}
+                        cta={item.data.cta}
+                        image={item.data.image}
+                        color={item.data.color}
+                        link={item.data.link}
+                        className={`row-span-2 h-full ${colSpanClass}`}
+                      />
+                    );
+                  }
+                });
+             })()}
           </div>
         )}
            

@@ -117,10 +117,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Update the listing to isPremium = true
+    // 4. Update the listing to isPremium = true and set premium_upgraded_at
     const { error: listingError } = await supabaseAdmin
       .from('properties')
-      .update({ is_premium: true })
+      .update({ is_premium: true, premium_upgraded_at: new Date().toISOString() })
       .eq('id', listingId);
 
     if (listingError) throw listingError;

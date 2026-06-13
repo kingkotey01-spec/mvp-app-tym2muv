@@ -185,7 +185,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="pointer-events-auto w-full glass-card rounded-2xl transition-all relative">
             
             {/* Top Bar: Brand, Search, Actions */}
-            <div className="flex items-center justify-between px-2 sm:px-6 py-2 sm:py-3 gap-1 sm:gap-8 h-14 sm:h-[72px]">
+            <div className="flex items-center justify-between px-2 sm:px-6 py-2 sm:py-3 gap-1.5 sm:gap-8 h-14 sm:h-[72px]">
                 
                 {/* Logo */}
                 <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
@@ -198,18 +198,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </Link>
                 </div>
 
-                {/* Search - Centered */}
-                <div className="hidden md:block flex-1 max-w-3xl">
+                {/* Search - Centered on desktop, always visible on mobile */}
+                <div className="flex-grow flex-1 max-w-3xl">
                     <SmartSearchInput 
                     variant="simple" 
                     placeholder="Search properties..." 
                     onSearch={handleSearch}
-                    className="w-full"
+                    className="w-full text-xs"
                     />
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1.5 sm:gap-4 flex-shrink-0">
+                {/* Country Selector Flag for Mobile */}
+                <div className="sm:hidden flex items-center flex-shrink-0">
+                    <CountrySelector />
+                </div>
+
+                {/* Actions - Hidden on mobile, visible from sm screen sizes and up */}
+                <div className="hidden sm:flex items-center gap-1.5 sm:gap-4 flex-shrink-0">
                     
                     {/* Country Selector */}
                     <CountrySelector />
@@ -272,8 +277,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
             </div>
 
-            {/* Search Mobile - Show only on mobile */}
-            <div className="md:hidden px-4 pb-4 flex flex-col gap-1.5">
+            {/* Search Mobile - Show only on mobile (Hidden now that logo, search bar and flag are on one row) */}
+            <div className="hidden">
               <div className="flex items-center gap-2">
                 <div className="flex-grow">
                   <SmartSearchInput variant="simple" onSearch={handleSearch} placeholder="Search..." />

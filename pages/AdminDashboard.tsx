@@ -18,7 +18,8 @@ import {
   ArrowRight,
   ExternalLink,
   Eye,
-  MousePointer2
+  MousePointer2,
+  Coins
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -64,12 +65,16 @@ import { User, Listing, Monetization, StaticPage, BlogPost } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSymbolFromCode } from '../services/location';
 import { useToast } from '../components/Toast';
+import { useLocation } from '../context/LocationContext';
+import { AdminRentFinancing } from '../components/AdminRentFinancing';
+import { AdminDashboardSkeleton } from '../components/DashboardSkeleton';
 
 const COLORS = ['#ea580c', '#3b82f6', '#10b981', '#f59e0b'];
 
 const AdminDashboard: React.FC = () => {
   const { toast, confirm } = useToast();
-  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'listings' | 'monetization' | 'pages'>('analytics');
+  const { location: userLoc } = useLocation();
+  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'listings' | 'monetization' | 'pages' | 'rent_financing'>('analytics');
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -437,11 +442,7 @@ const AdminDashboard: React.FC = () => {
   const pendingCount = stats?.pendingApprovals || 0;
 
   if (loading && !stats) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   return (
@@ -489,6 +490,13 @@ const AdminDashboard: React.FC = () => {
           >
             <Settings size={20} />
             <span className="font-medium">Page Management</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('rent_financing')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'rent_financing' ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50'}`}
+          >
+            <Coins size={20} />
+            <span className="font-medium">Rent Financing</span>
           </button>
         </nav>
         <div className="p-4 border-t border-gray-100">
@@ -1484,6 +1492,17 @@ const AdminDashboard: React.FC = () => {
                   </motion.div>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {activeTab === 'rent_financing' && (
+            <motion.div
+              key="rent_financing"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+            >
+              <AdminRentFinancing userLocation={userLoc} />
             </motion.div>
           )}
         </AnimatePresence>

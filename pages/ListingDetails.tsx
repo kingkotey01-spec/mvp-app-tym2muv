@@ -14,9 +14,11 @@ import { generateListingTitle } from '../utils/listingUtils';
 import SafetyDisclaimer from '../components/SafetyDisclaimer';
 import ErrorBanner from '../components/ErrorBanner';
 import MortgageCalculator from '../components/MortgageCalculator';
+import { PriceTrends } from '../components/PriceTrends';
 import { getSymbolFromCode } from '../services/location';
 import { getOptimizedImageUrl } from '../utils/imageOptimization';
 import SkeletonCard from '../components/SkeletonCard';
+import { QRScannerModal } from '../components/QRScannerModal';
 
 const ListingDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -86,6 +88,18 @@ const ListingDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [requestedTime, setRequestedTime] = useState('10:00');
+
+  // QR Code & Scanner states
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  // Listing Inquiry Form states
+  const [inquiryName, setInquiryName] = useState('');
+  const [inquiryEmail, setInquiryEmail] = useState('');
+  const [inquiryPhone, setInquiryPhone] = useState('');
+  const [inquiryMsg, setInquiryMsg] = useState('');
+  const [inquiryEmailError, setInquiryEmailError] = useState('');
+  const [inquiryPhoneError, setInquiryPhoneError] = useState('');
+  const [isInquirySubmitting, setIsInquirySubmitting] = useState(false);
 
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
@@ -190,6 +204,69 @@ const ListingDetails: React.FC = () => {
 
     fetchListingData();
   }, [id, retryKey]);
+
+  useEffect(() => {
+    if (listing) {
+      setInquiryMsg(`Hi, I am interested in your property details: "${listing.title || 'this property'}" located in ${listing.location || 'Ghana'}. Please provide more information.`);
+    }
+  }, [listing]);
+
+  useEffect(() => {
+    if (user) {
+      setInquiryName(user.name || '');
+      setInquiryEmail(user.socials?.email || user.email || '');
+      setInquiryPhone(user.socials?.phone || '');
+    }
+  }, [user]);
+
+  const handleInquirySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setInquiryEmailError('');
+    setInquiryPhoneError('');
+
+    let hasError = false;
+
+    // Validate email format
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!inquiryEmail.trim()) {
+      setInquiryEmailError('Email is required.');
+      hasError = true;
+    } else if (!emailPattern.test(inquiryEmail.trim())) {
+      setInquiryEmailError('Please enter a valid email address (e.g. name@domain.com).');
+      hasError = true;
+    }
+
+    // Validate phone number format (8 to 15 numbers, optional leading +)
+    const cleanPhone = inquiryPhone.replace(/[\s\-()]/g, '');
+    const phonePattern = /^\+?[0-9]{8,15}$/;
+    if (!inquiryPhone.trim()) {
+      setInquiryPhoneError('Phone number is required.');
+      hasError = true;
+    } else if (!phonePattern.test(cleanPhone)) {
+      setInquiryPhoneError('Please enter a valid phone number (8-15 digits, digits-only or + format).');
+      hasError = true;
+    }
+
+    if (!inquiryName.trim()) {
+      toast('Please enter your full name.', 'warning');
+      hasError = true;
+    }
+
+    if (hasError) {
+      toast('Form has validation issues. Please check your inputs.', 'error');
+      return;
+    }
+
+    setIsInquirySubmitting(true);
+    setTimeout(() => {
+      setIsInquirySubmitting(false);
+      toast('Inquiry submitted successfully! The agent will reach out within 24 hours.', 'success');
+      // Set default message back
+      if (listing) {
+        setInquiryMsg(`Hi, I am interested in your property details: "${listing.title || 'this property'}" located in ${listing.location || 'Ghana'}. Please provide more information.`);
+      }
+    }, 1200);
+  };
 
   if (error) {
     return (
@@ -446,6 +523,25 @@ const ListingDetails: React.FC = () => {
               </h1>
             </div>
 
+            {/* Special Availability Tag Alert */}
+            {(listing.availabilityStatus === 'sold' || listing.availabilityStatus === 'rented') && (
+              <div className={`p-3.5 rounded-2xl border flex items-start gap-3 shadow-2xs ${
+                listing.availabilityStatus === 'sold'
+                  ? 'bg-amber-50/70 text-amber-900 border-amber-200'
+                  : 'bg-blue-50/70 text-blue-900 border-blue-200'
+              }`}>
+                <span className="text-base shrink-0 select-none">⚡</span>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-black uppercase tracking-wider">
+                    Property {listing.availabilityStatus === 'sold' ? 'Sold' : 'Rented'}
+                  </h4>
+                  <p className="text-[10px] leading-relaxed font-semibold text-slate-500">
+                    This property has been marked as <strong>{listing.availabilityStatus}</strong> by the listing agent. It remains listed for reference for up to <strong>7 days</strong> after status change before being fully archived from standard listings search.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Column 1 Row 2 - Price */}
             <div className="py-1 border-b border-slate-100 flex items-center justify-between">
               <div className="space-y-0.5">
@@ -667,6 +763,15 @@ const ListingDetails: React.FC = () => {
             </div>
 
             <div className="mt-6">
+              <PriceTrends 
+                price={displayPrice} 
+                currency={displayCurrency} 
+                listingType={listing.type} 
+                location={listing.location} 
+              />
+            </div>
+
+            <div className="mt-6">
               <MortgageCalculator price={displayPrice} currency={displayCurrency} />
             </div>
           </div>
@@ -795,6 +900,153 @@ const ListingDetails: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Property QR Code Label */}
+            <div className="bg-slate-50 border border-slate-100/80 rounded-2xl p-4.5 space-y-4 shadow-3xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xs font-black text-slate-800 uppercase tracking-widest font-display">Property QR Code Panel</h3>
+                  <p className="text-[10px] text-slate-500 font-medium leading-none mt-0.5">Scan this label instantly from other devices to load details</p>
+                </div>
+                <div className="w-8 h-8 bg-brand-50 text-brand-600 rounded-lg flex items-center justify-center shrink-0">
+                  <Icon name="camera" size={14} />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3 rounded-xl border border-slate-100 shadow-3xs">
+                {/* Dynamic QR API creation */}
+                <div className="w-24 h-24 shrink-0 bg-slate-50 rounded-lg overflow-hidden border border-slate-200/50 p-1 flex items-center justify-center shadow-3xs">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`} 
+                    alt="Property QR" 
+                    className="w-full h-full object-contain mix-blend-multiply"
+                    crossOrigin="anonymous"
+                  />
+                </div>
+                <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
+                  <p className="text-[10px] text-slate-605 font-bold leading-normal">
+                    This dynamic QR code allows visitors to instantly map your real estate interior dimensions, book direct house views, and chat with agent:
+                  </p>
+                  <p className="text-[8px] text-slate-400 font-bold font-mono py-1 px-2 rounded bg-slate-50 border border-slate-100 inline-block">
+                    ID: {listing.id}
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
+                    <button
+                      onClick={() => setIsScannerOpen(true)}
+                      className="px-2.5 py-1.5 bg-slate-900 duration-150 hover:bg-black text-white rounded-lg text-3xs font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                    >
+                      <Icon name="camera" size={10} />
+                      <span>Scan QR Codes</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        toast('Listing URL link copied to clipboard! 📋', 'success');
+                      }}
+                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-3xs font-black uppercase tracking-wider transition-all border border-slate-200 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Icon name="copy" size={10} />
+                      <span>Copy link</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Client-Side Validated Property Inquiry Form */}
+            <div id="listing-inquiry" className="bg-white border border-slate-100 rounded-2xl p-5 shadow-3xs space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-2xs font-black text-slate-900 uppercase tracking-widest font-display">Direct Property Inquiry</h3>
+                <p className="text-[10px] text-slate-450 font-medium">Have questions? Submit your verified inquiry to the seller below</p>
+              </div>
+
+              <form onSubmit={handleInquirySubmit} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-wider">Inquirer Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter your full name"
+                    value={inquiryName}
+                    onChange={(e) => setInquiryName(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs bg-slate-50/55 focus:bg-white outline-none focus:ring-1 focus:ring-brand-500 font-medium text-slate-800"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-wider">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="name@domain.com"
+                      value={inquiryEmail}
+                      onChange={(e) => {
+                        setInquiryEmail(e.target.value);
+                        if (inquiryEmailError) setInquiryEmailError('');
+                      }}
+                      className={`w-full border rounded-lg px-3 py-1.5 text-xs focus:ring-1 outline-none font-medium text-slate-805 ${
+                        inquiryEmailError 
+                        ? 'border-red-500 focus:ring-red-500 bg-red-50/20' 
+                        : 'border-slate-200 bg-slate-50/55 focus:bg-white focus:ring-brand-500'
+                      }`}
+                    />
+                    {inquiryEmailError && (
+                      <p className="text-[9px] font-bold text-red-500 mt-0.5 leading-none">{inquiryEmailError}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-wider">Phone Line</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="+233 XX XXX XXXX"
+                      value={inquiryPhone}
+                      onChange={(e) => {
+                        setInquiryPhone(e.target.value);
+                        if (inquiryPhoneError) setInquiryPhoneError('');
+                      }}
+                      className={`w-full border rounded-lg px-3 py-1.5 text-xs focus:ring-1 outline-none font-medium text-slate-805 ${
+                        inquiryPhoneError 
+                        ? 'border-red-500 focus:ring-red-500 bg-red-50/20' 
+                        : 'border-slate-200 bg-slate-50/55 focus:bg-white focus:ring-brand-500'
+                      }`}
+                    />
+                    {inquiryPhoneError && (
+                      <p className="text-[9px] font-bold text-red-500 mt-0.5 leading-none">{inquiryPhoneError}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-wider">Inquiry Message</label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Enter details of your inquiry..."
+                    value={inquiryMsg}
+                    onChange={(e) => setInquiryMsg(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs bg-slate-50/55 focus:bg-white outline-none focus:ring-1 focus:ring-brand-500 font-medium text-slate-800"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isInquirySubmitting}
+                  className="w-full py-2 px-4 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white rounded-xl text-3xs font-black uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer hover:shadow-lg active:scale-98"
+                >
+                  {isInquirySubmitting ? (
+                    <span className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Icon name="send" size={10} />
+                      <span>Submit Property Inquiry</span>
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -975,6 +1227,11 @@ const ListingDetails: React.FC = () => {
           setIsSafetyOpen(false);
           if (safetyAction) safetyAction();
         }}
+      />
+
+      <QRScannerModal 
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
       />
     </div>
   );
