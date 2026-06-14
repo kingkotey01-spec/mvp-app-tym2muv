@@ -758,25 +758,25 @@ const RentFinancing: React.FC = () => {
   const progressPercentInt = Math.round(progressPercent);
 
   return (
-    <div id="rent-financing-view" className="py-6 md:py-10 min-h-screen bg-slate-950 text-white selection:bg-brand-600/50">
+    <div id="rent-financing-view" className="py-6 md:py-10 min-h-screen bg-white text-slate-900 selection:bg-brand-600/50">
       <div className="container mx-auto px-4 max-w-7xl">
         
         {/* Giant Futuristic Program Tag */}
         <div className="flex flex-col gap-2 mb-8 animate-slide-up">
-          <div className="inline-flex items-center gap-1.5 bg-brand-500/10 border border-[#CF8EED]/20 text-[#CF8EED] px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest font-mono select-none self-start">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00ffcc] animate-pulse"></span>
+          <div className="inline-flex items-center gap-1.5 bg-brand-50 border border-brand-200 text-brand-700 px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest font-mono select-none self-start">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></span>
             Tym2Muv Capital Solutions
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight font-display bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent lowercase">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight font-display text-slate-900 lowercase">
             flexible rent financing.
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm max-w-2xl leading-relaxed lowercase">
+          <p className="text-slate-600 text-xs sm:text-sm max-w-2xl leading-relaxed lowercase">
             struggling with massive 1 to 2 year upfront landlord rental advance demands? tym2muv pays your landlord in full immediately, and you pay us back in predictable, easy monthly installments.
           </p>
         </div>
 
         {/* Universal Page Tab buttons */}
-        <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-5 mb-8">
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-5 mb-8">
           {[
             { id: 'details', label: 'program details', icon: 'info' },
             { id: 'calculator', label: 'affordability calculator', icon: 'sliders' },
@@ -794,7 +794,7 @@ const RentFinancing: React.FC = () => {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border lowercase cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-tr from-[#8607C1] to-[#6366f1] text-white border-[#CF8EED]/30 shadow-lg shadow-[#8607C1]/10'
-                  : 'bg-slate-900/50 hover:bg-slate-900 text-slate-400 border-slate-850 hover:text-white'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900'
               }`}
             >
               <Icon name={tab.icon} size={13} />
@@ -870,21 +870,21 @@ const RentFinancing: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* Program Overview details */}
-              <div className="bg-slate-900/40 rounded-3xl p-6 border border-slate-800 space-y-4">
-                <h3 className="text-lg font-black text-white tracking-tight lowercase flex items-center gap-2">
-                  <Icon name="info" size={18} className="text-[#00ffcc]" />
+              <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 space-y-4">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight lowercase flex items-center gap-2">
+                  <Icon name="info" size={18} className="text-brand-600" />
                   how the program works
                 </h3>
-                <div className="space-y-3.5 text-xs text-slate-300 leading-relaxed lowercase">
+                <div className="space-y-3.5 text-xs text-slate-700 leading-relaxed lowercase">
                   <p>
-                    landlords across the country historically demand <strong className="text-white">12, 18 or 24 months of advance rent files</strong> before handing over house keys. this is incredibly hard for young employees, newlyweds or expatriates.
+                    landlords across the country historically demand <strong className="text-slate-900 font-extrabold">12, 18 or 24 months of advance rent files</strong> before handing over house keys. this is incredibly hard for young employees, newlyweds or expatriates.
                   </p>
                   <p>
                     our program bridges the advance-rent lock. we pay the entire landlord lump sum instantly. you repay the balance monthly over 1 to 24 months of flexible Simple Capital terms.
                   </p>
-                  <div className="bg-slate-950/50 rounded-2xl p-4 border border-slate-800 space-y-2">
-                    <h4 className="font-bold text-white text-xs uppercase tracking-wider text-[#CF8EED]">transparent terms</h4>
-                    <ul className="list-disc list-inside space-y-1 text-slate-400 text-[11px]">
+                  <div className="bg-white rounded-2xl p-4 border border-slate-200 space-y-2">
+                    <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider text-brand-600">transparent terms</h4>
+                    <ul className="list-disc list-inside space-y-1 text-slate-600 text-[11px]">
                       <li>No hidden transaction fees or application setup penalties.</li>
                       <li>Flat Simple Interest fee of 1.5% monthly of the principal.</li>
                       <li>Payoff the balance early to waive pending interest months entirely.</li>
@@ -894,13 +894,13 @@ const RentFinancing: React.FC = () => {
               </div>
 
               {/* Qualification Criteria */}
-              <div className="bg-slate-900/40 rounded-3xl p-6 border border-slate-800 space-y-4">
-                <h3 className="text-lg font-black text-white tracking-tight lowercase flex items-center gap-2">
+              <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 space-y-4">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight lowercase flex items-center gap-2">
                   <Icon name="shieldCheck" size={18} className="text-[#ff007f]" />
                   qualification standards
                 </h3>
                 <div className="space-y-3">
-                  <p className="text-xs text-slate-350 lowercase leading-relaxed">
+                  <p className="text-xs text-slate-600 lowercase leading-relaxed">
                     to hold high underwriting standards and prevent debt trapping, applicants must verify the following items:
                   </p>
                   
@@ -911,13 +911,13 @@ const RentFinancing: React.FC = () => {
                       { title: 'identification', desc: 'valid passport, national identity card (GHA card) or driver\'s license matching the target tenant.' },
                       { title: 'active savings profile', desc: 'clean credit status logs without severe default indicators, bankruptcy or active tenant evictions.' }
                     ].map((crit, idx) => (
-                      <div key={idx} className="flex gap-3 items-start p-2.5 rounded-xl bg-slate-950/30 border border-slate-850">
-                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mt-0.5 flex-shrink-0">
+                      <div key={idx} className="flex gap-3 items-start p-2.5 rounded-xl bg-white border border-slate-200">
+                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mt-0.5 flex-shrink-0">
                           <Icon name="check" size={11} />
                         </div>
                         <div>
-                          <h4 className="font-black text-white text-xs lowercase leading-tight">{crit.title}</h4>
-                          <p className="text-slate-400 text-[10px] lowercase leading-normal mt-0.5">{crit.desc}</p>
+                          <h4 className="font-black text-slate-900 text-xs lowercase leading-tight">{crit.title}</h4>
+                          <p className="text-slate-600 text-[10px] lowercase leading-normal mt-0.5">{crit.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -943,17 +943,17 @@ const RentFinancing: React.FC = () => {
         {/* Tab 2: Dynamic Affordability Calculator based on Income */}
         {activeTab === 'calculator' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="bg-slate-900/30 border border-slate-800 rounded-3xl p-5 sm:p-7">
+            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 sm:p-7">
               <div className="flex flex-col lg:flex-row gap-6">
                 
                 {/* Calculator settings */}
                 <div className="lg:w-1/2 space-y-5">
                   <div>
-                    <h2 className="text-lg font-black text-white flex items-center gap-2 lowercase tracking-tight">
-                      <Icon name="sliders" size={18} className="text-cyan-400" />
+                    <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 lowercase tracking-tight">
+                      <Icon name="sliders" size={18} className="text-cyan-600" />
                       income eligibility calculator
                     </h2>
-                    <p className="text-xs text-slate-400 lowercase leading-relaxed mt-0.5">
+                    <p className="text-xs text-slate-600 lowercase leading-relaxed mt-0.5">
                       enter your monthly numbers. our algorithmic rules automatically verify your debt-to-income (DTI) health and output your optimal pre-qualification limits.
                     </p>
                   </div>
@@ -961,8 +961,8 @@ const RentFinancing: React.FC = () => {
                   {/* Net Monthly Income */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-black uppercase text-slate-400">Net Monthly Salary/Income</label>
-                      <span className="text-xs font-black text-white font-mono">{userLoc.symbol || 'GH¢'}{calcIncome.toLocaleString()}</span>
+                      <label className="text-[10px] font-black uppercase text-slate-500">Net Monthly Salary/Income</label>
+                      <span className="text-xs font-black text-slate-900 font-mono">{userLoc.symbol || 'GH¢'}{calcIncome.toLocaleString()}</span>
                     </div>
                     <input
                       type="range"
@@ -971,7 +971,7 @@ const RentFinancing: React.FC = () => {
                       step={500}
                       value={calcIncome}
                       onChange={(e) => setCalcIncome(parseInt(e.target.value, 10))}
-                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
                     />
                     <div className="flex justify-between text-[8px] font-mono text-slate-500 font-bold uppercase">
                       <span>{userLoc.symbol || 'GH¢'}1,000</span>
@@ -982,8 +982,8 @@ const RentFinancing: React.FC = () => {
                   {/* Target Monthly Rent */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-black uppercase text-slate-400">Proposed Monthly Rent</label>
-                      <span className="text-xs font-black text-white font-mono">{userLoc.symbol || 'GH¢'}{calcTargetRent.toLocaleString()}</span>
+                      <label className="text-[10px] font-black uppercase text-slate-500">Proposed Monthly Rent</label>
+                      <span className="text-xs font-black text-slate-900 font-mono">{userLoc.symbol || 'GH¢'}{calcTargetRent.toLocaleString()}</span>
                     </div>
                     <input
                       type="range"
@@ -992,7 +992,7 @@ const RentFinancing: React.FC = () => {
                       step={100}
                       value={calcTargetRent}
                       onChange={(e) => setCalcTargetRent(parseInt(e.target.value, 10))}
-                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
                     />
                     <div className="flex justify-between text-[8px] font-mono text-slate-500 font-bold uppercase">
                       <span>{userLoc.symbol || 'GH¢'}200</span>
@@ -1003,11 +1003,11 @@ const RentFinancing: React.FC = () => {
                   {/* Repayment and Advance Terms */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-black uppercase text-slate-400">advance months needed</label>
+                      <label className="block text-[10px] font-black uppercase text-slate-500">advance months needed</label>
                       <select
                         value={calcAdvanceMonths}
                         onChange={(e) => setCalcAdvanceMonths(parseInt(e.target.value, 10))}
-                        className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs font-bold text-white outline-none"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold text-slate-800 outline-none"
                       >
                         <option value={6}>6 Months Advance</option>
                         <option value={12}>12 Months Advance</option>
@@ -1017,11 +1017,11 @@ const RentFinancing: React.FC = () => {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-black uppercase text-slate-400">repayment period</label>
+                      <label className="block text-[10px] font-black uppercase text-slate-500">repayment period</label>
                       <select
                         value={calcRepayMonths}
                         onChange={(e) => setCalcRepayMonths(parseInt(e.target.value, 10))}
-                        className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs font-bold text-white outline-none"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold text-slate-800 outline-none"
                       >
                         <option value={3}>3 Months Spread</option>
                         <option value={6}>6 Months Spread</option>
@@ -1036,8 +1036,8 @@ const RentFinancing: React.FC = () => {
                   {/* Existing Debts */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-black uppercase text-slate-400">other monthly bills / debts</label>
-                      <span className="text-xs font-black text-white font-mono">{userLoc.symbol || 'GH¢'}{calcDebts.toLocaleString()}</span>
+                      <label className="text-[10px] font-black uppercase text-slate-500">other monthly bills / debts</label>
+                      <span className="text-xs font-black text-slate-900 font-mono">{userLoc.symbol || 'GH¢'}{calcDebts.toLocaleString()}</span>
                     </div>
                     <input
                       type="range"
@@ -1046,24 +1046,24 @@ const RentFinancing: React.FC = () => {
                       step={50}
                       value={calcDebts}
                       onChange={(e) => setCalcDebts(parseInt(e.target.value, 10))}
-                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-pink-500"
                     />
                   </div>
 
                 </div>
 
                 {/* Score analysis output & calculator breakdown */}
-                <div className="lg:w-1/2 flex flex-col justify-between bg-slate-950 border border-slate-805 rounded-2xl p-5 relative overflow-hidden">
+                <div className="lg:w-1/2 flex flex-col justify-between bg-white border border-slate-200 rounded-2xl p-5 relative overflow-hidden">
                   
                   {/* Decorative faint glow */}
-                  <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-gradient-to-tr from-[#8607C1]/10 to-transparent rounded-full blur-[70px] pointer-events-none"></div>
+                  <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-gradient-to-tr from-[#8607C1]/5 to-transparent rounded-full blur-[70px] pointer-events-none"></div>
 
                   <div className="space-y-4 relative z-10">
                     
                     {/* Gauge metrics header */}
-                    <div className="flex justify-between items-start gap-4 pb-3 border-b border-slate-850">
+                    <div className="flex justify-between items-start gap-4 pb-3 border-b border-slate-200">
                       <div>
-                        <span className="text-[9px] font-black tracking-widest uppercase text-slate-450 block">Eligibility Status</span>
+                        <span className="text-[9px] font-black tracking-widest uppercase text-slate-500 block">Eligibility Status</span>
                         <div className={`mt-1.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border ${qualificationBg}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
                           {qualificationHeader}
@@ -1072,43 +1072,43 @@ const RentFinancing: React.FC = () => {
                       
                       {/* DTI Gauge Score display */}
                       <div className="text-right">
-                        <span className="text-[9px] font-black tracking-widest uppercase text-slate-450 block">Rent-to-Income DTI Ratio</span>
-                        <div className="text-2xl font-black text-white font-mono mt-0.5">
-                          {dtiRatio}% <span className="text-xs text-slate-400">affordability limit</span>
+                        <span className="text-[9px] font-black tracking-widest uppercase text-slate-500 block">Rent-to-Income DTI Ratio</span>
+                        <div className="text-2xl font-black text-slate-900 font-mono mt-0.5">
+                          {dtiRatio}% <span className="text-xs text-slate-500">affordability limit</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Explanatory text */}
-                    <p className="text-slate-300 text-xs mt-1.5 leading-relaxed lowercase">
+                    <p className="text-slate-700 text-xs mt-1.5 leading-relaxed lowercase">
                       {qualificationExplanation}
                     </p>
 
                     {/* Overall DTI Warning indicator */}
                     {overallDTI > 50 && (
-                      <div className="p-3 rounded-xl bg-orange-500/5 border border-orange-500/20 text-orange-400 text-[10px] leading-relaxed flex gap-2 lowercase font-semibold">
-                        <Icon name="alert" size={14} className="flex-shrink-0 mt-0.5 text-orange-400" />
+                      <div className="p-3 rounded-xl bg-orange-550/5 border border-orange-205 text-orange-600 text-[10px] leading-relaxed flex gap-2 lowercase font-semibold">
+                        <Icon name="alert" size={14} className="flex-shrink-0 mt-0.5 text-orange-600" />
                         <span>Warning: Your overall debt-to-income loading (target rent + existing loans) is {overallDTI}%. Financial advisors recommend keeping overall fixed obligations strictly below 50% of salary to remain financially shock-proof.</span>
                       </div>
                     )}
 
                     {/* Dynamic Cost breakdown */}
-                    <div className="py-2.5 border-t border-b border-slate-850 space-y-1.5 text-xs font-semibold text-slate-350">
-                      <div className="flex justify-between text-slate-400">
+                    <div className="py-2.5 border-t border-b border-slate-200 space-y-1.5 text-xs font-semibold text-slate-700">
+                      <div className="flex justify-between text-slate-500">
                         <span>Total Rent Advance principal requested:</span>
-                        <span className="text-white font-bold">{userLoc.symbol || 'GH¢'}{principalNeeded.toLocaleString()}</span>
+                        <span className="text-slate-900 font-bold">{userLoc.symbol || 'GH¢'}{principalNeeded.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between text-slate-400">
+                      <div className="flex justify-between text-slate-500">
                         <span>Advocated Landlord Coverage Term:</span>
-                        <span className="text-white font-bold">{calcAdvanceMonths} months</span>
+                        <span className="text-slate-900 font-bold">{calcAdvanceMonths} months</span>
                       </div>
-                      <div className="flex justify-between text-slate-400">
+                      <div className="flex justify-between text-slate-500">
                         <span>Program spread simple interest (1.5% fixed):</span>
-                        <span className="text-[#00ffcc] font-bold">{userLoc.symbol || 'GH¢'}{calculatedInterestCost.toLocaleString()}</span>
+                        <span className="text-brand-600 font-bold">{userLoc.symbol || 'GH¢'}{calculatedInterestCost.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between text-slate-100 font-extrabold text-sm pt-1 pb-1 border-t border-slate-850/50">
+                      <div className="flex justify-between text-slate-900 font-extrabold text-sm pt-1 pb-1 border-t border-slate-200">
                         <span>Monthly Installment ({calcRepayMonths}m repayment):</span>
-                        <span className="text-[#CF8EED]">{userLoc.symbol || 'GH¢'}{calculatedMonthlyRepay.toLocaleString()} / mo</span>
+                        <span className="text-brand-700">{userLoc.symbol || 'GH¢'}{calculatedMonthlyRepay.toLocaleString()} / mo</span>
                       </div>
                     </div>
 
@@ -1124,8 +1124,8 @@ const RentFinancing: React.FC = () => {
                         apply now with these calculation settings
                       </button>
                     ) : (
-                      <div className="text-center p-3 border border-slate-800/80 rounded-xl bg-slate-900/15">
-                        <p className="text-slate-450 text-[10px] uppercase leading-relaxed font-bold tracking-wide"> unaffordable rent limits. please use sliders to reduce monthly rent target below {userLoc.symbol || 'GH¢'}{(Math.round(calcIncome * 0.45)).toLocaleString()} to proceed.</p>
+                      <div className="text-center p-3 border border-slate-200 rounded-xl bg-slate-50">
+                        <p className="text-slate-500 text-[10px] uppercase leading-relaxed font-bold tracking-wide"> unaffordable rent limits. please use sliders to reduce monthly rent target below {userLoc.symbol || 'GH¢'}{(Math.round(calcIncome * 0.45)).toLocaleString()} to proceed.</p>
                       </div>
                     )}
                   </div>
@@ -1137,25 +1137,25 @@ const RentFinancing: React.FC = () => {
             
             {/* Transparent program indicators */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="bg-slate-900/10 border border-slate-800 p-4 rounded-2xl flex gap-3 items-start">
-                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 mt-0.5"><Icon name="shieldCheck" size={14} /></div>
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex gap-3 items-start">
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 mt-0.5"><Icon name="shieldCheck" size={14} /></div>
                 <div>
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] text-emerald-400">guaranteed rate lock</h4>
-                  <p className="text-[#94a3b8] mt-1 text-[11px] leading-relaxed lowercase">your simple interest is strictly fixed at 1.5% simple amortized percentage. absolutely zero hidden compoundings.</p>
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">guaranteed rate lock</h4>
+                  <p className="text-slate-600 mt-1 text-[11px] leading-relaxed lowercase">your simple interest is strictly fixed at 1.5% simple amortized percentage. absolutely zero hidden compoundings.</p>
                 </div>
               </div>
-              <div className="bg-slate-900/10 border border-slate-800 p-4 rounded-2xl flex gap-3 items-start">
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex gap-3 items-start">
                 <div className="p-2 rounded-lg bg-[#ff007f]/10 text-[#ff007f] mt-0.5"><Icon name="clock" size={14} /></div>
                 <div>
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] text-pink-400">early payoffs allowed</h4>
-                  <p className="text-[#94a3b8] mt-1 text-[11px] leading-relaxed lowercase">payoff the principal loan early at any point. outstanding future interest rates will be completely waived.</p>
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">early payoffs allowed</h4>
+                  <p className="text-slate-600 mt-1 text-[11px] leading-relaxed lowercase">payoff the principal loan early at any point. outstanding future interest rates will be completely waived.</p>
                 </div>
               </div>
-              <div className="bg-slate-900/10 border border-slate-800 p-4 rounded-2xl flex gap-3 items-start">
-                <div className="p-2 rounded-lg bg-sky-500/10 text-sky-450 mt-0.5"><Icon name="database" size={14} /></div>
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex gap-3 items-start">
+                <div className="p-2 rounded-lg bg-sky-500/10 text-sky-650 mt-0.5"><Icon name="database" size={14} /></div>
                 <div>
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] text-sky-400">escrow payment security</h4>
-                  <p className="text-[#94a3b8] mt-1 text-[11px] leading-relaxed lowercase">approved capital is wire-transferred straight into verified landlord accounts under secure signing contract logs.</p>
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">escrow payment security</h4>
+                  <p className="text-slate-600 mt-1 text-[11px] leading-relaxed lowercase">approved capital is wire-transferred straight into verified landlord accounts under secure signing contract logs.</p>
                 </div>
               </div>
             </div>
@@ -1291,38 +1291,36 @@ const RentFinancing: React.FC = () => {
                   )}
                 </AnimatePresence>
 
-                <form onSubmit={handleFormSubmit} className="space-y-6">
-                  
-                  {/* 1. Applicant Personal Identity */}
-                  <div className="bg-slate-900/35 border border-slate-805 rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800">
-                      <div className="w-7 h-7 rounded-lg bg-[#8607C1]/20 text-[#CF8EED] flex items-center justify-center">
+                <form onSubmit={handleFormSubmit} className="space-y-6">                  {/* 1. Applicant Personal Identity */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200">
+                      <div className="w-7 h-7 rounded-lg bg-[#8607C1]/10 text-brand-600 flex items-center justify-center">
                         <Icon name="user" size={14} />
                       </div>
-                      <h3 className="font-bold text-white text-xs lowercase">1. Applicant Identity info</h3>
+                      <h3 className="font-bold text-slate-905 text-xs lowercase">1. Applicant Identity info</h3>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tenant Full Name</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Tenant Full Name</label>
                         <input
                           type="text"
                           name="fullName"
                           value={formData.fullName}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="Your Legal Full Name"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tenant Email Address</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Tenant Email Address</label>
                         <input
                           type="email"
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="your.email@example.com"
                           required
                         />
@@ -1331,27 +1329,27 @@ const RentFinancing: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Direct phone line</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Direct phone line</label>
                         <input
                           type="tel"
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="+233 24 123 4567"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Employment Profile</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Employment Profile</label>
                         <select
                           name="employmentStatus"
                           value={formData.employmentStatus}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none text-slate-200"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none text-slate-900"
                         >
                           {EMPLOYMENT_STATUSES.map(stat => (
-                            <option key={stat.id} value={stat.id} className="bg-slate-950 text-white">{stat.name}</option>
+                            <option key={stat.id} value={stat.id} className="bg-white text-slate-900">{stat.name}</option>
                           ))}
                         </select>
                       </div>
@@ -1359,38 +1357,38 @@ const RentFinancing: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Net Monthly Salary ({userLoc.symbol || 'GH¢'})</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Net Monthly Salary ({userLoc.symbol || 'GH¢'})</label>
                         <input
                           type="number"
                           name="monthlyIncome"
                           value={formData.monthlyIncome}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="5000"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">ID Verification Document Type</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">ID Verification Document Type</label>
                         <select
                           name="idType"
                           value={formData.idType}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none text-slate-200"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none text-slate-900"
                         >
                           {ID_TYPES.map(type => (
-                            <option key={type.id} value={type.id} className="bg-slate-950 text-white">{type.name}</option>
+                            <option key={type.id} value={type.id} className="bg-white text-slate-900">{type.name}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">ID Document identification no</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">ID Document identification no</label>
                         <input
                           type="text"
                           name="idNumber"
                           value={formData.idNumber}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="GHA-789123490-5"
                           required
                         />
@@ -1399,34 +1397,34 @@ const RentFinancing: React.FC = () => {
                   </div>
 
                   {/* 2. Target Rental Lease Profile */}
-                  <div className="bg-slate-900/35 border border-slate-805 rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                         <Icon name="home" size={14} />
                       </div>
-                      <h3 className="font-bold text-white text-xs lowercase">2. Target Rent & Landlord info</h3>
+                      <h3 className="font-bold text-slate-900 text-xs lowercase">2. Target Rent & Landlord info</h3>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Monthly Rent Value ({userLoc.symbol || 'GH¢'})</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Monthly Rent Value ({userLoc.symbol || 'GH¢'})</label>
                         <input
                           type="number"
                           name="monthlyRent"
                           value={formData.monthlyRent}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="1205"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Advance duration demanded by landlord</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Advance duration demanded by landlord</label>
                         <select
                           name="leaseDuration"
                           value={formData.leaseDuration}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none text-slate-200"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none text-slate-900"
                         >
                           <option value="6">6 Months Upfront</option>
                           <option value="12">12 Months Upfront</option>
@@ -1438,37 +1436,37 @@ const RentFinancing: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Landlord full legal name</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Landlord full legal name</label>
                         <input
                           type="text"
                           name="landlordName"
                           value={formData.landlordName}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="Alhaji Kwesi Osei"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Landlord Contact Phone</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Landlord Contact Phone</label>
                         <input
                           type="tel"
                           name="landlordPhone"
                           value={formData.landlordPhone}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="+233 20 900 6641"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Target move-in date</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Target move-in date</label>
                         <input
                           type="date"
                           name="moveInDate"
                           value={formData.moveInDate}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors text-slate-350 cursor-pointer"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors text-slate-700 cursor-pointer"
                           required
                         />
                       </div>
@@ -1476,36 +1474,36 @@ const RentFinancing: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div className="sm:col-span-2">
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Property Street address</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Property Street address</label>
                         <input
                           type="text"
                           name="streetAddress"
                           value={formData.streetAddress}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="e.g. Plot 42, Spintex Ring Rd"
                           required
                         />
                       </div>
                       <div className="sm:col-span-1">
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">city / town</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">city / town</label>
                         <input
                           type="text"
                           name="city"
                           value={formData.city}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="Accra"
                         />
                       </div>
                       <div className="sm:col-span-1">
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">region</label>
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">region</label>
                         <input
                           type="text"
                           name="stateRegion"
                           value={formData.stateRegion}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none focus:border-brand-600 focus:bg-slate-900 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-brand-600 focus:bg-slate-50 transition-colors"
                           placeholder="Greater Accra"
                         />
                       </div>
@@ -1513,32 +1511,32 @@ const RentFinancing: React.FC = () => {
                   </div>
 
                   {/* 3. Drag and Drop simulated document uploads */}
-                  <div className="bg-slate-900/35 border border-slate-805 rounded-2xl p-5 space-y-4">
-                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800">
-                      <div className="w-7 h-7 rounded-lg bg-pink-500/15 text-pink-400 flex items-center justify-center">
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200">
+                      <div className="w-7 h-7 rounded-lg bg-pink-500/10 text-pink-600 flex items-center justify-center">
                         <Icon name="upload" size={14} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-xs lowercase">3. Document Upload Sandbox (Simulated)</h3>
-                        <p className="text-[9px] text-slate-450 uppercase tracking-wider font-semibold">Uploading recent bank statements saves applications from being incomplete</p>
+                        <h3 className="font-bold text-slate-900 text-xs lowercase">3. Document Upload Sandbox (Simulated)</h3>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">Uploading recent bank statements saves applications from being incomplete</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                       
                       {/* Bank Statement Upload block */}
-                      <div className="border border-dashed border-slate-800 rounded-2xl p-4 text-center space-y-3 bg-slate-950/20 hover:border-brand-600/50 transition-all">
-                        <span className="text-[10px] font-black text-slate-450 block uppercase tracking-wide">6m bank statements</span>
+                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all">
+                        <span className="text-[10px] font-black text-slate-500 block uppercase tracking-wide">6m bank statements</span>
                         {uploadedFiles.bankStatement ? (
                           <div className="space-y-1 text-center">
-                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
-                            <p className="text-[10px] truncate text-slate-350 font-mono font-bold">{uploadedFiles.bankStatement}</p>
+                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
+                            <p className="text-[10px] truncate text-slate-700 font-mono font-bold">{uploadedFiles.bankStatement}</p>
                           </div>
                         ) : (
                           <button
                             type="button"
                             onClick={() => simulateUpload('bankStatement', 'bank_statement_2026.pdf')}
-                            className="w-full py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl text-[10px] font-black text-slate-300 uppercase duration-150 cursor-pointer"
+                            className="w-full py-2 bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer"
                           >
                             <span>simulate upload</span>
                           </button>
@@ -1546,18 +1544,18 @@ const RentFinancing: React.FC = () => {
                       </div>
 
                       {/* Government ID doc file upload */}
-                      <div className="border border-dashed border-slate-800 rounded-2xl p-4 text-center space-y-3 bg-slate-950/20 hover:border-brand-600/50 transition-all">
-                        <span className="text-[10px] font-black text-slate-450 block uppercase tracking-wide">government id card</span>
+                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all">
+                        <span className="text-[10px] font-black text-slate-500 block uppercase tracking-wide">government id card</span>
                         {uploadedFiles.idCard ? (
                           <div className="space-y-1 text-center">
-                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
-                            <p className="text-[10px] truncate text-slate-350 font-mono font-bold">{uploadedFiles.idCard}</p>
+                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
+                            <p className="text-[10px] truncate text-slate-700 font-mono font-bold">{uploadedFiles.idCard}</p>
                           </div>
                         ) : (
                           <button
                             type="button"
                             onClick={() => simulateUpload('idCard', 'national_id_card.png')}
-                            className="w-full py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl text-[10px] font-black text-slate-300 uppercase duration-150 cursor-pointer"
+                            className="w-full py-2 bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer"
                           >
                             <span>simulate upload</span>
                           </button>
@@ -1565,18 +1563,18 @@ const RentFinancing: React.FC = () => {
                       </div>
 
                       {/* Pay Slip or Salary Certificate upload */}
-                      <div className="border border-dashed border-slate-800 rounded-2xl p-4 text-center space-y-3 bg-slate-950/20 hover:border-brand-600/50 transition-all">
-                        <span className="text-[10px] font-black text-slate-450 block uppercase tracking-wide">recent payslip</span>
+                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all">
+                        <span className="text-[10px] font-black text-slate-500 block uppercase tracking-wide">recent payslip</span>
                         {uploadedFiles.payslip ? (
                           <div className="space-y-1 text-center">
-                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
-                            <p className="text-[10px] truncate text-slate-350 font-mono font-bold">{uploadedFiles.payslip}</p>
+                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
+                            <p className="text-[10px] truncate text-slate-700 font-mono font-bold">{uploadedFiles.payslip}</p>
                           </div>
                         ) : (
                           <button
                             type="button"
                             onClick={() => simulateUpload('payslip', 'payslip_may_2026.pdf')}
-                            className="w-full py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl text-[10px] font-black text-slate-300 uppercase duration-150 cursor-pointer"
+                            className="w-full py-2 bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer"
                           >
                             <span>simulate upload</span>
                           </button>
@@ -1613,33 +1611,33 @@ const RentFinancing: React.FC = () => {
 
               {/* Sidebar breakdown metadata */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24 bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-4">
-                  <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800">
-                    <div className="p-2 rounded-xl bg-[#8607C1]/15 text-[#CF8EED] flex-shrink-0">
+                <div className="sticky top-24 bg-slate-50 p-5 rounded-3xl border border-slate-200 space-y-4">
+                  <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200">
+                    <div className="p-2 rounded-xl bg-[#8607C1]/10 text-brand-600 flex-shrink-0">
                       <Icon name="creditCard" size={14} />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-xs lowercase">repayment tracker</h4>
-                      <p className="text-[8px] text-slate-450 uppercase tracking-widest font-black">Real-time parameters overview</p>
+                      <h4 className="font-extrabold text-slate-900 text-xs lowercase">repayment tracker</h4>
+                      <p className="text-[8px] text-slate-550 uppercase tracking-widest font-black">Real-time parameters overview</p>
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 font-semibold text-xs text-slate-300">
+                  <div className="space-y-2.5 font-semibold text-xs text-slate-700">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Target rent coverage total:</span>
-                      <span className="text-white font-bold">{userLoc.symbol || 'GH¢'}{formData.amountRequired.toLocaleString()}</span>
+                      <span className="text-slate-505">Target rent coverage total:</span>
+                      <span className="text-slate-900 font-bold">{userLoc.symbol || 'GH¢'}{formData.amountRequired.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Term repayment spread:</span>
-                      <span className="text-white font-bold">{formData.repaymentDuration} months</span>
+                      <span className="text-slate-505">Term repayment spread:</span>
+                      <span className="text-slate-900 font-bold">{formData.repaymentDuration} months</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Upfront billing rate (1.5%):</span>
-                      <span className="text-[#00ffcc] font-bold">
+                      <span className="text-slate-505">Upfront billing rate (1.5%):</span>
+                      <span className="text-brand-600 font-bold">
                         {userLoc.symbol || 'GH¢'}{Math.round(formData.amountRequired * (interestPercentage/100) * formData.repaymentDuration).toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between font-extrabold text-[#CF8EED] text-sm pt-2 border-t border-slate-800">
+                    <div className="flex justify-between font-extrabold text-brand-700 text-sm pt-2 border-t border-slate-200">
                       <span>Monthly Repayment:</span>
                       <span>
                         {userLoc.symbol || 'GH¢'}
@@ -1648,33 +1646,33 @@ const RentFinancing: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="bg-slate-950/40 border border-slate-850 p-3 rounded-xl space-y-2 text-[10px] leading-relaxed text-slate-400">
-                    <span className="font-black text-rose-400 uppercase tracking-wider block text-[9px]">affordability validation:</span>
+                  <div className="bg-white border border-slate-205 p-3 rounded-xl space-y-2 text-[10px] leading-relaxed text-slate-600">
+                    <span className="font-black text-rose-600 uppercase tracking-wider block text-[9px]">affordability validation:</span>
                     <p className="lowercase font-semibold">your monthly salary is {userLoc.symbol || 'GH¢'}{parseFloat(formData.monthlyIncome).toLocaleString()}. proposed rent of {userLoc.symbol || 'GH¢'}{(parseFloat(formData.monthlyRent) || 0).toLocaleString()} must represent less than 50% DTI or application inserts fail.</p>
                   </div>
                 </div>
 
                 {/* Qualification Criteria Checklist */}
-                <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-4 mt-4 text-left">
-                  <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800">
-                    <div className="p-2 rounded-xl bg-orange-500/15 text-orange-400 flex-shrink-0">
+                <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200 space-y-4 mt-4 text-left">
+                  <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200">
+                    <div className="p-2 rounded-xl bg-orange-550/10 text-orange-600 flex-shrink-0">
                       <Icon name="check" size={14} />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-xs lowercase">qualification status checklist</h4>
-                      <p className="text-[8px] text-slate-450 uppercase tracking-widest font-black">progress tracker</p>
+                      <h4 className="font-extrabold text-slate-900 text-xs lowercase">qualification status checklist</h4>
+                      <p className="text-[8px] text-slate-550 uppercase tracking-widest font-black">progress tracker</p>
                     </div>
                   </div>
 
                   {/* Progress percentage */}
                   <div className="space-y-1">
                     <div className="flex justify-between items-center text-[10px]">
-                      <span className="text-slate-400 font-bold">{metCount} of {checklistItems.length} Criteria Met</span>
-                      <span className={`${metCount === checklistItems.length ? 'text-emerald-400 font-extrabold' : 'text-[#CF8EED] font-bold'} font-mono`}>{progressPercentInt}% qualified</span>
+                      <span className="text-slate-505 font-bold">{metCount} of {checklistItems.length} Criteria Met</span>
+                      <span className={`${metCount === checklistItems.length ? 'text-emerald-600 font-extrabold' : 'text-brand-600 font-bold'} font-mono`}>{progressPercentInt}% qualified</span>
                     </div>
-                    <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-850">
+                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden border border-slate-300">
                       <div 
-                        className={`h-full rounded-full transition-all duration-350 ${metCount === checklistItems.length ? 'bg-emerald-400' : 'bg-[#e244ff]'}`}
+                        className={`h-full rounded-full transition-all duration-350 ${metCount === checklistItems.length ? 'bg-emerald-500' : 'bg-brand-505'}`}
                         style={{ width: `${progressPercentInt}%` }}
                       />
                     </div>
@@ -1685,7 +1683,7 @@ const RentFinancing: React.FC = () => {
                     {checklistItems.map((item) => (
                       <div key={item.id} className="flex gap-2.5 items-start">
                         <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
-                          item.isMet ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25' : 'bg-slate-950 text-slate-550 border border-slate-850'
+                          item.isMet ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-slate-200 text-slate-500 border border-slate-300'
                         }`}>
                           {item.isMet ? (
                             <Icon name="check" size={9} />
@@ -1694,10 +1692,10 @@ const RentFinancing: React.FC = () => {
                           )}
                         </div>
                         <div className="space-y-0.5 text-left">
-                          <h5 className={`text-[10px] font-bold leading-normal lowercase ${item.isMet ? 'text-slate-100 line-through decoration-emerald-500/30' : 'text-slate-350'}`}>
+                          <h5 className={`text-[10px] font-bold leading-normal lowercase ${item.isMet ? 'text-slate-900 line-through decoration-emerald-500/30' : 'text-slate-700'}`}>
                             {item.label}
                           </h5>
-                          <p className="text-[9px] text-[#94a3b8] leading-tight font-medium lowercase">
+                          <p className="text-[9px] text-[#475569] leading-tight font-medium lowercase">
                             {item.desc}
                           </p>
                         </div>
@@ -1711,16 +1709,15 @@ const RentFinancing: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Tab 4: Application History and Tracking Logs */}
+         {/* Tab 4: Application History and Tracking Logs */}
         {activeTab === 'history' && (
           <div className="space-y-6 animate-fade-in">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* Left Column: Applications lists */}
               <div className="lg:col-span-2 space-y-4">
-                <div className="bg-slate-900/30 border border-slate-800 rounded-3xl p-5">
-                  <h3 className="text-base font-black text-white lowercase flex items-center gap-2 mb-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5">
+                  <h3 className="text-base font-black text-slate-900 lowercase flex items-center gap-2 mb-4">
                     <Icon name="clock" size={18} className="text-[#ff007f]" />
                     my financing applications history ({applications.length})
                   </h3>
@@ -1728,15 +1725,15 @@ const RentFinancing: React.FC = () => {
                   {isLoadingHistory ? (
                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                       <Icon name="loader" size={32} className="animate-spin text-brand-500" />
-                      <span className="text-xs text-slate-400">Retrieving secure financing applications logs...</span>
+                      <span className="text-xs text-slate-500">Retrieving secure financing applications logs...</span>
                     </div>
                   ) : applications.length === 0 ? (
                     <div className="py-20 text-center">
-                      <div className="w-16 h-16 bg-slate-900 text-slate-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <div className="w-16 h-16 bg-white border border-slate-200 text-slate-500 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Icon name="database" size={32} />
                       </div>
-                      <h4 className="font-bold text-white text-sm lowercase">No Financing History found</h4>
-                      <p className="text-slate-500 text-xs mt-1 leading-relaxed max-w-sm mx-auto lowercase">
+                      <h4 className="font-bold text-slate-900 text-sm lowercase">No Financing History found</h4>
+                      <p className="text-slate-600 text-xs mt-1 leading-relaxed max-w-sm mx-auto lowercase">
                         You have not submitted any rent financing applications. use our eligibility calculator to benchmark your limits and apply.
                       </p>
                     </div>
@@ -1748,19 +1745,19 @@ const RentFinancing: React.FC = () => {
                           <div 
                             key={app.id}
                             onClick={() => setSelectedApp(app)}
-                            className={`p-4 border rounded-2xl cursor-pointer hover:bg-slate-900/40 transition-all ${
+                            className={`p-4 border rounded-2xl cursor-pointer hover:bg-slate-100 transition-all ${
                               selectedApp?.id === app.id
-                                ? 'bg-[#8607C1]/10 border-[#CF8EED]/30'
-                                : 'bg-slate-950/40 border-slate-850'
+                                ? 'bg-[#8607C1]/5 border-brand-500/40 shadow-sm'
+                                : 'bg-white border-slate-200'
                             }`}
                           >
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 pb-2 border-b border-slate-850">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 pb-2 border-b border-slate-200">
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-mono text-slate-450 font-black tracking-wide uppercase">ID: {app.id}</span>
-                                  <span className="text-[10px] text-slate-500 font-bold">• {new Date(app.createdAt).toLocaleDateString()}</span>
+                                  <span className="text-[9px] font-mono text-slate-500 font-black tracking-wide uppercase">ID: {app.id}</span>
+                                  <span className="text-[10px] text-slate-505 font-bold">• {new Date(app.createdAt).toLocaleDateString()}</span>
                                 </div>
-                                <h4 className="font-bold text-white text-xs sm:text-sm mt-0.5 lowercase">
+                                <h4 className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5 lowercase">
                                   {app.streetAddress}, {app.city}
                                 </h4>
                               </div>
@@ -1769,24 +1766,24 @@ const RentFinancing: React.FC = () => {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs leading-none font-semibold text-slate-300">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs leading-none font-semibold text-slate-700">
                               <div>
-                                <span className="text-[9px] text-slate-400 lowercase block mb-1">advance value</span>
-                                <span className="font-bold font-mono text-white text-sm">{userLoc.symbol || 'GH¢'}{app.amountRequired.toLocaleString()}</span>
+                                <span className="text-[9px] text-slate-500 lowercase block mb-1">advance value</span>
+                                <span className="font-bold font-mono text-slate-900 text-sm">{userLoc.symbol || 'GH¢'}{app.amountRequired.toLocaleString()}</span>
                               </div>
                               <div>
-                                <span className="text-[9px] text-slate-400 lowercase block mb-1">monthly rate</span>
-                                <span className="font-bold text-slate-100">
+                                <span className="text-[9px] text-slate-500 lowercase block mb-1">monthly rate</span>
+                                <span className="font-bold text-slate-900">
                                   {userLoc.symbol || 'GH¢'}{Math.round((app.amountRequired + (app.amountRequired * (interestPercentage/100) * app.repaymentDuration)) / app.repaymentDuration).toLocaleString()}/m
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[9px] text-slate-400 lowercase block mb-1">spread duration</span>
-                                <span className="font-bold text-slate-100">{app.repaymentDuration} months</span>
+                                <span className="text-[9px] text-slate-500 lowercase block mb-1">spread duration</span>
+                                <span className="font-bold text-slate-900">{app.repaymentDuration} months</span>
                               </div>
                               <div>
-                                <span className="text-[9px] text-slate-400 lowercase block mb-1">landlord name</span>
-                                <span className="font-bold text-slate-100 truncate block max-w-[100px]">{app.landlordName}</span>
+                                <span className="text-[9px] text-slate-500 lowercase block mb-1">landlord name</span>
+                                <span className="font-bold text-slate-900 truncate block max-w-[100px]">{app.landlordName}</span>
                               </div>
                             </div>
 
@@ -1799,7 +1796,7 @@ const RentFinancing: React.FC = () => {
                                     e.stopPropagation();
                                     deleteApplication(app.id);
                                   }}
-                                  className="text-[9px] text-rose-500 hover:text-rose-400 hover:underline lowercase font-black"
+                                  className="text-[9px] text-rose-600 hover:text-rose-700 hover:underline lowercase font-black"
                                 >
                                   cancel application draft
                                 </button>
@@ -1817,23 +1814,23 @@ const RentFinancing: React.FC = () => {
 
               {/* Right Column: Dynamic tracker visualizer log */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24 bg-slate-900/40 border border-slate-800 rounded-3xl p-5 space-y-5">
+                <div className="sticky top-24 bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-5">
                   
                   {selectedApp ? (
                     <div className="space-y-4">
                       
                       {/* Tracking Header */}
-                      <div className="pb-3 border-b border-slate-800">
+                      <div className="pb-3 border-b border-slate-200">
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block font-mono">tracking timeline log</span>
-                            <h4 className="font-black text-white text-sm lowercase mt-1">Application {selectedApp.id}</h4>
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block font-mono">tracking timeline log</span>
+                            <h4 className="font-black text-slate-900 text-sm lowercase mt-1">Application {selectedApp.id}</h4>
                           </div>
                           {/* Export PDF Print Button */}
                           <button
                             type="button"
                             onClick={() => handlePrintApplication(selectedApp)}
-                            className="p-1.5 duration-200 text-slate-405 hover:text-[#ff007f] hover:bg-slate-800/60 rounded-lg border border-slate-800 flex items-center gap-1.5 text-[10px] uppercase font-black cursor-pointer shadow-3xs"
+                            className="p-1.5 duration-200 text-slate-705 hover:text-[#ff007f] hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center gap-1.5 text-[10px] uppercase font-black cursor-pointer shadow-3xs bg-white"
                             title="Print details as PDF"
                           >
                             <Icon name="printer" size={13} />
@@ -1841,46 +1838,47 @@ const RentFinancing: React.FC = () => {
                           </button>
                         </div>
                         <div className="mt-1.5 flex items-center gap-1.5 justify-between">
-                          <span className="text-slate-400 text-xs lowercase">status:</span>
+                          <span className="text-slate-550 text-xs lowercase">status:</span>
                           {renderStatusBadge(selectedApp.status)}
                         </div>
                       </div>
 
                       {/* Timeline Steps visualization */}
-                      <div className="space-y-4 relative pl-5 border-l border-slate-800 text-xs font-semibold lowercase">
+                      <div className="space-y-4 relative pl-5 border-l border-slate-200 text-xs font-semibold lowercase font-sans">
                         
                         {/* 1. Submitted */}
                         <div className="relative">
-                          <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-500/10 mb-2"></span>
-                          <span className="font-black text-white text-xs block leading-tight">1. Form Submitted Securely</span>
-                          <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">Your personal details have been registered into the credit log.</p>
+                          <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/10 mb-2"></span>
+                          <span className="font-black text-slate-900 text-xs block leading-tight">1. Form Submitted Securely</span>
+                          <p className="text-[10px] text-slate-600 mt-0.5 leading-normal font-medium">Your personal details have been registered into the credit log.</p>
                         </div>
 
                         {/* 2. Documents status based on incomplete or pending */}
                         <div className="relative">
                           {selectedApp.status === 'incomplete' ? (
                             <>
-                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-amber-500/10"></span>
-                              <span className="font-black text-white text-xs block leading-tight">2. Document Upload Required</span>
-                              <p className="text-[10px] text-amber-300 mt-0.5 leading-normal font-medium">your profile is incomplete due to missing credit documents (6-month bank statement and a salary paystub are required to proceed).</p>
+                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/10"></span>
+                              <span className="font-black text-slate-900 text-xs block leading-tight">2. Document Upload Required</span>
+                              <p className="text-[10px] text-amber-700 mt-0.5 leading-normal font-medium">your profile is incomplete due to missing credit documents (6-month bank statement and a salary paystub are required to proceed).</p>
                               
                               {/* Integrated Simulation Form */}
-                              <div className="mt-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
-                                <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Simulated Upload Sandbox</h5>
+                              <div className="mt-3 p-3 rounded-xl bg-white border border-slate-200 space-y-3">
+                                <h5 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Simulated Upload Sandbox</h5>
                                 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
                                   {/* Doc 1 Check/Upload */}
-                                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-805">
-                                    <span className="text-slate-350 font-bold lowercase">6m bank statement</span>
+                                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+                                    <span className="text-slate-700 font-bold lowercase">6m bank statement</span>
                                     {pendingUploadBank ? (
-                                      <span className="text-[9px] font-bold text-emerald-400 font-mono">attached ✓</span>
+                                      <span className="text-[9px] font-bold text-emerald-600 font-mono">attached ✓</span>
                                     ) : (
                                       <button 
+                                        type="button"
                                         onClick={() => {
                                           setPendingUploadBank("bank_statement_signed_" + selectedApp.id + ".pdf");
                                           setUploadError(null);
                                         }}
-                                        className="py-0.5 px-2 bg-slate-800 hover:bg-slate-700 rounded text-[9px] text-[#CF8EED] font-black cursor-pointer border border-[#CF8EED]/10 lowercase"
+                                        className="py-0.5 px-2 bg-white hover:bg-slate-50 rounded text-[9px] text-[#8607C1] font-black cursor-pointer border border-slate-200 lowercase"
                                       >
                                         attach pdf
                                       </button>
@@ -1888,17 +1886,18 @@ const RentFinancing: React.FC = () => {
                                   </div>
 
                                   {/* Doc 2 Check/Upload */}
-                                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-805">
-                                    <span className="text-slate-350 font-bold lowercase">salaried payslip</span>
+                                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+                                    <span className="text-slate-700 font-bold lowercase">salaried payslip</span>
                                     {pendingUploadPayslip ? (
-                                      <span className="text-[9px] font-bold text-emerald-400 font-mono">attached ✓</span>
+                                      <span className="text-[9px] font-bold text-emerald-600 font-mono">attached ✓</span>
                                     ) : (
                                       <button 
+                                        type="button"
                                         onClick={() => {
                                           setPendingUploadPayslip("salary_slip_" + selectedApp.id + ".pdf");
                                           setUploadError(null);
                                         }}
-                                        className="py-0.5 px-2 bg-slate-800 hover:bg-slate-700 rounded text-[9px] text-[#CF8EED] font-black cursor-pointer border border-[#CF8EED]/10 lowercase"
+                                        className="py-0.5 px-2 bg-white hover:bg-slate-50 rounded text-[9px] text-[#8607C1] font-black cursor-pointer border border-slate-200 lowercase"
                                       >
                                         attach pdf
                                       </button>
@@ -1908,13 +1907,14 @@ const RentFinancing: React.FC = () => {
 
                                 {/* Form error notifications */}
                                 {uploadError && (
-                                  <div className="p-2 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold leading-normal lowercase">
+                                  <div className="p-2 rounded bg-rose-500/10 border border-rose-505/20 text-rose-600 text-[10px] font-bold leading-normal lowercase">
                                     ⚠ error: {uploadError}
                                   </div>
                                 )}
 
                                 {/* Main Validate & Submit Button to transition to pending */}
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     // Form Validation
                                     if (!pendingUploadBank || !pendingUploadPayslip) {
@@ -1959,9 +1959,9 @@ const RentFinancing: React.FC = () => {
                             </>
                           ) : (
                             <>
-                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-500/10"></span>
-                              <span className="font-black text-white text-xs block leading-tight">2. Verification complete</span>
-                              <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">Bank statements and salary paystubs successfully parsed via OCR validator.</p>
+                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/10"></span>
+                              <span className="font-black text-slate-900 text-xs block leading-tight">2. Verification complete</span>
+                              <p className="text-[10px] text-slate-600 mt-0.5 leading-normal font-medium">Bank statements and salary paystubs successfully parsed via OCR validator.</p>
                             </>
                           )}
                         </div>
@@ -1970,27 +1970,27 @@ const RentFinancing: React.FC = () => {
                         <div className="relative">
                           {selectedApp.status === 'incomplete' ? (
                             <>
-                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-slate-800"></span>
-                              <span className="font-black text-slate-400 text-xs block leading-tight">3. automated credit analysis</span>
-                              <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">Pending document completion triggers.</p>
+                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-slate-200 border border-slate-300"></span>
+                              <span className="font-black text-slate-500 text-xs block leading-tight">3. automated credit analysis</span>
+                              <p className="text-[10px] text-slate-500 mt-0.5 leading-normal font-medium">Pending document completion triggers.</p>
                             </>
                           ) : selectedApp.status === 'rejected' ? (
                             <>
                               <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                              <span className="font-black text-rose-400 text-xs block leading-tight">3. review failed</span>
-                              <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">target rent level exceeds safe debt limit allocations.</p>
+                              <span className="font-black text-rose-600 text-xs block leading-tight">3. review failed</span>
+                              <p className="text-[10px] text-slate-600 mt-0.5 leading-normal font-medium">target rent level exceeds safe debt limit allocations.</p>
                             </>
                           ) : selectedApp.status === 'approved' ? (
                             <>
-                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                              <span className="font-black text-white text-xs block leading-tight">3. Credit review passed</span>
-                              <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">Underwriting cleared with an eligibility rating of healthy.</p>
+                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                              <span className="font-black text-slate-900 text-xs block leading-tight">3. Credit review passed</span>
+                              <p className="text-[10px] text-slate-605 mt-0.5 leading-normal font-medium">Underwriting cleared with an eligibility rating of healthy.</p>
                             </>
                           ) : (
                             <>
-                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                              <span className="font-black text-white text-xs block leading-tight">3. Credit review active</span>
-                              <p className="text-[10px] text-slate-450 mt-0.5 leading-normal font-medium">Underwriters are confirming stable salary inflows and validation logs.</p>
+                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
+                              <span className="font-black text-slate-900 text-xs block leading-tight">3. Credit review active</span>
+                              <p className="text-[10px] text-slate-600 mt-0.5 leading-normal font-medium">Underwriters are confirming stable salary inflows and validation logs.</p>
                             </>
                           )}
                         </div>
@@ -1999,15 +1999,15 @@ const RentFinancing: React.FC = () => {
                         <div className="relative">
                           {selectedApp.status === 'approved' ? (
                             <>
-                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                              <span className="font-black text-white text-xs block leading-tight">4. Landlord confirmed advance option</span>
-                              <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">Landlord is enrolled upon complete direct payout endorsement.</p>
+                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                              <span className="font-black text-slate-900 text-xs block leading-tight">4. Landlord confirmed advance option</span>
+                              <p className="text-[10px] text-slate-605 mt-0.5 leading-normal font-medium">Landlord is enrolled upon complete direct payout endorsement.</p>
                             </>
                           ) : (
                             <>
-                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-slate-800"></span>
-                              <span className="font-black text-slate-450 text-xs block leading-tight">4. Landlord lease signing</span>
-                              <p className="text-[10px] text-slate-450 mt-0.5 leading-normal font-medium">Triggered upon credit underwriting approval clearance.</p>
+                              <span className="absolute -left-[25px] top-0.5 w-2.5 h-2.5 rounded-full bg-slate-200 border border-slate-300"></span>
+                              <span className="font-black text-slate-500 text-xs block leading-tight">4. Landlord lease signing</span>
+                              <p className="text-[10px] text-slate-500 mt-0.5 leading-normal font-medium">Triggered upon credit underwriting approval clearance.</p>
                             </>
                           )}
                         </div>
@@ -2015,9 +2015,9 @@ const RentFinancing: React.FC = () => {
                       </div>
 
                       {/* Admin system decision feedback notes */}
-                      <div className="bg-slate-950/50 p-3.5 border border-slate-805 rounded-xl space-y-1">
+                      <div className="bg-white p-3.5 border border-slate-200 rounded-xl space-y-1">
                         <span className="text-[8px] font-black tracking-widest uppercase text-[#ff007f] block font-mono">underwriter reviewer logs</span>
-                        <p className="text-[11px] text-slate-300 leading-relaxed lowercase">
+                        <p className="text-[11px] text-slate-700 leading-relaxed lowercase">
                           "{selectedApp.adminNotes || 'Underwriting analysis is actively processing. Estimated decision time: 10 hours.'}"
                         </p>
                       </div>
@@ -2025,11 +2025,11 @@ const RentFinancing: React.FC = () => {
                     </div>
                   ) : (
                     <div className="text-center py-10">
-                      <div className="w-12 h-12 bg-slate-950 text-slate-700 border border-slate-850 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <div className="w-12 h-12 bg-white text-slate-555 border border-slate-200 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Icon name="info" size={24} />
                       </div>
-                      <h4 className="font-bold text-slate-400 text-xs">Selection Pending</h4>
-                      <p className="text-[10px] text-slate-450 mt-1 lowercase leading-relaxed">
+                      <h4 className="font-bold text-slate-700 text-xs">Selection Pending</h4>
+                      <p className="text-[10px] text-slate-500 mt-1 lowercase leading-relaxed">
                         Tap any rent financing application log on the left side to visual tracking paths and access system reviewer logs.
                       </p>
                     </div>

@@ -1,12 +1,12 @@
 import React from 'react';
 import Icon from './Icon';
 
-interface ErrorBannerProps {
+interface IssueBannerProps {
   message: string;
   onRetry: () => void;
 }
 
-const ErrorBanner: React.FC<ErrorBannerProps> = ({ message, onRetry }) => (
+const IssueBanner: React.FC<IssueBannerProps> = ({ message, onRetry }) => (
   <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl flex flex-col items-center justify-center text-center my-8 shadow-sm">
     <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
       <Icon name="alertTriangle" size={24} />
@@ -23,4 +23,4 @@ const ErrorBanner: React.FC<ErrorBannerProps> = ({ message, onRetry }) => (
   </div>
 );
 
-export default ErrorBanner;
+export default IssueBanner;

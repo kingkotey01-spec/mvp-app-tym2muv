@@ -7,7 +7,7 @@ import Icon from '../components/Icon';
 import { sanitizeString } from '../services/security';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import ErrorBanner from '../components/ErrorBanner';
+import IssueBanner from '../components/IssueBanner';
 import SkeletonCard from '../components/SkeletonCard';
 import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
 
@@ -280,7 +280,7 @@ const Chat: React.FC = () => {
   if (error) {
     return (
       <div className="container mx-auto px-4 pt-6 pb-4 h-[calc(100vh-5rem)] flex items-center justify-center">
-        <ErrorBanner message={error} onRetry={() => setRetryKey(k => k + 1)} />
+        <IssueBanner message={error} onRetry={() => setRetryKey(k => k + 1)} />
       </div>
     );
   }

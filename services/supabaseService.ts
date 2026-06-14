@@ -2,7 +2,6 @@ import { supabase } from '../supabaseClient';
 import { Listing, User, UserRole, Chat, ChatMessage, SearchFilters, Monetization, Review, Payment, ViewRequest, StaticPage, BlogPost, RentFinancingApplication } from '../types';
 import { withCache, delCache, invalidateCachePrefix, CACHE_TTL, cacheKey } from './cacheService';
 import { uploadImageToSupabase } from './imageService';
-import { MOCK_LISTINGS, MOCK_USERS, MOCK_ADS, MOCK_CHATS } from './mockData';
 
 // --- AUTH SERVICES ---
 export const loginWithEmail = async (email: string, password: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {
@@ -10,35 +9,6 @@ export const loginWithEmail = async (email: string, password: string, selectedRo
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     
     if (signInError) {
-      // Check if it corresponds to an autoprovisioned demo credentials
-      const isDemo = ['renter@tym2muv.com', 'agent@tym2muv.com', 'admin@tym2muv.com'].includes(email.toLowerCase());
-      if (isDemo && (signInError.status === 400 || signInError.message?.includes('Invalid login') || signInError.message?.includes('credentials'))) {
-        console.log(`Auto-provisioning demo role: ${email}`);
-        let name = 'Theresa Carter (Renter)';
-        let role: 'Tenant' | 'Agent' | 'Admin' = 'Tenant';
-        
-        if (email.toLowerCase().includes('agent')) {
-          name = 'Arthur Pendelton (Agent)';
-          role = 'Agent';
-        } else if (email.toLowerCase().includes('admin')) {
-          name = 'Marcus Aurelius (Admin)';
-          role = 'Admin';
-        }
-        
-        // Dynamic provision via signUp
-        await signupWithEmail(email, password, name, role);
-        
-        // Re-authenticate
-        const retryResult = await supabase.auth.signInWithPassword({ email, password });
-        if (retryResult.error) throw retryResult.error;
-        
-        return Object.assign(retryResult.data.user || {}, {
-          isNewAccount: true,
-          role: role,
-          id: retryResult.data.user?.id,
-          uid: retryResult.data.user?.id
-        });
-      }
       throw signInError;
     }
 
@@ -164,7 +134,8 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       let data = null;
 
       // Add retry logic to wait for database trigger to create the profile row (OAuth race condition safeguard)
-      for (let i = 0; i < 10; i++) {
+      // Done snappy at most 3 quick checks over 300ms to stay responsive
+      for (let i = 0; i < 3; i++) {
         const query = await supabase
           .from('profiles')
           .select('*')
@@ -176,9 +147,9 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
           break;
         }
 
-        if (i < 9) {
+        if (i < 2) {
           console.log(`Waiting for user profile triggered creation... attempt ${i + 1}`);
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 150));
         }
       }
         
@@ -273,11 +244,6 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       return mapProfileToUser(data);
     }, CACHE_TTL.PROFILES);
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn("Supabase profile fetch failed, falling back to mock users (DEV):", err);
-      const mockUser = MOCK_USERS.find(u => u.id === userId);
-      return (mockUser || null) as any;
-    }
     throw err;
   }
 };
@@ -555,9 +521,9 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
         .select('*', { count: 'exact' });
 
       if (!filters?.isAdminQuery) {
-        query = query.in('status', ['approved', 'active']);
+        query = query.in('status', ['approved']);
       } else if (filters?.status) {
-        const dbStatus = filters.status === 'active' ? ['approved', 'active'] : [filters.status];
+        const dbStatus = (filters.status === 'active' || filters.status === 'approved') ? ['approved'] : [filters.status];
         query = query.in('status', dbStatus);
       }
       
@@ -608,74 +574,6 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       return { listings: mapped, total: totalCount, hasMore };
     }, CACHE_TTL.SEARCH);
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn("Supabase listings query failed, falling back to mock listings (DEV):", err);
-      let filtered = [...MOCK_LISTINGS];
-      if (filters?.categoryId) {
-        filtered = filtered.filter(l => l.categoryId === filters.categoryId);
-      }
-      if (filters?.countryCode) {
-        filtered = filtered.filter(l => l.country?.toLowerCase() === filters.countryCode.toLowerCase());
-      }
-      if (filters?.type) {
-        filtered = filtered.filter(l => l.type.toLowerCase() === filters.type?.toLowerCase());
-      }
-      if (filters?.propertyType) {
-        filtered = filtered.filter(l => l.propertyType.toLowerCase() === filters.propertyType?.toLowerCase());
-      }
-      if (filters?.bedrooms) {
-        filtered = filtered.filter(l => (l.bedrooms || 0) >= (filters.bedrooms || 0));
-      }
-      if (filters?.bathrooms) {
-        filtered = filtered.filter(l => (l.bathrooms || 0) >= (filters.bathrooms || 0));
-      }
-      if (filters?.location) {
-        filtered = filtered.filter(l => l.location.toLowerCase().includes(filters.location!.toLowerCase()));
-      }
-      if (filters?.query) {
-        filtered = filtered.filter(l => l.title.toLowerCase().includes(filters.query!.toLowerCase()));
-      }
-      if (filters?.sellerId || filters?.agent_id) {
-        const sId = filters?.sellerId || filters?.agent_id;
-        filtered = filtered.filter(l => l.sellerId === sId);
-      }
-      
-      // Sort mock fallbacks: premium listing first, then newest listings
-      filtered.sort((a, b) => {
-        const aPremium = a.isPremium ? 1 : 0;
-        const bPremium = b.isPremium ? 1 : 0;
-        if (bPremium !== aPremium) {
-          return bPremium - aPremium;
-        }
-        return new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime();
-      });
-      
-      const page = filters?.page || 1;
-      const limit = filters?.limit || filters?.pageSize || 50;
-      const from = (page - 1) * limit;
-      const paginated = filtered.slice(from, from + limit);
-      
-      let finalMockListings = paginated;
-      if (!filters?.isAdminQuery && !filters?.sellerId && !filters?.agent_id) {
-        finalMockListings = finalMockListings.filter(listing => {
-          if (listing.availabilityStatus === 'sold' || listing.availabilityStatus === 'rented') {
-            if (!listing.availabilityChangedAt) return true;
-            const changedDate = new Date(listing.availabilityChangedAt);
-            const now = new Date();
-            const diffTime = Math.abs(now.getTime() - changedDate.getTime());
-            const diffDays = diffTime / (1000 * 60 * 60 * 24);
-            return diffDays <= 7;
-          }
-          return true;
-        });
-      }
-
-      return {
-        listings: finalMockListings,
-        total: filtered.length,
-        hasMore: from + limit < filtered.length
-      };
-    }
     throw err;
   }
 };
@@ -688,11 +586,6 @@ export const getListingById = async (id: string): Promise<Listing | null> => {
       return mapPropertyToListing(data);
     }, CACHE_TTL.LISTINGS);
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn("Supabase getListingById failed, falling back to mock listings (DEV):", err);
-      const mockMatch = MOCK_LISTINGS.find(l => l.id === id);
-      return mockMatch || null;
-    }
     throw err;
   }
 };
@@ -714,7 +607,7 @@ export const createListing = async (listing: Omit<Listing, 'id'>): Promise<strin
     subcategory_id: listing.subcategoryId,
     agent_id: listing.sellerId,
     description: listing.description,
-    status: listing.status === 'active' ? 'active' : (listing.status || 'pending'),
+    status: listing.status === 'active' ? 'approved' : (listing.status || 'pending'),
     listing_type: listing.type,
     property_type: listing.propertyType,
     bedrooms: listing.bedrooms,
@@ -740,7 +633,7 @@ export const createListing = async (listing: Omit<Listing, 'id'>): Promise<strin
 export const updateListing = async (id: string, updates: Partial<Listing>) => {
   const dbUpdates: any = {};
   if (updates.status !== undefined) {
-    dbUpdates.status = updates.status === 'active' ? 'active' : updates.status;
+    dbUpdates.status = updates.status === 'active' ? 'approved' : updates.status;
   }
   if (updates.title !== undefined) dbUpdates.title = updates.title;
   if (updates.price !== undefined) dbUpdates.price = updates.price;
@@ -858,7 +751,7 @@ export const getChats = (userId: string, callback: (chats: Chat[]) => void) => {
   const fetchAndCallback = async () => {
     const { data } = await supabase
       .from('chats')
-      .select('*, messages(*, sender:profiles(id, full_name, avatar_url))')
+      .select('*, messages(*, sender:profiles!sender_id(id, full_name, avatar_url))')
       .contains('participants', [userId])
       .order('last_message_time', { ascending: false })
       .limit(50);
@@ -1043,14 +936,6 @@ export const getMonetizationAds = async (countryCode?: string): Promise<Monetiza
       createdAt: ad.created_at
     }));
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn("getMonetizationAds failed, falling back to mock ads templates (DEV):", err);
-      let ads = [...MOCK_ADS];
-      if (countryCode) {
-        ads = ads.filter(ad => !ad.countryCode || ad.countryCode === countryCode);
-      }
-      return ads;
-    }
     throw err;
   }
 };
@@ -1171,7 +1056,7 @@ export const getReviewsForVendor = async (vendorId: string): Promise<Review[]> =
     // Join customer profiles to get name and avatar
     const { data, error } = await supabase
       .from('reviews')
-      .select('*, customer:profiles(id, full_name, avatar_url)')
+      .select('*, customer:profiles!customer_id(id, full_name, avatar_url)')
       .eq('vendor_id', vendorId)
       .order('created_at', { ascending: false });
     

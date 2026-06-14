@@ -8,7 +8,7 @@ import { getListings, getMonetizationAds, getRecentViewRequestCounts } from '../
 import Icon from '../components/Icon';
 import { useLocation as useAppLocation } from '../context/LocationContext';
 import { useMixedContent } from '../hooks/useMixedContent';
-import ErrorBanner from '../components/ErrorBanner';
+import IssueBanner from '../components/IssueBanner';
 import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
 import useDebounce from '../hooks/useDebounce';
@@ -411,7 +411,7 @@ const SearchPage: React.FC = () => {
         )}
            
          {error ? (
-           <ErrorBanner message={error} onRetry={() => setRetryKey(k => k + 1)} />
+           <IssueBanner message={error} onRetry={() => setRetryKey(k => k + 1)} />
         ) : isLoading && page === 1 ? (
           <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
              {Array.from({ length: 12 }).map((_, idx) => (

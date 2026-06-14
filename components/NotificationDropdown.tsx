@@ -27,12 +27,17 @@ const NotificationDropdown = () => {
   const { isAuthenticated, user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const ignoreNextUpdateRef = useRef(false);
 
   const fetchNotifs = async () => {
     if (user?.id) {
       setLoading(true);
       const data = await getNotificationsForUser(user.id);
-      setNotifications(data);
+      if (!ignoreNextUpdateRef.current) {
+        setNotifications(data);
+      } else {
+        ignoreNextUpdateRef.current = false;
+      }
       setLoading(false);
     }
   };
@@ -69,8 +74,9 @@ const NotificationDropdown = () => {
     e.preventDefault();
     e.stopPropagation();
     if (user?.id) {
-      await markAllNotificationsReadForUser(user.id);
+      ignoreNextUpdateRef.current = true;
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      await markAllNotificationsReadForUser(user.id);
     }
   };
 
@@ -78,8 +84,9 @@ const NotificationDropdown = () => {
     e.preventDefault();
     e.stopPropagation();
     if (user?.id) {
-      await clearAllNotificationsForUser(user.id);
+      ignoreNextUpdateRef.current = true;
       setNotifications([]);
+      await clearAllNotificationsForUser(user.id);
     }
   };
 

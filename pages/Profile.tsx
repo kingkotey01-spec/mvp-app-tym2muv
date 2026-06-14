@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useMixedContent } from '../hooks/useMixedContent';
 import { getOptimizedImageUrl } from '../utils/imageOptimization';
-import SimulatedInbox from '../components/SimulatedInbox';
+import { supabase } from '../supabaseClient';
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -396,16 +396,25 @@ const Profile: React.FC = () => {
 
       if (userId === 'me' || !userId) {
         // "me" route: must have a logged-in user
-        if (!isAuthenticated) {
-          // Auth is ready but no user session → send to sign-in
-          navigate('/signin', { replace: true });
-          return;
+        if (currentUser) {
+          targetId = currentUser.id;
+        } else {
+          // Dynamic session backup retrieval
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            targetId = session.user.id;
+          } else {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser) {
+              targetId = authUser.id;
+            } else if (!isAuthenticated) {
+              navigate('/signin', { replace: true });
+              return;
+            } else {
+              return;
+            }
+          }
         }
-        if (!currentUser) {
-          // Session exists, but profile document is still loading inside AuthContext
-          return;
-        }
-        targetId = currentUser.id;
       } else {
         targetId = userId;
       }
@@ -414,7 +423,13 @@ const Profile: React.FC = () => {
       if (active) setIsLoading(true);
       
       try {
-        const u = await getUserProfile(targetId);
+        let u: User | null = null;
+        if (currentUser && targetId === currentUser.id) {
+          u = currentUser;
+        } else {
+          u = await getUserProfile(targetId);
+        }
+
         if (!active) return;
 
         setUser(u ?? undefined);
@@ -476,7 +491,7 @@ const Profile: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [userId, currentUser?.id, isAuthReady, isAuthenticated]);
+  }, [userId, currentUser, isAuthReady, isAuthenticated]);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -789,14 +804,6 @@ const Profile: React.FC = () => {
                           <Icon name="zap" size={13} className={activeTab === 'pro' ? 'text-brand-500' : 'text-slate-400'} /> Agent Pro
                       </button>
                     ) : null}
-                    {isMe ? (
-                      <button 
-                         onClick={() => setActiveTab('inbox')}
-                         className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'inbox' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'} flex items-center gap-1`}
-                      >
-                          <Icon name="mail" size={13} className={activeTab === 'inbox' ? 'text-brand-500' : 'text-slate-400'} /> Simulated Inbox
-                      </button>
-                    ) : null}
                     <button 
                        onClick={() => setActiveTab('reviews')}
                        className={`pb-2 px-1 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${activeTab === 'reviews' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
@@ -871,8 +878,6 @@ const Profile: React.FC = () => {
                         <p className="text-slate-500 mt-1">You haven't saved any listings to your favorites yet.</p>
                     </div>
                 )
-            ) : activeTab === 'inbox' ? (
-                <SimulatedInbox />
             ) : activeTab === 'financing' ? (
                  <div className="space-y-6 animate-fade-in relative z-10 text-slate-705">
                      <div className="bg-white border border-slate-200 rounded-3xl p-5 md:p-6 shadow-xs">
@@ -980,8 +985,6 @@ const Profile: React.FC = () => {
                          )}
                      </div>
                  </div>
-            ) : activeTab === 'inbox' ? (
-                <SimulatedInbox />
             ) : (
                  <div className="space-y-8 animate-fade-in">
                     {/* Rating Overview & Trust Analytics Dashboard */}

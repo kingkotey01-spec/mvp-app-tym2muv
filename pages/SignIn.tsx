@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { loginWithGoogle, loginWithLinkedIn, loginWithEmail, signupWithEmail, sendPasswordResetEmail } from '../services/supabaseService';
-import { sendWelcomeComms } from '../services/notificationSimulator';
 import Icon from '../components/Icon';
 import { Logo } from '../components/Logo';
 
@@ -171,11 +170,6 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
 
       if (isSignUp) {
         const resultUser = await signupWithEmail(email, password, name, selectedRole);
-        try {
-          sendWelcomeComms(email, name, selectedRole);
-        } catch (e) {
-          console.error('Failed to trigger simulated welcome comms:', e);
-        }
         setMessage('Registration successful! Secure profile provisioned.');
         setTimeout(() => {
           navigate(getPostAuthPath(resultUser), { replace: true });
@@ -585,98 +579,6 @@ const SignIn: React.FC<SignInProps> = ({ defaultTab }) => {
                       Don't have an account? Sign Up
                     </Link>
                   )}
-
-                  {/* Dev Testing Portal Panel */}
-                  <div className="w-full mt-3 pt-3 border-t border-dashed border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => setShowDemoPanel(!showDemoPanel)}
-                      className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-[#7C3AED] transition-colors cursor-pointer bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100 hover:border-purple-200 hover:shadow-3xs"
-                    >
-                      <Icon name="sparkles" size={10} className="text-purple-500" />
-                      <span>{showDemoPanel ? 'Hide Demo Accounts' : 'Reveal Demo Accounts'}</span>
-                      <Icon name="chevronRight" size={10} className={`text-slate-400 transition-transform ${showDemoPanel ? 'rotate-90' : ''}`} />
-                    </button>
-
-                    {showDemoPanel && (
-                      <div className="mt-3 text-left space-y-2 animate-fade-in-up">
-                        <div className="bg-purple-50/50 p-2 rounded-xl border border-purple-100/30">
-                          <p className="text-[9px] text-purple-700/90 font-bold leading-normal text-center">
-                            💡 Click any credential card below to sign in instantly with dynamic auto-provisioning.
-                          </p>
-                        </div>
-
-                        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                          {/* 1. Tenant */}
-                          <button
-                            type="button"
-                            onClick={() => handleQuickFillAndSubmit('renter@tym2muv.com', 'Password123!', 'Tenant')}
-                            className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-purple-300 bg-white hover:bg-purple-50/10 transition shadow-3xs hover:shadow-2xs cursor-pointer group flex items-start gap-2"
-                          >
-                            <span className="p-1 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">
-                              <Icon name="user" size={12} />
-                            </span>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-extrabold text-[#7C3AED] tracking-tight">Renter / Tenant</span>
-                                <span className="text-[8px] font-mono font-bold bg-slate-100 text-slate-500 px-1 rounded-sm uppercase tracking-widest">LEVEL 1</span>
-                              </div>
-                              <p className="text-[9px] text-slate-700 font-bold">Theresa Carter</p>
-                              <code className="text-[8px] text-slate-400 block break-all font-mono">renter@tym2muv.com / Password123!</code>
-                              <p className="text-[8px] text-slate-400 font-medium">Tests room browsing, rent financing applications & profile favorites.</p>
-                            </div>
-                          </button>
-
-                          {/* 2. Agent */}
-                          <button
-                            type="button"
-                            onClick={() => handleQuickFillAndSubmit('agent@tym2muv.com', 'Password123!', 'Agent')}
-                            className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-purple-300 bg-white hover:bg-purple-50/10 transition shadow-3xs hover:shadow-2xs cursor-pointer group flex items-start gap-2"
-                          >
-                            <span className="p-1 rounded-lg bg-blue-50 text-blue-600 shrink-0">
-                              <Icon name="award" size={12} />
-                            </span>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-extrabold text-[#7C3AED] tracking-tight">Agency Agent / Vendor</span>
-                                <span className="text-[8px] font-mono font-bold bg-slate-100 text-slate-500 px-1 rounded-sm uppercase tracking-widest">LEVEL 2</span>
-                              </div>
-                              <p className="text-[9px] text-slate-700 font-bold">Arthur Pendelton</p>
-                              <code className="text-[8px] text-slate-400 block break-all font-mono">agent@tym2muv.com / Password123!</code>
-                              <p className="text-[8px] text-slate-400 font-medium">Tests property listing uploads, premium boost promotions, & agent dashboard stats.</p>
-                            </div>
-                          </button>
-
-                          {/* 3. Platform Admin */}
-                          <div className="p-2 rounded-xl border border-dashed border-purple-100 bg-slate-50/50 space-y-1.5">
-                            <div className="flex items-start gap-2">
-                              <span className="p-1 rounded-lg bg-purple-50 text-purple-600 shrink-0">
-                                <Icon name="shieldCheck" size={12} />
-                              </span>
-                              <div className="space-y-0.5 flex-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-extrabold text-[#7C3AED] tracking-tight">Master Administrator</span>
-                                  <span className="text-[8px] font-mono font-bold bg-purple-100 text-purple-700 px-1 rounded-sm uppercase tracking-widest">LEVEL 3</span>
-                                </div>
-                                <p className="text-[9px] text-slate-750 font-bold">Marcus Aurelius</p>
-                                <code className="text-[8px] text-slate-400 block break-all font-mono">admin@tym2muv.com / Password123!</code>
-                                <p className="text-[8px] text-slate-400 font-medium leading-normal">
-                                  Accesses the Global Administration System (approval feeds, activity tracking, moderation system).
-                                </p>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleQuickFillAndSubmit('admin@tym2muv.com', 'Password123!', 'Admin')}
-                              className="w-full py-1 text-[8.5px] font-extrabold uppercase bg-white border border-purple-100 text-purple-700 rounded-lg hover:bg-purple-600 hover:text-white transition shadow-3xs cursor-pointer flex items-center justify-center gap-1"
-                            >
-                              <span>🚀 Launch Admin Portal</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </>
             )}

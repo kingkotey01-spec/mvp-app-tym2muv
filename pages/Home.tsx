@@ -8,7 +8,7 @@ import Icon from '../components/Icon';
 import { Link } from 'react-router-dom';
 import { useLocation as useAppLocation } from '../context/LocationContext';
 import { useMixedContent } from '../hooks/useMixedContent';
-import ErrorBanner from '../components/ErrorBanner';
+import IssueBanner from '../components/IssueBanner';
 import SkeletonCard from '../components/SkeletonCard';
 import SmartSearchInput from '../components/SmartSearchInput';
 
@@ -304,7 +304,7 @@ const Home: React.FC = () => {
           <section id="trending-section">
             <div className="glass-card rounded-[2rem] p-6 md:p-8 shadow-sm">
               {error ? (
-                <ErrorBanner message={error} onRetry={fetchListings} />
+                <IssueBanner message={error} onRetry={fetchListings} />
               ) : isLoading && !isAppending ? (
                 <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
                   {[...Array(12)].map((_, i) => (

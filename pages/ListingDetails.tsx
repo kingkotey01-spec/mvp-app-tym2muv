@@ -12,7 +12,7 @@ import AdCard from '../components/AdCard';
 import ListingCard from '../components/ListingCard';
 import { generateListingTitle } from '../utils/listingUtils';
 import SafetyDisclaimer from '../components/SafetyDisclaimer';
-import ErrorBanner from '../components/ErrorBanner';
+import IssueBanner from '../components/IssueBanner';
 import MortgageCalculator from '../components/MortgageCalculator';
 import { PriceTrends } from '../components/PriceTrends';
 import { getSymbolFromCode } from '../services/location';
@@ -271,7 +271,7 @@ const ListingDetails: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 font-sans p-4">
-        <ErrorBanner message={error} onRetry={() => setRetryKey(k => k + 1)} />
+        <IssueBanner message={error} onRetry={() => setRetryKey(k => k + 1)} />
         <Link to="/" className="mt-4 px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-100 transition-all shadow-sm">
           Back to Home
         </Link>
