@@ -373,6 +373,18 @@ export const getAllUsers = async (): Promise<User[]> => {
 export const updateUserRole = async (userId: string, role: string) => {
   const normalizedRole = role.toLowerCase();
   
+  // 1. Update profiles table first!
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ role: normalizedRole })
+    .eq('id', userId);
+    
+  if (profileError) {
+    console.error('Failed to update profile role in database:', profileError);
+    throw profileError;
+  }
+
+  // 2. If it is an agent, insert/upsert the agent record second.
   if (normalizedRole === 'agent') {
     const { error: agentError } = await supabase
       .from('agents')
@@ -382,19 +394,19 @@ export const updateUserRole = async (userId: string, role: string) => {
       }, { onConflict: 'id' });
       
     if (agentError) {
-      console.error('Failed to upsert agent row during updateUserRole:', agentError);
-      throw new Error(`Failed to activate agent status: ${agentError.message}`);
+      console.warn('Non-fatal warning: failed to upsert agent row during updateUserRole:', agentError);
+      // Try to insert cleanly in case of RLS or constraint edge cases, or throw if absolutely required
+      const { error: retryAgentError } = await supabase
+        .from('agents')
+        .insert({
+          id: userId,
+          verification_status: 'pending'
+        });
+      if (retryAgentError) {
+        console.error('Failed to create agent row using insert fallback:', retryAgentError);
+        throw new Error(`Failed to activate agent status: ${retryAgentError.message}`);
+      }
     }
-  }
-
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ role: normalizedRole })
-    .eq('id', userId);
-    
-  if (profileError) {
-    console.error('Failed to update profile role in database:', profileError);
-    throw profileError;
   }
 
   await delCache(cacheKey('profile', userId));

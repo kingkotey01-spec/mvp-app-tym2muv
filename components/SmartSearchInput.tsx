@@ -183,13 +183,6 @@ const SmartSearchInput: React.FC<SmartSearchInputProps> = ({
 
         <div className={`absolute flex items-center gap-1 ${variant === 'simple' ? 'right-2' : 'right-0'}`}>
           <button 
-            onClick={handleVoiceSearch}
-            className={`p-2 rounded-xl transition-all relative ${isListening ? 'text-red-600 bg-red-50 animate-pulse' : 'text-slate-400 hover:text-brand-600 hover:bg-white/80'}`}
-            title="Voice Search"
-          >
-            <Icon name="mic" size={18} />
-          </button>
-          <button 
             onClick={toggleSort}
             className={`p-2 rounded-xl transition-all relative ${showSort ? 'text-brand-600 bg-brand-50' : 'text-slate-400 hover:text-brand-600 hover:bg-white/80'}`}
             title="Sort Order"

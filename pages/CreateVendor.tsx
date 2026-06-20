@@ -50,6 +50,11 @@ const CreateVendor: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [submissionError, setSubmissionError] = useState<{
+    title: string;
+    message: string;
+    suggestion: string;
+  } | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -103,13 +108,70 @@ const CreateVendor: React.FC = () => {
       setSelectedSpecializations(initialSpecs);
       
       // If they are already Agent or Admin, they don't need to create a vendor account
-      // UNLESS they haven't completed their vendor profile setup yet (e.g., bio or phone page parameters/details are absent).
-      const hasCompletedVendorProfile = user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
-      if (user.role === 'Admin' || (user.role === 'Agent' && hasCompletedVendorProfile)) {
+      if (user.role === 'Admin' || user.role === 'Agent') {
         navigate('/agent-dashboard', { replace: true });
       }
     }
   }, [user, navigate]);
+
+  const validateField = (fieldName: string, value: string) => {
+    let err = '';
+    if (fieldName === 'name') {
+      if (!value.trim()) {
+        err = 'Display name is required.';
+      } else if (value.trim().length < 2) {
+        err = 'Display name must be at least 2 characters.';
+      } else if (value.length > 50) {
+        err = 'Display name cannot exceed 50 characters.';
+      }
+    } else if (fieldName === 'phone') {
+      if (!value.trim()) {
+        err = 'Professional phone number is required.';
+      } else if (value.trim().length < 8) {
+        err = 'Professional phone must be at least 8 characters.';
+      } else if (value.length > 20) {
+        err = 'Phone number cannot exceed 20 characters.';
+      } else if (!/^\+?[0-9\s\-()]+$/.test(value)) {
+        err = 'Please provide a valid phone number (digits, spaces, or international format).';
+      }
+    } else if (fieldName === 'location') {
+      if (!value.trim()) {
+        err = 'Service location is required.';
+      } else if (value.trim().length < 3) {
+        err = 'Service location must be at least 3 characters.';
+      } else if (value.length > 100) {
+        err = 'Service location cannot exceed 100 characters.';
+      }
+    } else if (fieldName === 'bio') {
+      if (!value.trim()) {
+        err = 'Professional bio is required.';
+      } else if (value.trim().length < 10) {
+        err = 'Professional bio is required (minimum 10 characters to attract high-quality clients).';
+      } else if (value.length > 300) {
+        err = 'Professional bio cannot exceed 300 characters.';
+      }
+    } else if (fieldName === 'agencyName') {
+      if (value && value.length > 100) {
+        err = 'Agency name cannot exceed 100 characters.';
+      }
+    } else if (fieldName === 'licenseNumber') {
+      if (value && value.length > 50) {
+        err = 'License/Registration number cannot exceed 50 characters.';
+      }
+    }
+
+    setFieldErrors(prev => ({
+      ...prev,
+      [fieldName]: err
+    }));
+
+    return !err;
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    validateField(name, value);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -121,9 +183,12 @@ const CreateVendor: React.FC = () => {
       return updated;
     });
     
-    // Clear the error message to offer immediate pleasant visual response
+    // Clear display errors as they begin typing again
+    setError(null);
+    setSubmissionError(null);
+    
     if (fieldErrors[name]) {
-      setFieldErrors(prev => ({ ...prev, [name]: '' }));
+      validateField(name, value);
     }
   };
 
@@ -138,15 +203,78 @@ const CreateVendor: React.FC = () => {
     });
   };
 
+  const parseSupabaseError = (err: any) => {
+    console.error('Submission failed with full error details:', err);
+    
+    // Default fallback
+    const res = {
+      title: 'Submission Failed',
+      message: err?.message || 'Failed to initialize vendor account. Please verify input data and try again.',
+      suggestion: 'Please verify your details or network connection and try again.'
+    };
+
+    if (!err) return res;
+
+    // Check code or message
+    const code = String(err.code || '');
+    const msg = String(err.message || '').toLowerCase();
+    
+    if (code === '42501' || msg.includes('permission denied') || msg.includes('insufficient_privilege') || msg.includes('policy')) {
+      res.title = 'Access Denied (Security Policy Restriction)';
+      res.message = 'The database Row-Level Security policy prevented updating this profile or role catalog.';
+      res.suggestion = 'Ensure you are signed in as the correct user. If you recently updated your profile, try signing out and signing in again to refresh your security cookies.';
+    } else if (code === '23505' || msg.includes('unique violation') || msg.includes('duplicate key') || msg.includes('already exists')) {
+      res.title = 'Registration Conflict';
+      res.message = 'A custom record with similar fields (e.g. phone number or account ID) is already registered.';
+      res.suggestion = 'Please double-check your Professional Phone or agency credentials. Each vendor profile must operate with a distinct phone number.';
+    } else if (code === '42P01' || msg.includes('relation') || msg.includes('does not exist')) {
+      res.title = 'Database Table Missing';
+      res.message = 'The required database table structure was not found on the server.';
+      res.suggestion = 'This represents a systems migration issue. Your inputs are valid, but database tables under Supabase might be upgrading. Please contact support.';
+    } else if (msg.includes('jwt') || msg.includes('token expired') || msg.includes('auth') || msg.includes('api key')) {
+      res.title = 'Session Verification Expired';
+      res.message = 'Your authentication state expired while negotiating promotion tokens.';
+      res.suggestion = 'Please perform a page reload, or log out of your current session and sign back in to establish a healthy connection.';
+    } else if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('timeout') || msg.includes('connection refused')) {
+      res.title = 'Inbound Network Disruption';
+      res.message = 'An error occurred while establishing a stable socket connection with database nodes.';
+      res.suggestion = 'Check that your network is alive and that no firewall is blocking HTTPS traffic to our database clusters. Try clicking submit once more.';
+    } else if (msg.includes('validation') || msg.includes('invalid input')) {
+      res.title = 'Input Verification Error';
+      res.message = 'The database rejected schema insertion due to malformed values.';
+      res.suggestion = 'Make sure there are no illegal emojis or excessive special symbols inside the text boxes, then try submitting again.';
+    }
+
+    return res;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setIsSubmitting(true);
     setError(null);
+    setSubmissionError(null);
     setFieldErrors({});
 
-    // Validate using Zod schema
+    // 1. Front-end Required Fields Validation
+    let hasFieldErrors = false;
+    const fieldsToValidate = ['name', 'phone', 'location', 'bio', 'agencyName', 'licenseNumber'];
+    fieldsToValidate.forEach(field => {
+      const isValid = validateField(field, formData[field as keyof typeof formData]);
+      if (!isValid) {
+        hasFieldErrors = true;
+      }
+    });
+
+    if (hasFieldErrors) {
+      setError('Please review the form. Some required or formatted fields have invalid data.');
+      setIsSubmitting(false);
+      toast('Please correct the highlighted fields in the form.', 'warning');
+      return;
+    }
+
+    // 2. Validate using Zod schema for full coverage
     const validation = createVendorSchema.safeParse({
       name: formData.name,
       phone: formData.phone,
@@ -165,10 +293,9 @@ const CreateVendor: React.FC = () => {
         }
       });
       setFieldErrors(errorsList);
-      setError('Please review the form. Some fields have invalid or incomplete information.');
+      setError('Validation failed. Some fields contain invalid or inappropriate formats.');
       setIsSubmitting(false);
       
-      // Toast the first error to attract immediate user awareness
       const firstError = validation.error.issues[0]?.message;
       if (firstError) {
         toast(firstError, "warning");
@@ -177,7 +304,7 @@ const CreateVendor: React.FC = () => {
     }
 
     try {
-      // 1. Update the user profile with the fields (including phone/license/specializations inside socials for fallbacks)
+      // 1. Update the user profile with the fields
       await updateUserProfile(user.id, {
         name: formData.name,
         bio: formData.bio,
@@ -195,8 +322,12 @@ const CreateVendor: React.FC = () => {
       // 2. Perform role upgrade to 'Agent'
       await updateUserRole(user.id, 'Agent');
 
-      // 2.5 Upsert agent-specific profile details into agents table
-      await upsertAgentProfile(user.id, { company_name: formData.agencyName });
+      // 2.5 Upsert agent-specific profile details into agents table defensively
+      try {
+        await upsertAgentProfile(user.id, { company_name: formData.agencyName });
+      } catch (agentErr) {
+        console.warn('Non-fatal warning: failed to upsert premium company details into agents table:', agentErr);
+      }
  
       // Refresh AuthContext session details
       await refreshUser();
@@ -206,15 +337,17 @@ const CreateVendor: React.FC = () => {
       localStorage.removeItem(`create_vendor_specs_${user.id}`);
 
       // Delay briefly for auth state updates to take hold
-      await new Promise(res => setTimeout(res, 400));
+      await new Promise(res => setTimeout(res, 450));
 
       // 3. Show success Toast and redirect straight to the Agent Dashboard!
       toast("Congratulations! Your Premium Vendor Account has been activated successfully.", "success");
       navigate('/agent-dashboard', { replace: true });
     } catch (err: any) {
       console.error('Error creating vendor account:', err);
-      setError(err?.message || 'Failed to initialize vendor account. Please verify input data and try again.');
-      toast(err?.message || 'Failed to activate vendor profile. Please try again.', 'error');
+      const parsedError = parseSupabaseError(err);
+      setSubmissionError(parsedError);
+      setError(parsedError.message);
+      toast(parsedError.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -261,8 +394,24 @@ const CreateVendor: React.FC = () => {
             </div>
           </div>
 
-          {error && (
-            <div className="mb-3.5 p-2.5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[11px] font-semibold flex items-center gap-2">
+          {submissionError && (
+            <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-100 text-red-700 text-xs flex flex-col gap-1.5 shadow-none">
+              <div className="flex items-center gap-2 text-red-800 font-bold">
+                <Icon name="alert" size={15} />
+                <span>{submissionError.title}</span>
+              </div>
+              <p className="text-red-650 leading-relaxed font-medium">
+                {submissionError.message}
+              </p>
+              <div className="text-[10px] bg-red-100/40 text-red-850 p-2 rounded-lg font-semibold border border-red-100/60 mt-0.5 leading-relaxed">
+                <span className="font-bold block text-[9px] uppercase tracking-wider text-red-900 mb-0.5">Troubleshooting TIP:</span>
+                {submissionError.suggestion}
+              </div>
+            </div>
+          )}
+
+          {error && !submissionError && (
+            <div className="mb-3.5 p-2.5 rounded-xl bg-red-50 border border-red-100 text-red-650 text-[11px] font-semibold flex items-center gap-2 shadow-none">
               <Icon name="alert" size={13} />
               <span>{error}</span>
             </div>
@@ -277,15 +426,18 @@ const CreateVendor: React.FC = () => {
             <fieldset disabled={isSubmitting} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-750 uppercase tracking-wider mb-1">Display Name</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Display Name <span className="text-red-500" title="Required field">*</span>
+                  </label>
                   <input 
                     type="text" 
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
                     placeholder="e.g. Jane Doe"
-                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.name ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80'}`}
+                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.name ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80 hover:border-slate-300'}`}
                   />
                   {fieldErrors.name && (
                     <p className="mt-1 text-[9px] text-red-500 font-bold flex items-center gap-1 leading-none">
@@ -296,15 +448,18 @@ const CreateVendor: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-750 uppercase tracking-wider mb-1">Professional Phone</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Professional Phone <span className="text-red-500" title="Required field">*</span>
+                  </label>
                   <input 
                     type="tel" 
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
                     placeholder="e.g. +233..."
-                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.phone ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80'}`}
+                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.phone ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80 hover:border-slate-300'}`}
                   />
                   {fieldErrors.phone && (
                     <p className="mt-1 text-[9px] text-red-500 font-bold flex items-center gap-1 leading-none">
@@ -317,14 +472,15 @@ const CreateVendor: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-750 uppercase tracking-wider mb-1">Agency Name (Optional)</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Agency Name (Optional)</label>
                   <input 
                     type="text" 
                     name="agencyName"
                     value={formData.agencyName}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g. Premium Real Estate"
-                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.agencyName ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80'}`}
+                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.agencyName ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80 hover:border-slate-300'}`}
                   />
                   {fieldErrors.agencyName && (
                     <p className="mt-1 text-[9px] text-red-500 font-bold flex items-center gap-1 leading-none">
@@ -335,14 +491,15 @@ const CreateVendor: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-750 uppercase tracking-wider mb-1">Professional License # (Optional)</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Professional License # (Optional)</label>
                   <input 
                     type="text" 
                     name="licenseNumber"
                     value={formData.licenseNumber}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g. RE-190283"
-                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.licenseNumber ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80'}`}
+                    className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.licenseNumber ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80 hover:border-slate-300'}`}
                   />
                   {fieldErrors.licenseNumber && (
                     <p className="mt-1 text-[9px] text-red-500 font-bold flex items-center gap-1 leading-none">
@@ -354,15 +511,18 @@ const CreateVendor: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-750 uppercase tracking-wider mb-1">Service City / Region</label>
+                <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Service City / Region <span className="text-red-500" title="Required field">*</span>
+                </label>
                 <input 
                   type="text" 
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="e.g. Accra, Ghana"
-                  className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.location ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80'}`}
+                  className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none ${fieldErrors.location ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80 hover:border-slate-300'}`}
                 />
                 {fieldErrors.location && (
                   <p className="mt-1 text-[9px] text-red-500 font-bold flex items-center gap-1 leading-none">
@@ -373,7 +533,7 @@ const CreateVendor: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-750 uppercase tracking-wider mb-1">Areas of Specialization</label>
+                <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Areas of Specialization</label>
                 <div className="flex flex-wrap gap-1">
                   {SPECIALIZATIONS.map((spec) => {
                     const isSelected = selectedSpecializations.includes(spec);
@@ -397,7 +557,9 @@ const CreateVendor: React.FC = () => {
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-black text-slate-750 uppercase tracking-wider">Professional Bio</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                    Professional Bio <span className="text-red-500" title="Required field">*</span>
+                  </label>
                   <span className={`text-[9px] font-bold tracking-tight px-1.5 py-0.5 rounded ${
                     formData.bio.length > 300 
                       ? 'bg-red-50 text-red-500 border border-red-100' 
@@ -412,9 +574,11 @@ const CreateVendor: React.FC = () => {
                   name="bio"
                   value={formData.bio}
                   onChange={handleChange}
+                  onBlur={handleBlur}
+                  required
                   rows={3}
                   placeholder="Describe your real estate experience, customer commitment, properties specialized in, or services..."
-                  className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none resize-none ${fieldErrors.bio ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80'}`}
+                  className={`w-full border rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-brand-500 outline-none bg-white font-medium text-xs transition-colors shadow-none resize-none ${fieldErrors.bio ? 'border-red-500 focus:ring-red-500 bg-red-50/10' : 'border-slate-200/80 hover:border-slate-300'}`}
                 ></textarea>
                 {fieldErrors.bio && (
                   <p className="mt-1 text-[9px] text-red-500 font-bold flex items-center gap-1 leading-none">

@@ -8,8 +8,6 @@ const MobileBottomNav = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isAuthReady, user } = useAuth();
 
-  const hasCompletedVendorProfile = user && user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
-
   // Determine the correct profile path once auth is fully resolved
   const profilePath = isAuthReady
     ? (isAuthenticated && user?.id ? `/profile/${user.id}` : '/signin')
@@ -19,9 +17,9 @@ const MobileBottomNav = () => {
     e.preventDefault();
     if (!isAuthenticated || !user) {
       navigate('/signin', { 
-        state: { from: { pathname: '/create-vendor' } } 
+        state: { from: { pathname: '/post' } } 
       });
-    } else if (user.role === 'Admin' || (user.role === 'Agent' && hasCompletedVendorProfile)) {
+    } else if (user.role === 'Admin' || user.role === 'Agent') {
       navigate('/post');
     } else {
       navigate('/create-vendor');

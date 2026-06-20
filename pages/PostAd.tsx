@@ -25,12 +25,11 @@ const PostAd: React.FC = () => {
 
   const [step, setStep] = useState(1);
   
-  // Redirect buyers or incomplete vendors to create-vendor onboarding — only after auth is fully resolved
+  // Redirect buyers to create-vendor onboarding — only after auth is fully resolved
   useEffect(() => {
     if (!isAuthReady) return; // wait for auth to finish loading
     if (user) {
-      const hasCompletedVendorProfile = user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
-      if (user.role !== 'Admin' && (user.role !== 'Agent' || !hasCompletedVendorProfile)) {
+      if (user.role !== 'Admin' && user.role !== 'Agent') {
         navigate('/create-vendor', { replace: true });
       }
     }

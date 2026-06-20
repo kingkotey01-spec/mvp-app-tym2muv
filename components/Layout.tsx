@@ -223,12 +223,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <button 
                       onClick={(e) => {
                         e.preventDefault();
-                        const hasCompletedVendorProfile = user && user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
                         if (!isAuthenticated || !user) {
                           navigate('/signin', { 
-                            state: { from: { pathname: '/create-vendor' } } 
+                            state: { from: { pathname: '/post' } } 
                           });
-                        } else if (user.role === 'Admin' || (user.role === 'Agent' && hasCompletedVendorProfile)) {
+                        } else if (user.role === 'Admin' || user.role === 'Agent') {
                           navigate('/post');
                         } else {
                           navigate('/create-vendor');

@@ -328,11 +328,6 @@ const AgentDashboard: React.FC = () => {
       return <Navigate to="/" replace />;
   }
 
-  const hasCompletedVendorProfile = user.bio && user.location && user.location !== 'Unknown' && user.socials?.phone;
-  if (!hasCompletedVendorProfile) {
-      return <Navigate to="/create-vendor" replace />;
-  }
-
   if (loading) {
     return <AgentDashboardSkeleton />;
   }
