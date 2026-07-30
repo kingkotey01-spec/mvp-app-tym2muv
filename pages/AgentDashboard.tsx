@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getListings, updateListing, getChats, getUserProfile } from '../services/supabaseService';
 import { supabase } from '../supabaseClient';
@@ -128,6 +128,7 @@ const AgentDashboard: React.FC = () => {
   // Real-time Chat Inquiries State and listener
   const [chats, setChats] = useState<ChatType[]>([]);
   const [chatParticipants, setChatParticipants] = useState<Record<string, User>>({});
+  const fetchedParticipantsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -141,9 +142,14 @@ const AgentDashboard: React.FC = () => {
       }));
 
       userIds.forEach(async (uid) => {
-        if (!chatParticipants[uid]) {
+        if (!fetchedParticipantsRef.current.has(uid)) {
+          fetchedParticipantsRef.current.add(uid);
           const u = await getUserProfile(uid);
-          if (u) setChatParticipants(prev => ({ ...prev, [uid]: u }));
+          if (u) {
+            setChatParticipants(prev => ({ ...prev, [uid]: u }));
+          } else {
+            fetchedParticipantsRef.current.delete(uid);
+          }
         }
       });
     });

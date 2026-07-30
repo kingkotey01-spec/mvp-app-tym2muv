@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { processPayment } from '../../services/supabaseEdgeFunctions';
+import { checkFraudScoring } from '../../services/supabaseEdgeFunctions';
 
 describe('Supabase Edge Functions', () => {
   const fetchMock = vi.fn();
@@ -9,19 +9,19 @@ describe('Supabase Edge Functions', () => {
     fetchMock.mockReset();
   });
 
-  it('calls process-payment function successfully', async () => {
+  it('calls checkFraudScoring function successfully', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true }),
     } as any);
 
-    const result = await processPayment('user1', 'premium') as any;
+    const result = await checkFraudScoring('prop123') as any;
     
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/functions/v1/process-payment'),
+      expect.stringContaining('/functions/v1/ai-fraud-detection'),
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ agent_id: 'user1', plan: 'premium' })
+        body: JSON.stringify({ property_id: 'prop123' })
       })
     );
     expect(result.success).toBe(true);
@@ -33,6 +33,7 @@ describe('Supabase Edge Functions', () => {
       json: async () => ({ error: 'Network error' }),
     } as any);
 
-    await expect(processPayment('user1', 'premium')).rejects.toThrow('Network error');
+    await expect(checkFraudScoring('prop123')).rejects.toThrow('Network error');
   });
 });
+

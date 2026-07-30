@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit } from "../rate-limit-middleware.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -13,6 +14,15 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // 1. Rate Limit check
+  const rLimitResponse = await rateLimit(req, { maxRequests: 5, windowMs: 60000, errorMessage: 'Too many requests. Please wait 60 seconds.' });
+  if (rLimitResponse) {
+    for (const [key, val] of Object.entries(corsHeaders)) {
+      rLimitResponse.headers.set(key, val);
+    }
+    return rLimitResponse;
   }
 
   try {
@@ -57,7 +67,8 @@ Deno.serve(async (req) => {
     // 2. Perform Mock AI Fraud Analysis
     // In a real scenario, you would call OpenAI / Gemini here
     let fraudScore = 0;
-    if (property.price_per_month < 100) fraudScore += 40; // suspiciously low
+    const rentPrice = property.price || property.price_per_month || 0;
+    if (rentPrice > 0 && rentPrice < 100) fraudScore += 40; // suspiciously low
     if (!property.description || property.description.length < 20) fraudScore += 20;
 
     // 3. Update the database securely using service_role

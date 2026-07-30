@@ -84,6 +84,8 @@ async function run() {
 
     // Add other system schemas if they exist but aren't in standard migration folders
     const extraSchemas = [
+      { name: 'schema', path: 'schema.sql' },
+      { name: 'supabase_master_schema', path: 'supabase_master_schema.sql' },
       { name: 'supabase_production_schema', path: 'supabase_production_schema.sql' },
       { name: 'supabase_production_hardening', path: 'supabase_production_hardening.sql' },
       { name: 'supabase_admin_system', path: 'supabase_admin_system.sql' },
@@ -144,16 +146,7 @@ async function run() {
       } catch (err: any) {
         await client.query('ROLLBACK');
         console.error(`❌ Fail to apply ${migration.version}:`, err.message || err);
-        if (migration.version !== '0000_baseline') {
-          console.warn(`⚠️ Warning: Failed to apply optional schema part ${migration.version}. Continuing since this is an alternative/helper/patch schema and the core master schema has been successfully initialized.`);
-          try {
-            await client.query('INSERT INTO public.schema_migrations (version) VALUES ($1)', [migration.version]);
-          } catch (insertErr) {
-            // Ignored if insertion fails
-          }
-        } else {
-          throw err;
-        }
+        throw err; // Fail loudly on any migration failure!
       }
     }
 

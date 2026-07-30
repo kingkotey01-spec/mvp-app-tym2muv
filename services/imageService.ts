@@ -96,3 +96,38 @@ export function getSupabaseImageUrl(
     return url;
   }
 }
+
+/**
+ * Uploads a document (image or PDF) to Supabase Storage.
+ * Returns the public URL of the uploaded document.
+ */
+export async function uploadDocumentToSupabase(
+  file: File,
+  path: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Only JPEG, PNG, WebP images, and PDF documents are allowed.');
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('File must be smaller than 5MB.');
+  }
+
+  onProgress?.(10);
+
+  const { error } = await supabase.storage
+    .from('listings')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type,
+    });
+
+  if (error) throw error;
+
+  onProgress?.(100);
+
+  const { data } = supabase.storage.from('listings').getPublicUrl(path);
+  return data.publicUrl;
+}

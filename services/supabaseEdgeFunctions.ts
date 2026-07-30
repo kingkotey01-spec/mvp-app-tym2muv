@@ -1,6 +1,7 @@
 // Supabase Edge Function API Service
 // WARNING: Do NOT use supabase.rpc for sensitive operations like billing on the frontend!
 // ALWAYS call Edge Functions constructed via this service.
+import { supabase } from '../supabaseClient';
 
 const SUPABASE_PROJECT_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
@@ -15,11 +16,15 @@ export async function invokeEdgeFunction<T>(
   const url = `${SUPABASE_PROJECT_URL}/functions/v1/${functionName}`;
 
   try {
+    // Dynamically retrieve the latest authenticated active session access token
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || SUPABASE_ANON_KEY;
+
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify(payload),
     });
@@ -49,13 +54,6 @@ export async function updateSubscription(agentId: string, feature: string, incre
   });
 }
 
-export async function processPayment(agentId: string, plan: string) {
-  return invokeEdgeFunction('process-payment', {
-    agent_id: agentId,
-    plan
-  });
-}
-
 export async function checkFraudScoring(propertyId: string) {
   return invokeEdgeFunction('ai-fraud-detection', {
     property_id: propertyId
@@ -65,4 +63,5 @@ export async function checkFraudScoring(propertyId: string) {
 export async function logActivity(payload: Record<string, any>) {
   return invokeEdgeFunction('log-activity', payload);
 }
+
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { submitRentFinancingApplication, getRentFinancingApplications } from '../services/supabaseService';
+import { uploadDocumentToSupabase } from '../services/imageService';
 import { RentFinancingApplication } from '../types';
 import Icon from '../components/Icon';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -177,6 +178,16 @@ const RentFinancing: React.FC = () => {
     payslip: null
   });
 
+  const [uploadProgress, setUploadProgress] = useState<{
+    bankStatement: number | null;
+    idCard: number | null;
+    payslip: number | null;
+  }>({
+    bankStatement: null,
+    idCard: null,
+    payslip: null
+  });
+
   // Manual document submissions for 'incomplete' status applications
   const [pendingUploadBank, setPendingUploadBank] = useState<string | null>(null);
   const [pendingUploadPayslip, setPendingUploadPayslip] = useState<string | null>(null);
@@ -292,9 +303,26 @@ const RentFinancing: React.FC = () => {
     });
   };
 
-  // Simulated File Upload triggers
-  const simulateUpload = (type: 'bankStatement' | 'idCard' | 'payslip', filename: string) => {
-    setUploadedFiles(prev => ({ ...prev, [type]: filename }));
+  // Real File Upload trigger
+  const handleFileUpload = async (type: 'bankStatement' | 'idCard' | 'payslip', file: File) => {
+    if (!user) {
+      setErrorMsg('Authentication required. Please sign in to upload documents.');
+      return;
+    }
+    setErrorMsg(null);
+    setUploadProgress(prev => ({ ...prev, [type]: 10 }));
+    try {
+      const path = `${user.id}/documents/${Date.now().toString()}_${type}_${file.name}`;
+      const url = await uploadDocumentToSupabase(file, path, (prog) => {
+        setUploadProgress(prev => ({ ...prev, [type]: prog }));
+      });
+      setUploadedFiles(prev => ({ ...prev, [type]: url }));
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to upload document.');
+    } finally {
+      setUploadProgress(prev => ({ ...prev, [type]: null }));
+    }
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -303,6 +331,9 @@ const RentFinancing: React.FC = () => {
     setSuccessMsg(null);
 
     // Form validation
+    if (!user) {
+      return setErrorMsg('Authentication required. Please sign in to submit a financing application.');
+    }
     if (!formData.fullName.trim()) return setErrorMsg('Please enter your Full Name.');
     if (!formData.email.trim()) return setErrorMsg('Please enter your email Address.');
     if (!formData.phone.trim()) return setErrorMsg('Phone number is required.');
@@ -322,9 +353,34 @@ const RentFinancing: React.FC = () => {
     setIsSubmitting(true);
     try {
       const appId = `RF-${Math.floor(1000 + Math.random() * 9000)}`;
+      
+      // Mandatory DB insert! Any errors will be thrown and block success page
+      const dbResponse = await submitRentFinancingApplication({
+        userId: user.id,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        employmentStatus: formData.employmentStatus,
+        monthlyIncome: parseFloat(formData.monthlyIncome),
+        idType: formData.idType,
+        idNumber: formData.idNumber,
+        monthlyRent: parseFloat(formData.monthlyRent),
+        landlordName: formData.landlordName,
+        landlordPhone: formData.landlordPhone,
+        moveInDate: formData.moveInDate,
+        leaseDuration: parseInt(formData.leaseDuration, 10),
+        streetAddress: formData.streetAddress,
+        city: formData.city,
+        stateRegion: formData.stateRegion,
+        country: formData.country,
+        postalCode: formData.postalCode,
+        amountRequired: Number(formData.amountRequired),
+        repaymentDuration: Number(formData.repaymentDuration)
+      });
+
       const newApp = {
-        id: appId,
-        userId: user?.id || 'anonymous',
+        id: dbResponse?.id || appId,
+        userId: user.id,
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
@@ -345,47 +401,17 @@ const RentFinancing: React.FC = () => {
         amountRequired: Number(formData.amountRequired),
         repaymentDuration: Number(formData.repaymentDuration),
         status: uploadedFiles.bankStatement ? 'pending' : 'incomplete', // incomplete if no bank statement uploaded
-        createdAt: new Date().toISOString(),
+        createdAt: dbResponse?.createdAt || new Date().toISOString(),
         adminNotes: 'Application submitted securely. Initial verification algorithm is reviewing your documents.'
       };
 
-      // Save application
+      // Save application to local cache only after successful DB save
       const localStored = localStorage.getItem('rent_financing_local');
       const parsedLocal = localStored ? JSON.parse(localStored) : [];
       const updatedLocal = [newApp, ...parsedLocal];
       localStorage.setItem('rent_financing_local', JSON.stringify(updatedLocal));
 
-      // Attempt DB insert too if Supabase client is available & user logged in
-      if (user) {
-        try {
-          await submitRentFinancingApplication({
-            userId: user.id,
-            fullName: formData.fullName,
-            email: formData.email,
-            phone: formData.phone,
-            employmentStatus: formData.employmentStatus,
-            monthlyIncome: parseFloat(formData.monthlyIncome),
-            idType: formData.idType,
-            idNumber: formData.idNumber,
-            monthlyRent: parseFloat(formData.monthlyRent),
-            landlordName: formData.landlordName,
-            landlordPhone: formData.landlordPhone,
-            moveInDate: formData.moveInDate,
-            leaseDuration: parseInt(formData.leaseDuration, 10),
-            streetAddress: formData.streetAddress,
-            city: formData.city,
-            stateRegion: formData.stateRegion,
-            country: formData.country,
-            postalCode: formData.postalCode,
-            amountRequired: Number(formData.amountRequired),
-            repaymentDuration: Number(formData.repaymentDuration)
-          });
-        } catch (_) {
-          console.warn('Real database write skipped, secured and synced with client state.');
-        }
-      }
-
-      setApplications(prev => [newApp, ...prev.filter(x => x.id !== appId)]);
+      setApplications(prev => [newApp, ...prev.filter(x => x.id !== newApp.id)]);
       setSuccessMsg(newApp.status === 'incomplete' 
         ? 'Application Draft Saved! Your application is marked as "Incomplete" because you have not uploaded a bank statement file. You can upload it via the history logs anytime to submit for final approval.' 
         : 'Financing Application Submitted Successfully! Our underwriting algorithm has flagged you as standard. A representative is contacting you and Landlord ' + formData.landlordName + ' within 12 hours.'
@@ -1166,7 +1192,26 @@ const RentFinancing: React.FC = () => {
         {/* Tab 3: Complete Application Block */}
         {activeTab === 'apply' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {!user ? (
+              <div className="bg-slate-50 border border-slate-205 rounded-3xl p-8 text-center max-w-lg mx-auto my-12 space-y-4">
+                <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                  <Icon name="lock" size={20} />
+                </div>
+                <h3 className="text-base font-extrabold text-slate-800 lowercase">Authentication Required</h3>
+                <p className="text-xs text-slate-550 leading-relaxed lowercase">
+                  To protect your personal identifiable information (PII) and ensure secure database submissions, you must sign in with a verified account before filling out a rent financing application.
+                </p>
+                <div className="pt-2">
+                  <a
+                    href="/login"
+                    className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-all shadow-md lowercase cursor-pointer"
+                  >
+                    Go to Sign In
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* Form Input areas */}
               <div className="lg:col-span-2 space-y-6">
@@ -1510,14 +1555,14 @@ const RentFinancing: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 3. Drag and Drop simulated document uploads */}
+                  {/* 3. Real secure document uploads */}
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
                     <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200">
                       <div className="w-7 h-7 rounded-lg bg-pink-500/10 text-pink-600 flex items-center justify-center">
                         <Icon name="upload" size={14} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 text-xs lowercase">3. Document Upload Sandbox (Simulated)</h3>
+                        <h3 className="font-bold text-slate-900 text-xs lowercase">3. Document Upload Pipeline</h3>
                         <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">Uploading recent bank statements saves applications from being incomplete</p>
                       </div>
                     </div>
@@ -1525,59 +1570,137 @@ const RentFinancing: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                       
                       {/* Bank Statement Upload block */}
-                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all">
+                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all flex flex-col justify-between">
                         <span className="text-[10px] font-black text-slate-500 block uppercase tracking-wide">6m bank statements</span>
                         {uploadedFiles.bankStatement ? (
                           <div className="space-y-1 text-center">
                             <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
-                            <p className="text-[10px] truncate text-slate-700 font-mono font-bold">{uploadedFiles.bankStatement}</p>
+                            <p className="text-[9px] text-emerald-600 font-extrabold tracking-tight">uploaded</p>
+                            <button
+                              type="button"
+                              onClick={() => setUploadedFiles(prev => ({ ...prev, bankStatement: null }))}
+                              className="text-[9px] text-rose-500 font-bold lowercase hover:underline mt-1 block mx-auto cursor-pointer"
+                            >
+                              remove
+                            </button>
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => simulateUpload('bankStatement', 'bank_statement_2026.pdf')}
-                            className="w-full py-2 bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer"
-                          >
-                            <span>simulate upload</span>
-                          </button>
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              id="bankStatement-input"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload('bankStatement', file);
+                              }}
+                              disabled={uploadProgress.bankStatement !== null}
+                            />
+                            <label
+                              htmlFor="bankStatement-input"
+                              className="w-full inline-block py-2 bg-slate-100 border border-slate-200 hover:border-slate-350 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer text-center"
+                            >
+                              {uploadProgress.bankStatement !== null ? (
+                                <span className="flex items-center justify-center gap-1">
+                                  <Icon name="loader" size={12} className="animate-spin" />
+                                  {uploadProgress.bankStatement}%
+                                </span>
+                              ) : (
+                                <span>choose file</span>
+                              )}
+                            </label>
+                          </div>
                         )}
                       </div>
 
                       {/* Government ID doc file upload */}
-                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all">
+                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all flex flex-col justify-between">
                         <span className="text-[10px] font-black text-slate-500 block uppercase tracking-wide">government id card</span>
                         {uploadedFiles.idCard ? (
                           <div className="space-y-1 text-center">
                             <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
-                            <p className="text-[10px] truncate text-slate-700 font-mono font-bold">{uploadedFiles.idCard}</p>
+                            <p className="text-[9px] text-emerald-600 font-extrabold tracking-tight">uploaded</p>
+                            <button
+                              type="button"
+                              onClick={() => setUploadedFiles(prev => ({ ...prev, idCard: null }))}
+                              className="text-[9px] text-rose-500 font-bold lowercase hover:underline mt-1 block mx-auto cursor-pointer"
+                            >
+                              remove
+                            </button>
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => simulateUpload('idCard', 'national_id_card.png')}
-                            className="w-full py-2 bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer"
-                          >
-                            <span>simulate upload</span>
-                          </button>
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              id="idCard-input"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload('idCard', file);
+                              }}
+                              disabled={uploadProgress.idCard !== null}
+                            />
+                            <label
+                              htmlFor="idCard-input"
+                              className="w-full inline-block py-2 bg-slate-100 border border-slate-200 hover:border-slate-350 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer text-center"
+                            >
+                              {uploadProgress.idCard !== null ? (
+                                <span className="flex items-center justify-center gap-1">
+                                  <Icon name="loader" size={12} className="animate-spin" />
+                                  {uploadProgress.idCard}%
+                                </span>
+                              ) : (
+                                <span>choose file</span>
+                              )}
+                            </label>
+                          </div>
                         )}
                       </div>
 
                       {/* Pay Slip or Salary Certificate upload */}
-                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all">
+                      <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-3 bg-white hover:border-brand-600/50 transition-all flex flex-col justify-between">
                         <span className="text-[10px] font-black text-slate-500 block uppercase tracking-wide">recent payslip</span>
                         {uploadedFiles.payslip ? (
                           <div className="space-y-1 text-center">
                             <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto"><Icon name="check" size={12} /></div>
-                            <p className="text-[10px] truncate text-slate-700 font-mono font-bold">{uploadedFiles.payslip}</p>
+                            <p className="text-[9px] text-emerald-600 font-extrabold tracking-tight">uploaded</p>
+                            <button
+                              type="button"
+                              onClick={() => setUploadedFiles(prev => ({ ...prev, payslip: null }))}
+                              className="text-[9px] text-rose-500 font-bold lowercase hover:underline mt-1 block mx-auto cursor-pointer"
+                            >
+                              remove
+                            </button>
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => simulateUpload('payslip', 'payslip_may_2026.pdf')}
-                            className="w-full py-2 bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer"
-                          >
-                            <span>simulate upload</span>
-                          </button>
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              id="payslip-input"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload('payslip', file);
+                              }}
+                              disabled={uploadProgress.payslip !== null}
+                            />
+                            <label
+                              htmlFor="payslip-input"
+                              className="w-full inline-block py-2 bg-slate-100 border border-slate-200 hover:border-slate-350 rounded-xl text-[10px] font-black text-slate-705 uppercase duration-150 cursor-pointer text-center"
+                            >
+                              {uploadProgress.payslip !== null ? (
+                                <span className="flex items-center justify-center gap-1">
+                                  <Icon name="loader" size={12} className="animate-spin" />
+                                  {uploadProgress.payslip}%
+                                </span>
+                              ) : (
+                                <span>choose file</span>
+                              )}
+                            </label>
+                          </div>
                         )}
                       </div>
 
@@ -1707,6 +1830,7 @@ const RentFinancing: React.FC = () => {
               </div>
 
             </div>
+            )}
           </div>
         )}
          {/* Tab 4: Application History and Tracking Logs */}
@@ -1755,6 +1879,9 @@ const RentFinancing: React.FC = () => {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[9px] font-mono text-slate-500 font-black tracking-wide uppercase">ID: {app.id}</span>
+                                  {DEFAULT_MOCK_APPLICATIONS.some(m => m.id === app.id) && (
+                                    <span className="text-[8px] bg-[#8607C1]/5 text-brand-600 font-extrabold px-1.5 py-0.5 rounded border border-brand-500/10 uppercase tracking-widest leading-none">Demo Sample</span>
+                                  )}
                                   <span className="text-[10px] text-slate-505 font-bold">• {new Date(app.createdAt).toLocaleDateString()}</span>
                                 </div>
                                 <h4 className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5 lowercase">
@@ -1824,7 +1951,12 @@ const RentFinancing: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block font-mono">tracking timeline log</span>
-                            <h4 className="font-black text-slate-900 text-sm lowercase mt-1">Application {selectedApp.id}</h4>
+                            <h4 className="font-black text-slate-900 text-sm lowercase mt-1">
+                              Application {selectedApp.id}
+                              {DEFAULT_MOCK_APPLICATIONS.some(m => m.id === selectedApp.id) && (
+                                <span className="block mt-1 text-[8px] max-w-max bg-[#8607C1]/5 text-brand-600 font-extrabold px-1.5 py-0.5 rounded border border-brand-500/10 uppercase tracking-widest leading-none">Demo Sample Application</span>
+                              )}
+                            </h4>
                           </div>
                           {/* Export PDF Print Button */}
                           <button

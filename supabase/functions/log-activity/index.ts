@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit } from "../rate-limit-middleware.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -13,6 +14,15 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // 1. Rate Limit check
+  const rLimitResponse = await rateLimit(req, { maxRequests: 30, windowMs: 60000, errorMessage: 'Too many requests. Please wait 60 seconds.' });
+  if (rLimitResponse) {
+    for (const [key, val] of Object.entries(corsHeaders)) {
+      rLimitResponse.headers.set(key, val);
+    }
+    return rLimitResponse;
   }
 
   try {
@@ -32,7 +42,8 @@ Deno.serve(async (req) => {
         p_target_table: target_table,
         p_target_id: target_id,
         p_description: description,
-        p_metadata: metadata
+        p_metadata: metadata,
+        p_admin_id: user.id
     });
 
     if (error) throw error;

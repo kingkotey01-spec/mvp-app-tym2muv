@@ -28,7 +28,7 @@ jobs:
       - name: Build Check
         run: npm run build
       - name: Unit Tests (Coverage)
-        run: npm run test:coverage || echo "No tests defined yet"
+        run: npm run test:coverage
       - name: Bundle Size Check
         run: |
           size=$(du -sm dist/ | awk '{print $1}')

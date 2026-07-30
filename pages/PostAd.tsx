@@ -60,8 +60,7 @@ const PostAd: React.FC = () => {
   const [images, setImages] = useState<string[]>([]); // URLs
   const [imageFiles, setImageFiles] = useState<File[]>([]); // Local files for upload
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-
+  const [originalStatus, setOriginalStatus] = useState<string | null>(null);
 
   // Load listing if editing
   useEffect(() => {
@@ -75,6 +74,7 @@ const PostAd: React.FC = () => {
             return;
           }
 
+          setOriginalStatus(listing.status);
           setFormData({
             categoryId: listing.categoryId,
             categoryName: CATEGORIES.find(c => c.id === listing.categoryId)?.name || '',
@@ -273,7 +273,7 @@ const PostAd: React.FC = () => {
         sellerId: user.id,
         sellerName: user.name,
         sellerAvatar: user.avatar,
-        status: 'pending',
+        status: editId ? (originalStatus || 'pending') : 'pending',
         postedAt: new Date().toISOString().split('T')[0],
         views: 0
       };

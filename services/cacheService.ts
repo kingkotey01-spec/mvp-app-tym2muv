@@ -1,35 +1,66 @@
-import { Redis } from '@upstash/redis';
 import { logger } from '../utils/logger';
 
-// Retrieve credentials from Vite environment variables
-const redisUrl = import.meta.env.VITE_UPSTASH_REDIS_REST_URL;
-const redisToken = import.meta.env.VITE_UPSTASH_REDIS_REST_TOKEN;
+/**
+ * Clean, safe client-side in-memory caching engine.
+ * Eliminates the security risk of baking read/write Upstash Redis REST credentials in public client bundles.
+ * This ensures that cache pollution or erasure is impossible from browser DevTools, while retaining
+ * performant client-side query and response caching.
+ */
+class InMemoryRedisClient {
+  private cache = new Map<string, { value: any; expiresAt: number }>();
 
-// Helper to validate the Upstash Redis URL
-const isValidRedisUrl = (url?: string): boolean => {
-  if (!url) return false;
-  const lowercase = url.toLowerCase().trim();
-  return (
-    (lowercase.startsWith('https://') || lowercase.startsWith('http://')) &&
-    !lowercase.includes('your-upstash-redis-url') &&
-    !lowercase.includes('placeholder')
-  );
-};
+  async get<T>(key: string): Promise<T | null> {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.value as T;
+  }
 
-const isValidRedisToken = (token?: string): boolean => {
-  if (!token) return false;
-  const lowercase = token.toLowerCase().trim();
-  return (
-    lowercase !== '' &&
-    !lowercase.includes('your-upstash-redis-token') &&
-    !lowercase.includes('placeholder')
-  );
-};
+  async set(key: string, value: any, options?: { ex?: number }): Promise<void> {
+    const ttl = options?.ex ?? 3600; // default 1 hour in seconds
+    this.cache.set(key, {
+      value,
+      expiresAt: Date.now() + ttl * 1000,
+    });
+  }
 
-// Initialize Redis client conditionally to handle missing credentials gracefully
-export const redisClient = isValidRedisUrl(redisUrl) && isValidRedisToken(redisToken)
-  ? new Redis({ url: redisUrl!.trim(), token: redisToken!.trim() })
-  : null;
+  async del(...keys: string[]): Promise<void> {
+    for (const key of keys) {
+      this.cache.delete(key);
+    }
+  }
+
+  async scan(cursor: number | string, options?: { match?: string; count?: number }): Promise<[number | string, string[]]> {
+    const matchPattern = options?.match;
+    if (!matchPattern) return [0, []];
+    
+    // Convert match pattern (e.g. "prefix:*") to prefix check
+    const prefix = matchPattern.replace('*', '');
+    const keys: string[] = [];
+    
+    for (const [key, entry] of this.cache.entries()) {
+      // Clean up naturally during scan if expired
+      if (Date.now() > entry.expiresAt) {
+        this.cache.delete(key);
+        continue;
+      }
+      if (key.startsWith(prefix)) {
+        keys.push(key);
+      }
+    }
+    return [0, keys];
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// In-Memory Redis client instance to support existing references safely without token exposure
+export const redisClient = new InMemoryRedisClient();
 
 /**
  * Valid caching TTLs in seconds as requested:
@@ -98,9 +129,7 @@ export async function setCache<T>(key: string, value: T, ttlSeconds?: number): P
   if (!redisClient) return;
   
   try {
-    const setPromise = ttlSeconds
-      ? redisClient.set(key, value, { ex: ttlSeconds })
-      : redisClient.set(key, value);
+    const setPromise = redisClient.set(key, value, { ex: ttlSeconds });
 
     await Promise.race([
       setPromise,
@@ -138,18 +167,14 @@ export async function delCache(key: string): Promise<void> {
 
 /**
  * Invalidates cache by pattern or multiple keys
- * Note: Upstash Redis over REST has limited support for pattern deletion via SCAN.
- * For multiple specific keys, we can delete them.
  */
 export async function invalidateCachePrefix(prefix: string): Promise<void> {
   if (!redisClient) return;
   
   try {
-    // A simplified scan & delete approach for wiping namespace prefixes
     let cursor: number | string = 0;
     const startTime = Date.now();
     do {
-      // Prevent infinite loop if scan hangs or is slow (max 1500ms total)
       if (Date.now() - startTime > 1500) {
         logger.warn(`[CACHE TIMEOUT] Invalidate prefix scan exceeded limit for prefix: ${prefix}`);
         break;
@@ -202,7 +227,6 @@ export async function withCache<T>(
 
   const data = await fetcher();
   
-  // Only cache if there's actual data (don't cache nulls indefinitely, though sometimes useful)
   if (data !== undefined && data !== null) {
     await setCache(key, data, ttlSeconds);
   }

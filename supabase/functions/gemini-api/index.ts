@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.14.0";
+import { rateLimit } from "../rate-limit-middleware.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -16,8 +17,17 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // 1. Rate Limit check
+  const rLimitResponse = await rateLimit(req, { maxRequests: 5, windowMs: 60000, errorMessage: 'Too many requests. Please wait 60 seconds.' });
+  if (rLimitResponse) {
+    for (const [key, val] of Object.entries(corsHeaders)) {
+      rLimitResponse.headers.set(key, val);
+    }
+    return rLimitResponse;
+  }
+
   try {
-    // 1. Verify Authentication
+    // 2. Verify Authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(

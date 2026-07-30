@@ -76,6 +76,7 @@ const AdminDashboard: React.FC = () => {
   const { location: userLoc } = useLocation();
   const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'listings' | 'monetization' | 'pages' | 'rent_financing'>('analytics');
   const [stats, setStats] = useState<any>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [ads, setAds] = useState<Monetization[]>([]);
@@ -291,8 +292,15 @@ const AdminDashboard: React.FC = () => {
     setLoading(true);
     try {
       if (activeTab === 'analytics') {
-        const statsData = await getAdminStats();
-        setStats(statsData);
+        setStatsError(null);
+        try {
+          const statsData = await getAdminStats();
+          setStats(statsData);
+        } catch (err: any) {
+          console.error("Failed to load admin stats:", err);
+          setStatsError(err.message || "Failed to load live database stats.");
+          setStats(null);
+        }
       } else if (activeTab === 'listings') {
         const filters: any = {
            page: activePage,
@@ -586,6 +594,18 @@ const AdminDashboard: React.FC = () => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
+              {statsError && (
+                <div id="stats-error-banner" className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3">
+                  <div className="mt-0.5 text-red-500">
+                    <XCircle size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-red-900">Database Connection / API Error</h4>
+                    <p className="text-sm mt-1 text-red-700">{statsError}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">

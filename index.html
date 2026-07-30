@@ -13,14 +13,14 @@
       (function() {
         try {
           if (window.fetch) {
-            var originalFetch = window.fetch;
+            var originalFetch = window.fetch.bind(window);
             var fetchStorage = originalFetch;
             Object.defineProperty(window, 'fetch', {
               get: function() {
                 return fetchStorage;
               },
               set: function(val) {
-                fetchStorage = val;
+                fetchStorage = typeof val === 'function' ? val.bind(window) : val;
               },
               configurable: true,
               enumerable: true

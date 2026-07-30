@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '../types';
 import { getUserProfile, logout as backendLogout, createNotification } from '../services/supabaseService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from '../supabaseClient';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import Icon from '../components/Icon';
 
 interface AuthContextType {
@@ -85,72 +85,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            const sUser = session?.user ?? null;
-            setSupabaseUser(sUser);
-            
-            if (sUser) {
-              setLoading(true);
-              const profile = await getUserProfile(sUser.id).catch(() => null);
-              const currentUserDoc = profile ? { ...profile, email: sUser.email } : buildFallbackUser(sUser);
-              setUser(currentUserDoc as any);
-              
-              // Inject in-app welcome notification and simulated email trigger when the user signs up
-              const welcomeSentKey = `tym2muv_welcome_sent_${sUser.id}`;
-              if (!localStorage.getItem(welcomeSentKey)) {
-                await createNotification(
-                  sUser.id,
-                  'you’re in. welcome to tym2muv 🔑',
-                  `Hey ${currentUserDoc.name || 'friend'}! Your account is active. Click here to preview your official welcome deliverable and login guide.`,
-                  '#welcome-email'
-                ).catch((e) => console.error("Could not write welcome notification to Supabase:", e));
-                  
-                  // Track welcome email in a simulated outbox/deliveries store too
-                  const emailDelivery = {
-                    id: Date.now().toString(),
-                    toEmail: sUser.email || 'friend@tym2muv.com',
-                    toName: currentUserDoc.name || 'friend',
-                    subject: 'you’re in. welcome to tym2muv 🔑',
-                    sentAt: new Date().toISOString()
-                  };
-                  const cachedDeliveriesRaw = localStorage.getItem('tym2muv_sent_emails');
-                  let deliveries = [];
-                  try {
-                    deliveries = cachedDeliveriesRaw ? JSON.parse(cachedDeliveriesRaw) : [];
-                  } catch (_) {}
-                  localStorage.setItem('tym2muv_sent_emails', JSON.stringify([emailDelivery, ...deliveries]));
+    let isMounted = true;
 
-                  localStorage.setItem(welcomeSentKey, 'true');
+    if (!isSupabaseConfigured) {
+      setIsAuthReady(true);
+      setLoading(false);
+      return;
+    }
+
+    // Safety timeout: if onAuthStateChange doesn't resolve within 1000ms, mark auth as ready
+    const timer = setTimeout(() => {
+      if (isMounted) {
+        setIsAuthReady(true);
+        setLoading(false);
+      }
+    }, 1000);
+
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    try {
+      const authRes = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          clearTimeout(timer);
+          if (!isMounted) return;
+
+          try {
+            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              const sUser = session?.user ?? null;
+              setSupabaseUser(sUser);
+              
+              if (sUser) {
+                setLoading(true);
+                const profile = await getUserProfile(sUser.id).catch(() => null);
+                if (isMounted) {
+                  const currentUserDoc = profile ? { ...profile, email: sUser.email } : buildFallbackUser(sUser);
+                  setUser(currentUserDoc as any);
                   
-                  // Dispatch custom events to update component states instantly
-                  window.dispatchEvent(new Event('welcome_email_received'));
-                  
-                  // Auto-trigger a beautiful popup preview of the welcome email so the user gets real-time response feedback
-                  setTimeout(() => {
-                    window.dispatchEvent(new Event('open_welcome_email'));
-                  }, 1200);
+                  // Inject in-app welcome notification
+                  const welcomeSentKey = `tym2muv_welcome_sent_${sUser.id}`;
+                  if (!localStorage.getItem(welcomeSentKey)) {
+                    await createNotification(
+                      sUser.id,
+                      'you’re in. welcome to tym2muv 🔑',
+                      `Hey ${currentUserDoc.name || 'friend'}! Your account is active. Click here to preview your official welcome deliverable and login guide.`,
+                      '#welcome-email'
+                    ).catch((e) => console.error("Could not write welcome notification to Supabase:", e));
+                      
+                      const emailDelivery = {
+                        id: Date.now().toString(),
+                        toEmail: sUser.email || 'friend@tym2muv.com',
+                        toName: currentUserDoc.name || 'friend',
+                        subject: 'you’re in. welcome to tym2muv 🔑',
+                        sentAt: new Date().toISOString()
+                      };
+                      const cachedDeliveriesRaw = localStorage.getItem('tym2muv_sent_emails');
+                      let deliveries = [];
+                      try {
+                        deliveries = cachedDeliveriesRaw ? JSON.parse(cachedDeliveriesRaw) : [];
+                      } catch (_) {}
+                      localStorage.setItem('tym2muv_sent_emails', JSON.stringify([emailDelivery, ...deliveries]));
+
+                      localStorage.setItem(welcomeSentKey, 'true');
+                      window.dispatchEvent(new Event('welcome_email_received'));
+                      setTimeout(() => {
+                        window.dispatchEvent(new Event('open_welcome_email'));
+                      }, 1200);
+                  }
                 }
-            } else {
+              } else {
+                setUser(null);
+              }
+            } else if (event === 'SIGNED_OUT') {
+              setSupabaseUser(null);
               setUser(null);
             }
-          } else if (event === 'SIGNED_OUT') {
-            setSupabaseUser(null);
-            setUser(null);
+          } catch (error) {
+            console.error('Error handling auth state change:', error);
+            if (isMounted) {
+              setSupabaseUser(null);
+              setUser(null);
+            }
+          } finally {
+            if (isMounted) {
+              setLoading(false);
+              setIsAuthReady(true);
+            }
           }
-        } catch (error) {
-          console.error('Error handling auth state change:', error);
-          setSupabaseUser(null);
-          setUser(null);
-        } finally {
-          setLoading(false);
-          setIsAuthReady(true);
         }
+      );
+      subscription = authRes.data.subscription;
+    } catch (err) {
+      console.warn("Failed to subscribe to auth state changes:", err);
+      if (isMounted) {
+        setIsAuthReady(true);
+        setLoading(false);
       }
-    );
-    return () => subscription.unsubscribe();
+    }
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   const isAuthenticated = !!supabaseUser;

@@ -1,6 +1,5 @@
 export async function generateIdempotencyKey(userId: string, listingId: string, amount: number): Promise<string> {
-    const timestamp = Date.now();
-    const data = `${userId}-${listingId}-${amount}-${timestamp}`;
+    const data = `${userId}-${listingId}-${amount}`;
     
     // Hash the data to create a consistent, unique key
     const encoder = new TextEncoder();

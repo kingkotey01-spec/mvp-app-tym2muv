@@ -135,7 +135,7 @@ const PaymentPage: React.FC = () => {
   const processPaymentWithRetry = async (reference: string, retries = 3, delay = 1000): Promise<void> => {
     try {
       const { data, error } = await supabase.functions.invoke('process-payment', {
-        body: { reference, listingId: listing!.id, idempotencyKey }
+        body: { reference, listingId: listing!.id, idempotencyKey, purpose: paymentIntent }
       });
       
       // 409 Conflict can be handled if idempotency checks out
@@ -184,6 +184,7 @@ const PaymentPage: React.FC = () => {
       amount: priceToPay * 100, // Amount in kobo/pesewas
       currency: listing.currency || 'GHS',
       ref: `TYM_${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`,
+      metadata: { listingId: listing.id, userId: user.id, purpose: paymentIntent, idempotencyKey },
       callback: async (response: any) => {
         setIsProcessing(true);
         try {

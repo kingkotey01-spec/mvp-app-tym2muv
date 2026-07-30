@@ -576,7 +576,12 @@ export const AdminRentFinancing: React.FC<AdminRentFinancingProps> = ({ userLoca
                       }`}
                       onClick={() => setSelectedApp(app)}
                     >
-                      <td className="p-4 font-mono font-black text-slate-500">{app.id}</td>
+                      <td className="p-4 font-mono font-black text-slate-500">
+                        <div>{app.id}</div>
+                        {['RF-9042', 'RF-8193', 'RF-5120', 'RF-3051'].includes(app.id) && (
+                          <span className="inline-block mt-1 text-[8px] bg-sky-50 text-sky-655 font-extrabold px-1.5 py-0.5 rounded border border-sky-100 uppercase tracking-widest leading-none">Sample Demo</span>
+                        )}
+                      </td>
                       <td className="p-4">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-extrabold text-slate-800 font-sans tracking-tight">{app.fullName}</span>
@@ -659,6 +664,9 @@ export const AdminRentFinancing: React.FC<AdminRentFinancingProps> = ({ userLoca
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 sticky top-0 z-10">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black font-mono text-slate-500 bg-slate-200/60 px-2 py-0.5 rounded">{selectedApp.id}</span>
+                {['RF-9042', 'RF-8193', 'RF-5120', 'RF-3051'].includes(selectedApp.id) && (
+                  <span className="text-[8px] bg-sky-50 text-sky-655 font-extrabold px-1.5 py-0.5 rounded border border-sky-100 uppercase tracking-widest leading-none">Sample Demo</span>
+                )}
                 <h3 className="font-extrabold text-slate-800 text-base">Credit File Review</h3>
               </div>
               <button 

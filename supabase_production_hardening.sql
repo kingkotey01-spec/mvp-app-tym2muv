@@ -355,10 +355,21 @@ DROP POLICY IF EXISTS "Public can view valid profiles" ON public.profiles;
 CREATE POLICY "Public can view valid profiles" ON public.profiles FOR SELECT USING (is_blocked = false OR public.is_admin());
 
 DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
-CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "users_insert_own_profile_safe_role" ON public.profiles;
+DROP POLICY IF EXISTS "users_update_own_profile_safe_role" ON public.profiles;
+
+CREATE POLICY "users_insert_own_profile_safe_role"
+ON public.profiles FOR INSERT
+WITH CHECK (auth.uid() = id AND role IN ('tenant', 'agent'));
+
+CREATE POLICY "users_update_own_profile_safe_role"
+ON public.profiles FOR UPDATE
+USING (auth.uid() = id OR public.is_admin())
+WITH CHECK (
+  (auth.uid() = id AND role IN ('tenant', 'agent'))  -- self-service: tenant/agent only
+  OR public.is_admin()                                -- admins can set any role for anyone
+);
 
 DROP POLICY IF EXISTS "Public can view agents" ON public.agents;
 CREATE POLICY "Public can view agents" ON public.agents FOR SELECT USING (true);

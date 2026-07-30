@@ -4,11 +4,11 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_role user_role;
 BEGIN
-  -- Safe conversion from string to user_role enum
+  -- SECURITY: raw_user_meta_data is client-controlled. Only 'agent' is a legitimate
+  -- self-service choice; everything else (including admin/super_admin requests)
+  -- silently becomes 'tenant'. Admin elevation must happen out-of-band.
   v_role := CASE LOWER(NEW.raw_user_meta_data->>'role')
               WHEN 'agent' THEN 'agent'::user_role
-              WHEN 'admin' THEN 'admin'::user_role
-              WHEN 'super_admin' THEN 'super_admin'::user_role
               ELSE 'tenant'::user_role
             END;
 

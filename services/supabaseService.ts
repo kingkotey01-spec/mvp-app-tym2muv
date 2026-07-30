@@ -1,7 +1,8 @@
-import { supabase } from '../supabaseClient';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { Listing, User, UserRole, Chat, ChatMessage, SearchFilters, Monetization, Review, Payment, ViewRequest, StaticPage, BlogPost, RentFinancingApplication } from '../types';
 import { withCache, delCache, invalidateCachePrefix, CACHE_TTL, cacheKey } from './cacheService';
 import { uploadImageToSupabase } from './imageService';
+import { MOCK_LISTINGS, MOCK_ADS } from '../constants/mockListings';
 
 // --- AUTH SERVICES ---
 export const loginWithEmail = async (email: string, password: string, selectedRole: 'Tenant' | 'Agent' | 'Admin' = 'Tenant'): Promise<any> => {
@@ -129,6 +130,7 @@ const mapProfileToUser = (profileData: any): User => {
 };
 
 export const getUserProfile = async (userId: string): Promise<User | null> => {
+  if (!isSupabaseConfigured) return null;
   try {
     return await withCache(cacheKey('profile', userId), async () => {
       let data = null;
@@ -526,6 +528,28 @@ CREATE INDEX IF NOT EXISTS idx_properties_price ON properties(price);
 CREATE INDEX IF NOT EXISTS idx_properties_agent ON properties(agent_id);
 */
 export const getListings = async (filters?: SearchFilters): Promise<{ listings: Listing[], total: number, hasMore: boolean }> => {
+  const getFallback = () => {
+    let filtered = [...MOCK_LISTINGS];
+    if (filters?.categoryId) filtered = filtered.filter(l => l.categoryId === filters.categoryId);
+    if (filters?.type) filtered = filtered.filter(l => l.type === filters.type);
+    if (filters?.propertyType) filtered = filtered.filter(l => l.propertyType === filters.propertyType);
+    if (filters?.minPrice) filtered = filtered.filter(l => l.price >= parseInt(filters.minPrice));
+    if (filters?.maxPrice) filtered = filtered.filter(l => l.price <= parseInt(filters.maxPrice));
+    if (filters?.query) {
+      const q = filters.query.toLowerCase();
+      filtered = filtered.filter(l => l.title.toLowerCase().includes(q) || l.location.toLowerCase().includes(q));
+    }
+    const page = filters?.page || 1;
+    const limit = filters?.limit || filters?.pageSize || 50;
+    const from = (page - 1) * limit;
+    const paged = filtered.slice(from, from + limit);
+    return { listings: paged, total: filtered.length, hasMore: from + limit < filtered.length };
+  };
+
+  if (!isSupabaseConfigured) {
+    return getFallback();
+  }
+
   try {
     return await withCache(cacheKey('listings', filters || 'all'), async () => {
       let query = supabase
@@ -560,7 +584,16 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       const from = (page - 1) * limit;
       query = query.range(from, from + limit - 1);
 
-      const { data, error, count } = await query.order('is_premium', { ascending: false }).order('created_at', { ascending: false });
+      let timer: any;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('getListings timeout')), 2500);
+      });
+
+      const { data, error, count } = await Promise.race([
+        query.order('is_premium', { ascending: false }).order('created_at', { ascending: false }),
+        timeoutPromise
+      ]).finally(() => clearTimeout(timer));
+
       if (error) throw error;
       
       const totalCount = count || 0;
@@ -586,19 +619,33 @@ export const getListings = async (filters?: SearchFilters): Promise<{ listings: 
       return { listings: mapped, total: totalCount, hasMore };
     }, CACHE_TTL.SEARCH);
   } catch (err) {
-    throw err;
+    console.warn("getListings database query failed or unconfigured, returning fallback listings:", err);
+    return getFallback();
   }
 };
 
 export const getListingById = async (id: string): Promise<Listing | null> => {
+  if (!isSupabaseConfigured) {
+    return MOCK_LISTINGS.find(l => l.id === id) || null;
+  }
   try {
     return await withCache(cacheKey('listing', id), async () => {
-      const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
-      if (error || !data) return null;
+      let timer: any;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('getListingById timeout')), 2500);
+      });
+
+      const { data, error } = await Promise.race([
+        supabase.from('properties').select('*').eq('id', id).single(),
+        timeoutPromise
+      ]).finally(() => clearTimeout(timer));
+
+      if (error || !data) return MOCK_LISTINGS.find(l => l.id === id) || null;
       return mapPropertyToListing(data);
     }, CACHE_TTL.LISTINGS);
   } catch (err) {
-    throw err;
+    console.warn(`getListingById failed for ${id}, falling back to mock:`, err);
+    return MOCK_LISTINGS.find(l => l.id === id) || null;
   }
 };
 
@@ -687,6 +734,7 @@ export const deleteListing = async (id: string) => {
 };
 
 export const runAutomaticTagsCleanup = async () => {
+  if (!isSupabaseConfigured) return;
   try {
     const tenDaysAgo = new Date();
     tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
@@ -882,21 +930,57 @@ export const getUserPayments = async (userId: string): Promise<Payment[]> => {
 
 // --- ADMIN SERVICES ---
 export const getAdminStats = async () => {
-  try {
-    return await withCache('admin_stats', async () => {
-      // 1. Try fetching via RPC if we have get_dashboard_stats initialized
-      try {
-        const { data, error } = await supabase.rpc('get_dashboard_stats');
-        if (!error && data) return data;
-      } catch (_) {}
+  if (!isSupabaseConfigured) {
+    return {
+      totalUsers: 1,
+      totalListings: MOCK_LISTINGS.length,
+      totalAds: MOCK_ADS.length,
+      pendingApprovals: 0,
+      revenue: 0,
+      userRoles: { Admin: 1, Agent: 0, Tenant: 1 },
+      listingTypes: { Rent: 0, Sale: MOCK_LISTINGS.length },
+      adPerformance: { totalClicks: 0, totalImpressions: 0 }
+    };
+  }
+  return await withCache('admin_stats', async () => {
+    // 1. Try fetching via RPC if we have get_dashboard_stats initialized
+    try {
+      let timer: any;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('RPC get_dashboard_stats timeout')), 2000);
+      });
+      const { data, error } = await Promise.race([
+        supabase.rpc('get_dashboard_stats'),
+        timeoutPromise
+      ]).finally(() => clearTimeout(timer));
 
-      // 2. Fallback to active query metrics on database tables
-      const [{ count: totalUsers }, { count: totalListings }, { count: totalAds }, { count: pendingApprovals }] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('properties').select('*', { count: 'exact', head: true }),
-        supabase.from('monetization_ads').select('*', { count: 'exact', head: true }),
-        supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'pending')
-      ]);
+      if (error) throw error;
+      if (data) return data;
+    } catch (rpcErr: any) {
+      console.warn("RPC get_dashboard_stats failed, attempting fallback query metrics:", rpcErr);
+    }
+
+    // 2. Fallback to active query metrics on database tables
+    try {
+      let timer: any;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Admin stats fallback query timeout')), 2000);
+      });
+
+      const [{ count: totalUsers, error: errUsers }, { count: totalListings, error: errListings }, { count: totalAds, error: errAds }, { count: pendingApprovals, error: errPending }] = await Promise.race([
+        Promise.all([
+          supabase.from('profiles').select('*', { count: 'exact', head: true }),
+          supabase.from('properties').select('*', { count: 'exact', head: true }),
+          supabase.from('monetization_ads').select('*', { count: 'exact', head: true }),
+          supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+        ]),
+        timeoutPromise
+      ]).finally(() => clearTimeout(timer));
+
+      if (errUsers) throw errUsers;
+      if (errListings) throw errListings;
+      if (errAds) throw errAds;
+      if (errPending) throw errPending;
 
       return {
         totalUsers: totalUsers || 0,
@@ -908,29 +992,47 @@ export const getAdminStats = async () => {
         listingTypes: { Rent: 0, Sale: totalListings || 0 },
         adPerformance: { totalClicks: 0, totalImpressions: 0 }
       };
-    }, 300);
-  } catch (err) {
-    console.error("getAdminStats query failed, returning mockup statistics:", err);
-    return {
-      totalUsers: 12,
-      totalListings: 8,
-      totalAds: 3,
-      pendingApprovals: 1,
-      revenue: 1500,
-      userRoles: { Admin: 1, Agent: 4, Tenant: 7 },
-      listingTypes: { Rent: 5, Sale: 3 },
-      adPerformance: { totalClicks: 210, totalImpressions: 4800 }
-    };
-  }
+    } catch (fallbackErr: any) {
+      console.error("getAdminStats both RPC and fallback queries failed:", fallbackErr);
+      return {
+        totalUsers: 1,
+        totalListings: MOCK_LISTINGS.length,
+        totalAds: MOCK_ADS.length,
+        pendingApprovals: 0,
+        revenue: 0,
+        userRoles: { Admin: 1, Agent: 0, Tenant: 1 },
+        listingTypes: { Rent: 0, Sale: MOCK_LISTINGS.length },
+        adPerformance: { totalClicks: 0, totalImpressions: 0 }
+      };
+    }
+  }, 300);
 };
 
 // --- MONETIZATION SERVICES ---
 export const getMonetizationAds = async (countryCode?: string): Promise<Monetization[]> => {
+  const getFallbackAds = () => {
+    if (countryCode) {
+      return MOCK_ADS.filter(ad => !ad.countryCode || ad.countryCode === countryCode);
+    }
+    return MOCK_ADS;
+  };
+
+  if (!isSupabaseConfigured) {
+    return getFallbackAds();
+  }
+
   try {
     let query = supabase.from('monetization_ads').select('*').order('priority', { ascending: false });
     if (countryCode) query = query.eq('country_code', countryCode);
-    const { data, error } = await query;
-    if (error) throw error;
+
+    let timer: any;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('getMonetizationAds timeout')), 2500);
+    });
+
+    const { data, error } = await Promise.race([query, timeoutPromise]).finally(() => clearTimeout(timer));
+    if (error || !data) return getFallbackAds();
+
     return (data || []).map((ad: any) => ({
       id: ad.id,
       type: ad.type,
@@ -948,7 +1050,8 @@ export const getMonetizationAds = async (countryCode?: string): Promise<Monetiza
       createdAt: ad.created_at
     }));
   } catch (err) {
-    throw err;
+    console.warn("getMonetizationAds query failed or unconfigured, returning fallback ads:", err);
+    return getFallbackAds();
   }
 };
 
@@ -1035,12 +1138,21 @@ export const createViewRequest = async (request: Omit<ViewRequest, 'id' | 'creat
 };
 
 export const getRecentViewRequestCounts = async (): Promise<Record<string, number>> => {
+  if (!isSupabaseConfigured) return {};
   try {
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase
-      .from('view_requests')
-      .select('listing_id')
-      .gte('created_at', fortyEightHoursAgo);
+    let timer: any;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('getRecentViewRequestCounts timeout')), 2000);
+    });
+
+    const { data, error } = await Promise.race([
+      supabase
+        .from('view_requests')
+        .select('listing_id')
+        .gte('created_at', fortyEightHoursAgo),
+      timeoutPromise
+    ]).finally(() => clearTimeout(timer));
       
     if (error) {
       console.error("Error fetching view requests count:", error);
@@ -1241,8 +1353,18 @@ const saveLocalPosts = (posts: BlogPost[]) => {
 };
 
 export const getStaticPages = async (): Promise<StaticPage[]> => {
+  if (!isSupabaseConfigured) return DEFAULT_STATIC_PAGES;
   try {
-    const { data, error } = await supabase.from('cms_pages').select('*').order('created_at', { ascending: false });
+    let timer: any;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('getStaticPages timeout')), 2000);
+    });
+
+    const { data, error } = await Promise.race([
+      supabase.from('cms_pages').select('*').order('created_at', { ascending: false }),
+      timeoutPromise
+    ]).finally(() => clearTimeout(timer));
+
     if (error) throw error;
     
     const dbPages = (data || []).map((p: any) => ({
@@ -1346,8 +1468,18 @@ export const deleteStaticPage = async (id: string): Promise<void> => {
 // --- BLOG POST SERVICES ---
 
 export const getBlogPosts = async (): Promise<BlogPost[]> => {
+  if (!isSupabaseConfigured) return DEFAULT_BLOG_POSTS;
   try {
-    const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+    let timer: any;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('getBlogPosts timeout')), 2000);
+    });
+
+    const { data, error } = await Promise.race([
+      supabase.from('blog_posts').select('*').order('created_at', { ascending: false }),
+      timeoutPromise
+    ]).finally(() => clearTimeout(timer));
+
     if (error) throw error;
     
     const dbPosts = (data || []).map((b: any) => ({

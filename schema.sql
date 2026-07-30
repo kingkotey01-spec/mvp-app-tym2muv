@@ -345,8 +345,22 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 -- 2.1 PROFILES & AGENTS POLICIES
 CREATE POLICY "Public can view profiles" ON profiles FOR SELECT USING (is_blocked = false OR is_admin());
-CREATE POLICY "Users can edit profiles" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users insert profiles" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can edit profiles" ON profiles;
+DROP POLICY IF EXISTS "Users insert profiles" ON profiles;
+DROP POLICY IF EXISTS "users_insert_own_profile_safe_role" ON profiles;
+DROP POLICY IF EXISTS "users_update_own_profile_safe_role" ON profiles;
+
+CREATE POLICY "users_insert_own_profile_safe_role"
+ON profiles FOR INSERT
+WITH CHECK (auth.uid() = id AND role IN ('tenant', 'agent'));
+
+CREATE POLICY "users_update_own_profile_safe_role"
+ON profiles FOR UPDATE
+USING (auth.uid() = id OR is_admin())
+WITH CHECK (
+  (auth.uid() = id AND role IN ('tenant', 'agent'))  -- self-service: tenant/agent only
+  OR is_admin()                                      -- admins can set any role for anyone
+);
 CREATE POLICY "Public view agents" ON agents FOR SELECT USING (true);
 CREATE POLICY "Agents edit agents" ON agents FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Agents insert agents" ON agents FOR INSERT WITH CHECK (auth.uid() = id);
@@ -434,16 +448,26 @@ CREATE TRIGGER update_sys_modtime BEFORE UPDATE ON system_settings FOR EACH ROW 
 -- Auto-insert into profiles when auth.users is created
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_role user_role;
 BEGIN
+  -- SECURITY: raw_user_meta_data is client-controlled. Only 'agent' is a legitimate
+  -- self-service choice; everything else (including admin/super_admin requests)
+  -- silently becomes 'tenant'. Admin elevation must happen out-of-band.
+  v_role := CASE LOWER(NEW.raw_user_meta_data->>'role')
+              WHEN 'agent' THEN 'agent'::user_role
+              ELSE 'tenant'::user_role
+            END;
+
   INSERT INTO public.profiles (id, full_name, avatar_url, role)
   VALUES (
       NEW.id, 
       COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'email', 'Unknown'), 
       COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture'),
-      COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'tenant')
+      v_role
   );
   -- If role is agent, insert into agents table
-  IF NEW.raw_user_meta_data->>'role' = 'agent' THEN
+  IF v_role = 'agent'::user_role THEN
       INSERT INTO public.agents (id, company_name)
       VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'company_name', ''));
   END IF;

@@ -11,6 +11,119 @@
 -- ========================================================================================
 
 -- ==========================================
+-- STEP 0: ENSURE CANONICAL FUNCTIONS EXIST IN VERSION CONTROL
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.log_property_view(p_property_id uuid, p_viewer_id uuid, p_client_ip text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO public.property_views (property_id, viewer_id, client_ip, created_at)
+  VALUES (p_property_id, p_viewer_id, p_client_ip, now())
+  ON CONFLICT DO NOTHING;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_dashboard_stats()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_total_users INT;
+  v_total_listings INT;
+  v_total_ads INT;
+  v_pending_approvals INT;
+  v_admin_users INT;
+  v_agent_users INT;
+  v_customer_users INT;
+  v_rent_listings INT;
+  v_sale_listings INT;
+  v_total_clicks INT;
+  v_total_impressions INT;
+BEGIN
+  SELECT count(*) INTO v_total_users FROM public.profiles;
+  SELECT count(*) INTO v_total_listings FROM public.properties;
+  SELECT count(*) INTO v_total_ads FROM public.monetization_ads;
+  SELECT count(*) INTO v_pending_approvals FROM public.properties WHERE status = 'pending';
+  
+  SELECT count(*) INTO v_admin_users FROM public.profiles WHERE role = 'Admin';
+  SELECT count(*) INTO v_agent_users FROM public.profiles WHERE role = 'Agent';
+  SELECT count(*) INTO v_customer_users FROM public.profiles WHERE role IN ('Customer', 'Tenant');
+  
+  SELECT count(*) INTO v_rent_listings FROM public.properties WHERE listing_type = 'Rent';
+  SELECT count(*) INTO v_sale_listings FROM public.properties WHERE listing_type = 'Sale';
+  
+  SELECT COALESCE(sum(clicks), 0), COALESCE(sum(impressions), 0) 
+  INTO v_total_clicks, v_total_impressions 
+  FROM public.monetization_ads;
+
+  RETURN jsonb_build_object(
+    'totalUsers', v_total_users,
+    'totalListings', v_total_listings,
+    'totalAds', v_total_ads,
+    'pendingApprovals', v_pending_approvals,
+    'revenue', 0,
+    'userRoles', jsonb_build_object('Admin', v_admin_users, 'Agent', v_agent_users, 'Tenant', v_customer_users),
+    'listingTypes', jsonb_build_object('Rent', v_rent_listings, 'Sale', v_sale_listings),
+    'adPerformance', jsonb_build_object('totalClicks', v_total_clicks, 'totalImpressions', v_total_impressions)
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_user_activity_daily()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN COALESCE(
+    (
+      SELECT jsonb_agg(d) FROM (
+        SELECT 
+          created_at::date::text AS date,
+          count(distinct user_id) AS active_users
+        FROM (
+          SELECT created_at, user_id FROM public.payments
+          UNION ALL
+          SELECT created_at, sender_id AS user_id FROM public.messages
+        ) combined
+        GROUP BY created_at::date
+        ORDER BY created_at::date DESC
+        LIMIT 30
+      ) d
+    ),
+    '[]'::jsonb
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_listing_stats()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_rent INT;
+  v_sale INT;
+  v_total INT;
+BEGIN
+  SELECT count(*) INTO v_total FROM public.properties;
+  SELECT count(*) INTO v_rent FROM public.properties WHERE listing_type = 'Rent';
+  SELECT count(*) INTO v_sale FROM public.properties WHERE listing_type = 'Sale';
+  
+  RETURN jsonb_build_object(
+    'total', v_total,
+    'rent', v_rent,
+    'sale', v_sale
+  );
+END;
+$$;
+
+
+-- ==========================================
 -- STEP 1: SOLVING 'security_definer_view'
 -- ==========================================
 -- Re-create views WITH (security_invoker = true) to enforce caller security context and RLS policies
